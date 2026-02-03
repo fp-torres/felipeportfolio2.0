@@ -34,19 +34,14 @@ export default function Hero() {
           {/* 1. SUPER CARD DE PERFIL */}
           <BentoCard className="md:col-span-2 md:row-span-1 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group bg-gradient-to-br from-surface/60 to-black/40">
             
-            {/* Foto e Status Corrigidos */}
             <div className="relative shrink-0 flex items-center justify-center">
-                {/* Glow Proporcional Centralizado */}
                 <div className="absolute inset-0 m-auto w-32 h-32 bg-primary/30 rounded-full blur-2xl group-hover:bg-primary/50 transition-all duration-500"></div>
-                
                 <div className="relative">
                     <img 
                         src={githubData?.avatar_url || t.hero.image} 
                         alt={t.hero.name} 
                         className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-surface object-cover shadow-2xl relative z-10"
                     />
-                    
-                    {/* --- Status Suave (3s) --- */}
                     <div className="absolute bottom-2 right-2 z-20">
                          <span 
                             className="absolute inline-flex h-5 w-5 rounded-full bg-green-500 opacity-75 animate-ping"
@@ -57,7 +52,6 @@ export default function Hero() {
                 </div>
             </div>
 
-            {/* Informações */}
             <div className="text-center md:text-left z-10 flex-1">
                 <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-2">
                     {t.hero.name}
@@ -85,7 +79,6 @@ export default function Hero() {
                 </div>
             </div>
 
-            {/* Decorativo Fundo */}
             <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
                <Icon icon="solar:code-square-bold" width="200" />
             </div>
@@ -119,7 +112,6 @@ export default function Hero() {
             </div>
             
             <div className="mt-8 pt-6 border-t border-white/10">
-                 {/* Texto agora dinâmico (t.hero.recentActivity) */}
                  <p className="text-xs text-gray-500 mb-2">{t.hero.recentActivity}</p>
                  <div className="flex gap-1">
                     {[1,2,3,4,5,6,7].map(i => (
@@ -132,7 +124,6 @@ export default function Hero() {
           {/* 3. CARD SOBRE */}
           <BentoCard className="md:col-span-1 md:row-span-1 flex flex-col justify-center">
              <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
-                {/* Texto agora dinâmico (t.hero.aboutTitle) */}
                 <Icon icon="solar:user-id-bold" className="text-primary" /> {t.hero.aboutTitle}
              </h3>
              <p className="text-gray-300 text-sm leading-relaxed">
@@ -140,14 +131,32 @@ export default function Hero() {
              </p>
           </BentoCard>
 
-          {/* 4. CARD ESPECIALIDADE */}
-          <BentoCard className="md:col-span-1 md:row-span-1 flex flex-col justify-center relative overflow-hidden">
-             <h4 className="text-white font-bold mb-4 relative z-10">{t.hero.currentFocus}</h4>
-             <div className="flex flex-wrap gap-2 relative z-10">
-                <span className="px-3 py-1 bg-blue-500/10 text-blue-300 text-xs rounded border border-blue-500/20 font-mono">React</span>
-                <span className="px-3 py-1 bg-yellow-500/10 text-yellow-300 text-xs rounded border border-yellow-500/20 font-mono">Node.js</span>
-                <span className="px-3 py-1 bg-green-500/10 text-green-300 text-xs rounded border border-green-500/20 font-mono">API Rest</span>
-                <span className="px-3 py-1 bg-purple-500/10 text-purple-300 text-xs rounded border border-purple-500/20 font-mono">Clean Code</span>
+          {/* 4. CARD ESPECIALIDADE MELHORADO */}
+          <BentoCard className="md:col-span-1 md:row-span-1 relative overflow-hidden flex flex-col justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
+             
+             <h4 className="text-white font-bold mb-4 relative z-10 flex items-center gap-2">
+                <Icon icon="solar:target-bold" className="text-blue-400 animate-pulse" /> 
+                {t.hero.currentFocus}
+             </h4>
+             
+             <div className="grid grid-cols-2 gap-3 relative z-10">
+                <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 p-2 rounded-lg hover:bg-blue-500/20 transition-colors">
+                    <Icon icon="devicon:react" width="20" />
+                    <span className="text-blue-200 text-xs font-bold">React</span>
+                </div>
+                <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 p-2 rounded-lg hover:bg-yellow-500/20 transition-colors">
+                    <Icon icon="devicon:nodejs" width="20" />
+                    <span className="text-yellow-200 text-xs font-bold">Node.js</span>
+                </div>
+                <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 p-2 rounded-lg hover:bg-green-500/20 transition-colors">
+                    <Icon icon="solar:server-square-bold" className="text-green-400" width="20" />
+                    <span className="text-green-200 text-xs font-bold">API Rest</span>
+                </div>
+                <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 p-2 rounded-lg hover:bg-purple-500/20 transition-colors">
+                    <Icon icon="solar:magic-stick-3-bold" className="text-purple-400" width="20" />
+                    <span className="text-purple-200 text-xs font-bold">Clean Code</span>
+                </div>
              </div>
           </BentoCard>
 

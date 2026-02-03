@@ -13,7 +13,7 @@ import cvPt from '../assets/curriculo/cvfelipetorres.pdf';
 import cvEn from '../assets/curriculo/enresumefelipetorres.pdf';
 import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática.pdf';
 
-// Certificados
+// Certificados (Importações mantidas...)
 import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png';
 import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.png';
 import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.png';
@@ -43,9 +43,9 @@ export const content = {
       image: profileImg,
       resumeLink: cvPt,
       ctaResume: "Baixar CV",
-      aboutTitle: "Sobre Mim", // Novo
+      aboutTitle: "Sobre Mim",
       aboutText: "Desenvolvedor Full Stack com foco em React, Node.js e arquitetura moderna. Transformo ideias complexas em software robusto e escalável.",
-      recentActivity: "Atividade Recente:", // Novo
+      recentActivity: "Atividade Recente:",
       location: "Rio de Janeiro, BR",
       available: "Disponível",
       currentFocus: "Foco Atual",
@@ -57,7 +57,7 @@ export const content = {
     },
     experience: {
       title: "Trajetória Profissional",
-      educationTitle: "Formação Acadêmica", // Novo (para usar no componente Experience)
+      educationTitle: "Formação Acadêmica",
       items: [
         {
           id: 1,
@@ -65,14 +65,16 @@ export const content = {
           company: "Crase Sigma",
           period: "2026 - Atual",
           description: "Desenvolvimento de sistemas web completos. Atuação direta na regra de negócio, integração de APIs e otimização de performance.",
-          current: true
+          current: true,
+          icon: "solar:code-square-bold" // Ícone adicionado
         },
         {
           id: 2,
           role: "Estagiário de TI",
           company: "Allternativa Filmes X",
           period: "Abr 2023 - Jul 2023",
-          description: "Suporte técnico, manutenção de infraestrutura e auxílio na gestão de sistemas internos."
+          description: "Suporte técnico, manutenção de infraestrutura e auxílio na gestão de sistemas internos.",
+          icon: "solar:monitor-camera-bold" // Ícone adicionado
         }
       ],
       education: [
@@ -81,14 +83,16 @@ export const content = {
           course: "Análise e Desenvolvimento de Sistemas",
           school: "Universidade Veiga de Almeida",
           period: "2024 - 2026",
-          diploma: null 
+          diploma: null,
+          icon: "mdi:university" // Ícone adicionado
         },
         {
           id: 2,
           course: "Técnico em TI - Desenvolvimento Web",
           school: "Colégio Santo Inácio",
           period: "2022 - 2023",
-          diploma: diplomaTecnico
+          diploma: diplomaTecnico,
+          icon: "mdi:school" // Ícone adicionado
         }
       ]
     },
@@ -135,7 +139,7 @@ export const content = {
         { id: 1, name: "POO - Java", issuer: "Curso em Vídeo", image: certPoo },
         { id: 2, name: "Git e GitHub", issuer: "Curso em Vídeo", image: certGit },
         { id: 3, name: "Adm. Banco de Dados", issuer: "Fundação Bradesco", image: certDbAdmin },
-        { id: 4, name: "Implementação de BD", issuer: "Fundação Bradesco", image: certImplDb },
+        { id: 4, name: "Impl DB", issuer: "Fundação Bradesco", image: certImplDb },
         { id: 5, name: "Modelagem de Dados", issuer: "Fundação Bradesco", image: certModeling },
         { id: 6, name: "Segurança em TI", issuer: "Bradesco", image: certSecurity },
         { id: 7, name: "Cybersecurity Intro", issuer: "Cisco", image: certCyber },
@@ -168,12 +172,20 @@ export const content = {
     },
     minigame: {
       title: "Tech Memory",
-      subtitle: "Encontre os pares para testar a sua memória.",
+      subtitle: "Desafie sua memória em diferentes níveis.",
       moves: "Jogadas",
+      bestScore: "Recorde",
       restart: "Reiniciar",
       winTitle: "Mandou Bem!",
       winSubtitle: "Você completou em",
-      playAgain: "Jogar Novamente"
+      newRecord: "NOVO RECORDE!",
+      playAgain: "Jogar Novamente",
+      modes: {
+        easy: "Fácil",
+        medium: "Médio",
+        hard: "Difícil"
+      },
+      selectMode: "Selecione a Dificuldade"
     },
     footer: {
       title: "Vamos construir algo incrível?",
@@ -198,9 +210,9 @@ export const content = {
       image: profileImg,
       resumeLink: cvEn,
       ctaResume: "Download CV",
-      aboutTitle: "About Me", // Novo
+      aboutTitle: "About Me",
       aboutText: "Full Stack Developer focused on React, Node.js, and modern architecture. I transform complex ideas into robust and scalable software.",
-      recentActivity: "Recent Activity:", // Novo
+      recentActivity: "Recent Activity:",
       location: "Rio de Janeiro, BR",
       available: "Available",
       currentFocus: "Current Focus",
@@ -212,7 +224,7 @@ export const content = {
     },
     experience: {
       title: "Professional Path",
-      educationTitle: "Education", // Novo
+      educationTitle: "Education",
       items: [
         {
           id: 1,
@@ -220,14 +232,16 @@ export const content = {
           company: "Crase Sigma",
           period: "2026 - Present",
           description: "Development of complete web systems. Direct involvement in business rules, API integration, and performance optimization.",
-          current: true
+          current: true,
+          icon: "solar:code-square-bold"
         },
         {
           id: 2,
           role: "IT Intern",
           company: "Allternativa Filmes X",
           period: "Apr 2023 - Jul 2023",
-          description: "Technical support, infrastructure maintenance, and internal systems assistance."
+          description: "Technical support, infrastructure maintenance, and internal systems assistance.",
+          icon: "solar:monitor-camera-bold"
         }
       ],
       education: [
@@ -236,14 +250,16 @@ export const content = {
           course: "Systems Analysis",
           school: "Universidade Veiga de Almeida",
           period: "2024 - 2026",
-          diploma: null 
+          diploma: null,
+          icon: "mdi:university"
         },
         {
           id: 2,
           course: "IT Technician",
           school: "Colégio Santo Inácio",
           period: "2022 - 2023",
-          diploma: diplomaTecnico
+          diploma: diplomaTecnico,
+          icon: "mdi:school"
         }
       ]
     },
@@ -323,12 +339,20 @@ export const content = {
     },
     minigame: {
       title: "Tech Memory",
-      subtitle: "Find the pairs to test your memory.",
+      subtitle: "Challenge your memory across different levels.",
       moves: "Moves",
+      bestScore: "Best",
       restart: "Restart",
       winTitle: "Well Done!",
       winSubtitle: "You completed it in",
-      playAgain: "Play Again"
+      newRecord: "NEW RECORD!",
+      playAgain: "Play Again",
+      modes: {
+        easy: "Easy",
+        medium: "Medium",
+        hard: "Hard"
+      },
+      selectMode: "Select Difficulty"
     },
     footer: {
       title: "Let's build something amazing?",

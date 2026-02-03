@@ -20,7 +20,6 @@ export default function Experience() {
 
   return (
     <section id="experience" className="py-24 relative">
-      {/* Título com detalhe visual */}
       <div className="flex flex-col items-center mb-16">
         <h2 className="text-3xl md:text-5xl font-bold text-center flex items-center gap-3">
           <Icon icon="solar:suitcase-lines-bold-duotone" className="text-primary" />
@@ -40,11 +39,10 @@ export default function Experience() {
           className="space-y-8"
         >
           <h3 className="text-2xl font-bold text-white mb-8 flex items-center gap-3 border-l-4 border-primary pl-4">
-             Experiência Profissional
+             {t.experience.title}
           </h3>
 
           <div className="relative pl-4 sm:pl-0">
-            {/* Linha da Timeline (Mobile/Desktop) */}
             <div className="absolute left-0 sm:left-4 top-2 bottom-0 w-0.5 bg-gradient-to-b from-primary/50 to-transparent md:hidden"></div>
 
             {t.experience.items.map((job) => (
@@ -55,18 +53,21 @@ export default function Experience() {
               >
                 <div className="relative bg-surface/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border border-white/5 hover:border-primary/50 hover:bg-surface/80 transition-all duration-300 shadow-lg hover:shadow-[0_0_30px_rgba(255,209,0,0.1)] group-hover:-translate-y-1">
                     
-                    {/* Badge "Atual" ou Ícone */}
-                    <div className="absolute -top-3 -right-3 sm:top-6 sm:right-6">
-                       {job.current ? (
+                    {/* ÍCONE DA EMPRESA (Onde estava vazio) */}
+                    <div className="absolute -left-3 -top-3 sm:-left-4 sm:-top-4 w-12 h-12 bg-surface border border-primary/30 rounded-full flex items-center justify-center shadow-lg z-10 group-hover:scale-110 transition-transform">
+                         <Icon icon={job.icon || "solar:briefcase-bold"} className="text-primary text-2xl" />
+                    </div>
+
+                    {/* Badge "Atual" */}
+                    <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+                       {job.current && (
                            <span className="flex items-center gap-1 bg-primary text-bg text-xs font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">
                                <span className="w-2 h-2 bg-bg rounded-full"></span> Atualmente
                            </span>
-                       ) : (
-                           <Icon icon="solar:briefcase-bold" className="text-white/20 text-4xl group-hover:text-primary/20 transition-colors" />
                        )}
                     </div>
 
-                    <h4 className="text-xl md:text-2xl font-bold text-white group-hover:text-primary transition-colors">{job.role}</h4>
+                    <h4 className="text-xl md:text-2xl font-bold text-white group-hover:text-primary transition-colors mt-2">{job.role}</h4>
                     <p className="text-lg text-gray-300 font-medium mb-4 flex items-center gap-2">
                         {job.company}
                     </p>
@@ -93,7 +94,7 @@ export default function Experience() {
           className="space-y-8"
         >
            <h3 className="text-2xl font-bold text-white mb-8 flex items-center gap-3 border-l-4 border-blue-500 pl-4">
-             Formação Acadêmica
+             {t.experience.educationTitle}
           </h3>
 
            <div className="space-y-6">
@@ -101,11 +102,11 @@ export default function Experience() {
               <motion.div 
                 key={edu.id} 
                 variants={itemVariants}
-                className="bg-surface/50 backdrop-blur-sm p-6 rounded-2xl border border-white/5 hover:border-blue-500/50 hover:bg-surface/80 transition-all duration-300 group flex flex-col sm:flex-row gap-4 items-start"
+                className="bg-surface/50 backdrop-blur-sm p-6 rounded-2xl border border-white/5 hover:border-blue-500/50 hover:bg-surface/80 transition-all duration-300 group flex flex-col sm:flex-row gap-4 items-start relative overflow-hidden"
               >
-                {/* Ícone Grande */}
+                {/* Ícone Grande (Corrigido para usar o ícone específico) */}
                 <div className="p-4 bg-blue-500/10 rounded-2xl text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
-                    <Icon icon="solar:hat-graduation-bold" size={32} />
+                    <Icon icon={edu.icon || "solar:hat-graduation-bold"} size={32} />
                 </div>
 
                 <div className="flex-1">
@@ -113,7 +114,6 @@ export default function Experience() {
                     <p className="text-gray-400 text-sm mb-2">{edu.school}</p>
                     <span className="text-xs text-blue-400 font-mono block mb-4">{edu.period}</span>
                     
-                    {/* Botão Diploma */}
                     {edu.diploma && (
                         <a 
                             href={edu.diploma} 
