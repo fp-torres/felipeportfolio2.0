@@ -45,14 +45,15 @@ export default function Certificates() {
         ))}
       </div>
 
-      {/* Botão Ver Mais / Ver Menos */}
+     {/* Botão Ver Mais / Ver Menos TRADUZIDO */}
       {t.certificates.items.length > 4 && (
         <div className="flex justify-center mt-10">
             <button 
                 onClick={() => setShowAll(!showAll)}
                 className="flex items-center gap-2 px-6 py-2 border border-primary text-primary rounded-full hover:bg-primary hover:text-bg transition-colors font-bold"
             >
-                {showAll ? 'Ver Menos' : 'Ver Todos'}
+                {/* USANDO AS VARIÁVEIS DE TRADUÇÃO AQUI */}
+                {showAll ? t.certificates.seeLess : t.certificates.seeMore}
                 <Icon icon={showAll ? "solar:alt-arrow-up-bold" : "solar:alt-arrow-down-bold"} />
             </button>
         </div>

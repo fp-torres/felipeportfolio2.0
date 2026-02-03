@@ -13,7 +13,7 @@ import cvPt from '../assets/curriculo/cvfelipetorres.pdf';
 import cvEn from '../assets/curriculo/enresumefelipetorres.pdf';
 import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática.pdf';
 
-// Certificados (TODOS OS ARQUIVOS)
+// Certificados
 import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png';
 import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.png';
 import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.png';
@@ -29,25 +29,35 @@ import certSecurity from '../assets/imgs/certs/Segurança em Tecnologia da Infor
 export const content = {
   pt: {
     nav: {
-      about: "Sobre",
+      home: "Início",
       experience: "Carreira",
       projects: "Projetos",
       certificates: "Certificados",
       skills: "Stack",
+      minigame: "Minigame",
       contact: "Contato",
     },
     hero: {
-      title: "Olá, eu sou",
       name: "Felipe Torres",
       role: "Desenvolvedor Full Stack",
-      description: "Especialista em criar sistemas completos, escaláveis e eficientes. Atuo em todo o ciclo de desenvolvimento, transformando requisitos complexos em software funcional e robusto.",
-      ctaResume: "Baixar CV",
-      ctaContact: "Vamos conversar",
       image: profileImg,
       resumeLink: cvPt,
+      ctaResume: "Baixar CV",
+      aboutTitle: "Sobre Mim", // Novo
+      aboutText: "Desenvolvedor Full Stack com foco em React, Node.js e arquitetura moderna. Transformo ideias complexas em software robusto e escalável.",
+      recentActivity: "Atividade Recente:", // Novo
+      location: "Rio de Janeiro, BR",
+      available: "Disponível",
+      currentFocus: "Foco Atual",
+      githubStats: {
+        repos: "Repositórios",
+        followers: "Seguidores",
+        profileBtn: "Ver Perfil GitHub"
+      }
     },
     experience: {
       title: "Trajetória Profissional",
+      educationTitle: "Formação Acadêmica", // Novo (para usar no componente Experience)
       items: [
         {
           id: 1,
@@ -119,6 +129,8 @@ export const content = {
     },
     certificates: {
       title: "Certificações",
+      seeMore: "Ver Todos",
+      seeLess: "Ver Menos",
       items: [
         { id: 1, name: "POO - Java", issuer: "Curso em Vídeo", image: certPoo },
         { id: 2, name: "Git e GitHub", issuer: "Curso em Vídeo", image: certGit },
@@ -153,29 +165,54 @@ export const content = {
         { name: "MacOS", icon: "devicon-apple-original" },
         { name: "Tailwind", icon: "devicon-tailwindcss-original" },
       ]
+    },
+    minigame: {
+      title: "Tech Memory",
+      subtitle: "Encontre os pares para testar a sua memória.",
+      moves: "Jogadas",
+      restart: "Reiniciar",
+      winTitle: "Mandou Bem!",
+      winSubtitle: "Você completou em",
+      playAgain: "Jogar Novamente"
+    },
+    footer: {
+      title: "Vamos construir algo incrível?",
+      subtitle: "Estou disponível para novos projetos e oportunidades como Full Stack.",
+      emailBtn: "Mandar Email",
+      copyright: "© 2026 Felipe Torres. Todos os direitos reservados."
     }
   },
   en: {
     nav: {
-      about: "About",
+      home: "Home",
       experience: "Career",
       projects: "Projects",
       certificates: "Certificates",
       skills: "Stack",
+      minigame: "Minigame",
       contact: "Contact",
     },
     hero: {
-      title: "Hi, I'm",
       name: "Felipe Torres",
       role: "Full Stack Developer",
-      description: "Specialist in building complete, scalable, and efficient systems. I work across the entire development cycle, turning complex requirements into robust software.",
-      ctaResume: "Download CV",
-      ctaContact: "Let's Talk",
       image: profileImg,
       resumeLink: cvEn,
+      ctaResume: "Download CV",
+      aboutTitle: "About Me", // Novo
+      aboutText: "Full Stack Developer focused on React, Node.js, and modern architecture. I transform complex ideas into robust and scalable software.",
+      recentActivity: "Recent Activity:", // Novo
+      location: "Rio de Janeiro, BR",
+      available: "Available",
+      currentFocus: "Current Focus",
+      githubStats: {
+        repos: "Repositories",
+        followers: "Followers",
+        profileBtn: "View GitHub Profile"
+      }
     },
     experience: {
       title: "Professional Path",
+      educationTitle: "Education", // Novo
       items: [
         {
           id: 1,
@@ -247,9 +284,11 @@ export const content = {
     },
     certificates: {
       title: "Certifications",
+      seeMore: "See All",
+      seeLess: "See Less",
       items: [
-        { id: 1, name: "OOP - Java", issuer: "Curso em Vídeo", image: certPoo },
-        { id: 2, name: "Git & GitHub", issuer: "Curso em Vídeo", image: certGit },
+        { id: 1, name: "OOP - Java", issuer: "Online Course", image: certPoo },
+        { id: 2, name: "Git & GitHub", issuer: "Online Course", image: certGit },
         { id: 3, name: "DB Admin", issuer: "Fundação Bradesco", image: certDbAdmin },
         { id: 4, name: "Impl DB", issuer: "Fundação Bradesco", image: certImplDb },
         { id: 5, name: "Data Modeling", issuer: "Fundação Bradesco", image: certModeling },
@@ -281,6 +320,21 @@ export const content = {
         { name: "MacOS", icon: "devicon-apple-original" },
         { name: "Tailwind", icon: "devicon-tailwindcss-original" },
       ]
+    },
+    minigame: {
+      title: "Tech Memory",
+      subtitle: "Find the pairs to test your memory.",
+      moves: "Moves",
+      restart: "Restart",
+      winTitle: "Well Done!",
+      winSubtitle: "You completed it in",
+      playAgain: "Play Again"
+    },
+    footer: {
+      title: "Let's build something amazing?",
+      subtitle: "I'm available for new projects and Full Stack opportunities.",
+      emailBtn: "Send Email",
+      copyright: "© 2026 Felipe Torres. All rights reserved."
     }
   }
 };

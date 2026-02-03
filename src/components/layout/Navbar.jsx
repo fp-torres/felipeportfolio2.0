@@ -18,10 +18,12 @@ export default function Navbar() {
   };
 
   const navLinks = [
+    { name: t.nav.home, href: '#hero' },
     { name: t.nav.experience, href: '#experience' },
     { name: t.nav.certificates, href: '#certificates' },
     { name: t.nav.projects, href: '#projects' },
     { name: t.nav.skills, href: '#skills' },
+    { name: "Minigame", href: '#minigame' },
   ];
 
   return (
