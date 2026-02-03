@@ -44,7 +44,7 @@ export default function Navbar() {
     { name: t.nav.certificates, href: "#certificates" },
     { name: t.nav.projects, href: "#projects" },
     { name: t.nav.skills, href: "#skills" },
-    { name: t.nav.minigame, href: "#minigame" },
+    { name: t.nav.minigames, href: "#minigames" },
   ];
 
   return (

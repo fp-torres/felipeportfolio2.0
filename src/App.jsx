@@ -5,12 +5,14 @@ import Footer from './components/layout/Footer';
 import ScrollToTop from './components/layout/ScrollToTop';
 
 // Seções
-import Hero from './components/sections/Hero'; // O Hero agora contém a bio e o grid
+import Hero from './components/sections/Hero'; 
 import Experience from './components/sections/Experience';
 import Projects from './components/sections/Projects';
 import Skills from './components/sections/Skills';
 import Certificates from './components/sections/Certificates';
-import TechMemoryGame from './components/sections/TechMemoryGame';
+
+// AQUI ESTAVA O ERRO: Trocamos o jogo direto pelo HUB (Catálogo)
+import GameHub from './components/sections/GameHub'; 
 
 function App() {
   return (
@@ -21,7 +23,6 @@ function App() {
         <Navbar />
         
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-20">
-            {/* O Hero novo já inclui a apresentação e o Bento Grid (Sobre) */}
             <Hero />
             
             <Experience />
@@ -29,7 +30,8 @@ function App() {
             <Projects />
             <Skills />
 
-            <TechMemoryGame />
+            {/* Renderiza o Hub de Jogos em vez do jogo direto */}
+            <GameHub />
         </main>
         
         <Footer />

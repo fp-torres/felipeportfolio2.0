@@ -13,7 +13,7 @@ import cvPt from '../assets/curriculo/cvfelipetorres.pdf';
 import cvEn from '../assets/curriculo/enresumefelipetorres.pdf';
 import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática.pdf';
 
-// Certificados (Importações mantidas...)
+// Certificados
 import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png';
 import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.png';
 import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.png';
@@ -34,7 +34,7 @@ export const content = {
       projects: "Projetos",
       certificates: "Certificados",
       skills: "Stack",
-      minigame: "Minigame",
+      minigames: "Minigames",
       contact: "Contato",
     },
     hero: {
@@ -66,7 +66,7 @@ export const content = {
           period: "2026 - Atual",
           description: "Desenvolvimento de sistemas web completos. Atuação direta na regra de negócio, integração de APIs e otimização de performance.",
           current: true,
-          icon: "solar:code-square-bold" // Ícone adicionado
+          icon: "solar:code-square-bold"
         },
         {
           id: 2,
@@ -74,7 +74,7 @@ export const content = {
           company: "Allternativa Filmes X",
           period: "Abr 2023 - Jul 2023",
           description: "Suporte técnico, manutenção de infraestrutura e auxílio na gestão de sistemas internos.",
-          icon: "solar:monitor-camera-bold" // Ícone adicionado
+          icon: "solar:monitor-camera-bold"
         }
       ],
       education: [
@@ -84,7 +84,7 @@ export const content = {
           school: "Universidade Veiga de Almeida",
           period: "2024 - 2026",
           diploma: null,
-          icon: "mdi:university" // Ícone adicionado
+          icon: "mdi:university"
         },
         {
           id: 2,
@@ -92,7 +92,7 @@ export const content = {
           school: "Colégio Santo Inácio",
           period: "2022 - 2023",
           diploma: diplomaTecnico,
-          icon: "mdi:school" // Ícone adicionado
+          icon: "mdi:school"
         }
       ]
     },
@@ -170,22 +170,98 @@ export const content = {
         { name: "Tailwind", icon: "devicon-tailwindcss-original" },
       ]
     },
-    minigame: {
-      title: "Tech Memory",
-      subtitle: "Desafie sua memória em diferentes níveis.",
-      moves: "Jogadas",
-      bestScore: "Recorde",
-      restart: "Reiniciar",
-      winTitle: "Mandou Bem!",
-      winSubtitle: "Você completou em",
-      newRecord: "NOVO RECORDE!",
-      playAgain: "Jogar Novamente",
-      modes: {
-        easy: "Fácil",
-        medium: "Médio",
-        hard: "Difícil"
+    minigames: {
+      sectionTitle: "Arcade Zone",
+      sectionSubtitle: "Desafie sua mente com nossos mini-games.",
+      
+      common: {
+        score: "Pontos",
+        record: "Recorde",
+        level: "Nível",
+        max: "Máx",
+        moves: "Jogadas",
+        time: "Tempo",
+        win: "Você Venceu!",
+        gameOver: "Fim de Jogo",
+        playAgain: "Jogar Novamente",
+        restart: "Reiniciar",
+        back: "Sair",
+        quit: "Menu Principal",
+        nextLevel: "Próxima Fase",
+        tryAgain: "Tentar Novamente",
+        exit: "Sair"
       },
-      selectMode: "Selecione a Dificuldade"
+
+      descriptions: {
+        memory: { title: "Tech Memory", desc: "Encontre os pares das tecnologias." },
+        snake: { title: "Dev Snake", desc: "Clássico Snake com visual tech." },
+        sequence: { title: "Cyber Sequence", desc: "Repita a sequência de cores." },
+        matrix: { title: "Matrix Recall", desc: "Memorize e repita o padrão visual." },
+        decryptor: { title: "Decryptor", desc: "Descubra a senha secreta lógica." },
+        zip: { title: "Logic Quiz", desc: "Perguntas de lógica rápida." }
+      },
+
+      // AQUI ESTAVA O PROBLEMA: Adicionei as chaves que faltavam (title, bestScore, moves)
+      memory: {
+        title: "Tech Memory",
+        subtitle: "Teste sua memória em diferentes níveis.",
+        bestScore: "Recorde",
+        moves: "Movimentos",
+        winTitle: "Mandou Bem!",
+        winSubtitle: "Você completou em",
+        newRecord: "NOVO RECORDE!",
+        playAgain: "Jogar Novamente",
+        modes: { easy: "Fácil", medium: "Médio", hard: "Difícil" }
+      },
+      snake: {
+        title: "Dev Snake",
+        help: "Use as setas para mover"
+      },
+      sequence: {
+        title: "Cyber Sequence",
+        turn: "Sua vez!",
+        watch: "Observe...",
+        wrong: "Errou!"
+      },
+      matrix: {
+        title: "Matrix Recall",
+        memorize: "MEMORIZE!",
+        repeat: "Repita o padrão.",
+        success: "SUCESSO!",
+        fail: "FALHA NO SISTEMA"
+      },
+      decryptor: {
+        title: "Decryptor",
+        accessGranted: "ACESSO LIBERADO!",
+        accessDenied: "ACESSO NEGADO",
+        cracked: "Você quebrou a criptografia.",
+        enter: "ENTER"
+      },
+      zip: {
+        title: "Logic Quiz",
+        hint: "Dica:",
+        correct: "CORRETO!",
+        wrong: "ERRADO!",
+        hackComplete: "HACK COMPLETO!",
+        placeholder: "Resposta...",
+        levels: [
+            { id: 1, question: "2, 4, 6, 8, ...", answer: "10", hint: "Números pares." },
+            { id: 2, question: "5, 10, 15, 20, ...", answer: "25", hint: "Tabuada de 5." },
+            { id: 3, question: "1, 2, 4, 8, 16, ...", answer: "32", hint: "Dobro do anterior." },
+            { id: 4, question: "10 - 5 + 2 = ?", answer: "7", hint: "Matemática básica." },
+            { id: 5, question: "A, B, C, D, ...", answer: "E", hint: "Alfabeto." },
+            { id: 6, question: "1, 1, 2, 3, 5, 8, ...", answer: "13", hint: "Fibonacci (soma os dois anteriores)." },
+            { id: 7, question: "HTML, CSS, JS, ...", answer: "REACT", hint: "Stack Frontend popular (Framework)." },
+            { id: 8, question: "100, 90, 80, 70, ...", answer: "60", hint: "Contagem regressiva." },
+            { id: 9, question: "0, 1, 10, 11, 100, ...", answer: "101", hint: "Binário." },
+            { id: 10, question: "const x = 5; x + 1 = ?", answer: "6", hint: "Javascript básico." },
+            { id: 11, question: "3, 6, 9, 12, ...", answer: "15", hint: "Múltiplos de 3." },
+            { id: 12, question: "Segunda, Terça, Quarta, ...", answer: "QUINTA", hint: "Dias da semana." },
+            { id: 13, question: "10² = ?", answer: "100", hint: "Potência." },
+            { id: 14, question: "[1, 2, 3].length = ?", answer: "3", hint: "Tamanho do array." },
+            { id: 15, question: "#FF0000 é que cor?", answer: "VERMELHO", hint: "Código Hex." },
+        ]
+      }
     },
     footer: {
       title: "Vamos construir algo incrível?",
@@ -201,7 +277,7 @@ export const content = {
       projects: "Projects",
       certificates: "Certificates",
       skills: "Stack",
-      minigame: "Minigame",
+      minigames: "Minigames",
       contact: "Contact",
     },
     hero: {
@@ -337,22 +413,97 @@ export const content = {
         { name: "Tailwind", icon: "devicon-tailwindcss-original" },
       ]
     },
-    minigame: {
-      title: "Tech Memory",
-      subtitle: "Challenge your memory across different levels.",
-      moves: "Moves",
-      bestScore: "Best",
-      restart: "Restart",
-      winTitle: "Well Done!",
-      winSubtitle: "You completed it in",
-      newRecord: "NEW RECORD!",
-      playAgain: "Play Again",
-      modes: {
-        easy: "Easy",
-        medium: "Medium",
-        hard: "Hard"
+    minigames: {
+      sectionTitle: "Arcade Zone",
+      sectionSubtitle: "Challenge your mind with our mini-games.",
+      
+      common: {
+        score: "Score",
+        record: "Record",
+        level: "Level",
+        max: "Max",
+        moves: "Moves",
+        time: "Time",
+        win: "You Won!",
+        gameOver: "Game Over",
+        playAgain: "Play Again",
+        restart: "Restart",
+        back: "Exit",
+        quit: "Main Menu",
+        nextLevel: "Next Level",
+        tryAgain: "Try Again",
+        exit: "Exit"
       },
-      selectMode: "Select Difficulty"
+
+      descriptions: {
+        memory: { title: "Tech Memory", desc: "Find the technology pairs." },
+        snake: { title: "Dev Snake", desc: "Classic Snake with tech visuals." },
+        sequence: { title: "Cyber Sequence", desc: "Repeat the color sequence." },
+        matrix: { title: "Matrix Recall", desc: "Memorize and repeat the pattern." },
+        decryptor: { title: "Decryptor", desc: "Crack the secret logic password." },
+        zip: { title: "Logic Quiz", desc: "Quick logic questions." }
+      },
+
+      memory: {
+        title: "Tech Memory",
+        subtitle: "Test your memory across different levels.",
+        bestScore: "Best",
+        moves: "Moves",
+        winTitle: "Well Done!",
+        winSubtitle: "You completed it in",
+        newRecord: "NEW RECORD!",
+        playAgain: "Play Again",
+        modes: { easy: "Easy", medium: "Medium", hard: "Hard" }
+      },
+      snake: {
+        title: "Dev Snake",
+        help: "Use arrows to move"
+      },
+      sequence: {
+        title: "Cyber Sequence",
+        turn: "Your turn!",
+        watch: "Watch...",
+        wrong: "Wrong!"
+      },
+      matrix: {
+        title: "Matrix Recall",
+        memorize: "MEMORIZE!",
+        repeat: "Repeat the pattern.",
+        success: "SUCCESS!",
+        fail: "SYSTEM FAILURE"
+      },
+      decryptor: {
+        title: "Decryptor",
+        accessGranted: "ACCESS GRANTED!",
+        accessDenied: "ACCESS DENIED",
+        cracked: "You cracked the encryption.",
+        enter: "ENTER"
+      },
+      zip: {
+        title: "Logic Quiz",
+        hint: "Hint:",
+        correct: "CORRECT!",
+        wrong: "WRONG!",
+        hackComplete: "HACK COMPLETE!",
+        placeholder: "Answer...",
+        levels: [
+            { id: 1, question: "2, 4, 6, 8, ...", answer: "10", hint: "Even numbers." },
+            { id: 2, question: "5, 10, 15, 20, ...", answer: "25", hint: "Multiples of 5." },
+            { id: 3, question: "1, 2, 4, 8, 16, ...", answer: "32", hint: "Double the previous." },
+            { id: 4, question: "10 - 5 + 2 = ?", answer: "7", hint: "Basic math." },
+            { id: 5, question: "A, B, C, D, ...", answer: "E", hint: "Alphabet." },
+            { id: 6, question: "1, 1, 2, 3, 5, 8, ...", answer: "13", hint: "Fibonacci (sum of previous two)." },
+            { id: 7, question: "HTML, CSS, JS, ...", answer: "REACT", hint: "Popular Frontend Stack." },
+            { id: 8, question: "100, 90, 80, 70, ...", answer: "60", hint: "Countdown." },
+            { id: 9, question: "0, 1, 10, 11, 100, ...", answer: "101", hint: "Binary." },
+            { id: 10, question: "const x = 5; x + 1 = ?", answer: "6", hint: "Basic Javascript." },
+            { id: 11, question: "3, 6, 9, 12, ...", answer: "15", hint: "Multiples of 3." },
+            { id: 12, question: "Monday, Tuesday, Wednesday, ...", answer: "THURSDAY", hint: "Days of the week." },
+            { id: 13, question: "10² = ?", answer: "100", hint: "Power." },
+            { id: 14, question: "[1, 2, 3].length = ?", answer: "3", hint: "Array length." },
+            { id: 15, question: "#FF0000 is which color?", answer: "RED", hint: "Hex code." },
+        ]
+      }
     },
     footer: {
       title: "Let's build something amazing?",
