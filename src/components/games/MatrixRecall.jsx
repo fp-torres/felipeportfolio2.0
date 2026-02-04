@@ -6,6 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function MatrixRecall({ onBack }) {
   const { t } = useLanguage();
   
+  // Helpers de texto
+  const common = t?.minigames?.common;
+  const txt = t?.minigames?.matrix;
+
   const LEVELS = [
     { id: 1, size: 3, tiles: 3 }, 
     { id: 2, size: 3, tiles: 4 },
@@ -80,6 +84,7 @@ export default function MatrixRecall({ onBack }) {
             if (lives - 1 <= 0) {
                 setStatus('lost');
             } else {
+                // Reinicia o mesmo nível com novo padrão
                 startLevel(levelIndex);
             }
         }, 1000);
@@ -97,32 +102,36 @@ export default function MatrixRecall({ onBack }) {
 
     if (status === 'preview') {
         if (pattern.includes(index)) {
-            bgClass = "bg-white text-bg shadow-[0_0_15px_white]"; 
+            bgClass = "bg-white text-bg shadow-[0_0_15px_white] scale-105"; 
         }
     } else if (status === 'playing' || status === 'won' || status === 'error') {
         if (selected.includes(index)) {
             if (pattern.includes(index)) {
                 bgClass = "bg-green-500 shadow-[0_0_15px_#22c55e]"; 
-                icon = <Icon icon="solar:check-circle-bold" className="text-white text-xl" />;
+                // Ícone removido no mobile se o grid for muito denso para limpar a visão
+                if (currentLevel.size < 5) {
+                    icon = <Icon icon="solar:check-circle-bold" className="text-white text-lg" />;
+                }
             } else {
                 bgClass = "bg-red-500 shadow-[0_0_15px_#ef4444]"; 
-                icon = <Icon icon="solar:close-circle-bold" className="text-white text-xl" />;
+                icon = <Icon icon="solar:close-circle-bold" className="text-white text-lg" />;
             }
         }
     } else if (status === 'lost') {
-        if (pattern.includes(index)) bgClass = "bg-white/20";
+        if (pattern.includes(index)) bgClass = "bg-white/20 animate-pulse";
         if (selected.includes(index) && !pattern.includes(index)) bgClass = "bg-red-500/50";
     }
 
     return (
         <motion.button
             key={index}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => handleTileClick(index)}
+            // Removemos whileTap no mobile para evitar delay
             className={`
-                aspect-square rounded-xl flex items-center justify-center transition-all duration-200 border border-white/5
+                w-full aspect-square rounded-lg flex items-center justify-center transition-all duration-100 border border-white/5
                 ${bgClass}
             `}
+            // onPointerDown é mais rápido que onClick no mobile
+            onPointerDown={() => handleTileClick(index)}
             disabled={status !== 'playing'}
         >
             {icon}
@@ -130,13 +139,10 @@ export default function MatrixRecall({ onBack }) {
     );
   };
 
-  // Helpers
-  const common = t?.minigames?.common;
-  const txt = t?.minigames?.matrix;
-
   return (
-    <div className="w-full max-w-lg mx-auto bg-[#0F172A] rounded-3xl border border-white/10 p-6 shadow-2xl relative min-h-[500px] flex flex-col">
+    <div className="w-full max-w-lg mx-auto bg-[#0F172A] rounded-3xl border border-white/10 p-4 sm:p-6 shadow-2xl relative min-h-[500px] flex flex-col">
       
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <button onClick={onBack} className="text-white/50 hover:text-white flex items-center gap-2 text-sm font-bold">
           <Icon icon="solar:arrow-left-bold" /> {common?.exit}
@@ -152,7 +158,8 @@ export default function MatrixRecall({ onBack }) {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center">
+      {/* Área do Jogo Responsiva */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full">
         
         {status === 'lost' ? (
             <div className="text-center animate-in zoom-in duration-300">
@@ -165,7 +172,8 @@ export default function MatrixRecall({ onBack }) {
             </div>
         ) : (
             <div 
-                className="grid gap-2 w-full max-w-[300px]"
+                // Aqui está a mágica: w-full e max-width dinâmico
+                className="grid gap-2 sm:gap-3 w-full max-w-[min(90vw,400px)]"
                 style={{ 
                     gridTemplateColumns: `repeat(${currentLevel.size}, 1fr)` 
                 }}
@@ -176,11 +184,12 @@ export default function MatrixRecall({ onBack }) {
 
       </div>
 
+      {/* Footer Status */}
       <div className="text-center h-12 flex items-center justify-center mt-4">
-        {status === 'preview' && <p className="text-primary font-bold animate-pulse text-lg">{txt?.memorize}</p>}
-        {status === 'playing' && <p className="text-gray-400">{txt?.repeat}</p>}
+        {status === 'preview' && <p className="text-primary font-bold animate-pulse text-xl tracking-widest">{txt?.memorize}</p>}
+        {status === 'playing' && <p className="text-gray-400 text-sm animate-in fade-in">{txt?.repeat}</p>}
         {status === 'won' && <p className="text-green-400 font-bold flex items-center gap-2"><Icon icon="solar:verified-check-bold" /> {txt?.success}</p>}
-        {status === 'error' && <p className="text-red-400 font-bold">X</p>}
+        {status === 'error' && <p className="text-red-400 font-bold animate-shake">X</p>}
       </div>
 
     </div>
