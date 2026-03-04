@@ -6,12 +6,39 @@ import { motion } from 'framer-motion';
 export default function Hero() {
   const { t } = useLanguage();
   const [githubData, setGithubData] = useState(null);
+  
+  // Inicia com 7 quadradinhos "vazios" (cinza)
+  const [activitySquares, setActivitySquares] = useState(Array(7).fill(false));
 
   useEffect(() => {
+    // 1. Busca dados do perfil (Repos e Followers REAIS)
     fetch('https://api.github.com/users/fp-torres')
       .then((res) => res.json())
       .then((data) => setGithubData(data))
-      .catch((err) => console.error(err));
+      .catch((err) => console.error("Erro ao buscar perfil GitHub:", err));
+
+    // 2. Busca eventos públicos para montar a atividade REAl dos últimos 7 dias
+    fetch('https://api.github.com/users/fp-torres/events/public')
+      .then((res) => res.json())
+      .then((events) => {
+        if (!Array.isArray(events)) return;
+
+        // Gera as datas dos últimos 7 dias (ex: ['2023-10-20', '2023-10-21'...])
+        const last7Days = Array.from({ length: 7 }).map((_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - (6 - i)); // Do 6º dia atrás até hoje
+          return d.toISOString().split('T')[0];
+        });
+
+        // Extrai apenas as datas em que houve alguma atividade sua (commits, stars, PRs)
+        const activeDays = new Set(events.map(event => event.created_at.split('T')[0]));
+
+        // Compara os últimos 7 dias com as datas de atividade
+        const realActivity = last7Days.map(day => activeDays.has(day));
+        
+        setActivitySquares(realActivity);
+      })
+      .catch((err) => console.error("Erro ao buscar eventos GitHub:", err));
   }, []);
 
   const stats = githubData || { public_repos: 0, followers: 0, following: 0 };
@@ -79,7 +106,8 @@ export default function Hero() {
                 </div>
             </div>
 
-            <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
+            {/* ÍCONE DE FUNDO (Removido no mobile usando "hidden md:block") */}
+            <div className="hidden md:block absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
                <Icon icon="solar:code-square-bold" width="200" />
             </div>
           </BentoCard>
@@ -89,7 +117,7 @@ export default function Hero() {
             <div>
                 <div className="flex items-center justify-between mb-6">
                     <Icon icon="mdi:github" width="44" className="text-white" />
-                    <a href={githubData?.html_url} target="_blank" className="text-xs border border-white/20 px-3 py-1 rounded-full hover:bg-white hover:text-bg transition-colors text-white">
+                    <a href={githubData?.html_url || "https://github.com/fp-torres"} target="_blank" rel="noreferrer" className="text-xs border border-white/20 px-3 py-1 rounded-full hover:bg-white hover:text-bg transition-colors text-white">
                         {t.hero.githubStats.profileBtn}
                     </a>
                 </div>
@@ -114,8 +142,13 @@ export default function Hero() {
             <div className="mt-8 pt-6 border-t border-white/10">
                  <p className="text-xs text-gray-500 mb-2">{t.hero.recentActivity}</p>
                  <div className="flex gap-1">
-                    {[1,2,3,4,5,6,7].map(i => (
-                        <div key={i} className={`w-full h-3 rounded-sm ${Math.random() > 0.5 ? 'bg-primary' : 'bg-white/10'}`}></div>
+                    {/* Renderiza a atividade real da API do Github */}
+                    {activitySquares.map((isActive, index) => (
+                        <div 
+                            key={index} 
+                            title={isActive ? "Atividade Registrada" : "Sem Atividade"}
+                            className={`w-full h-3 rounded-sm transition-colors duration-500 ${isActive ? 'bg-primary' : 'bg-white/10'}`}
+                        ></div>
                     ))}
                  </div>
             </div>
