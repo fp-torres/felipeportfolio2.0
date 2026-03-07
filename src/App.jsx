@@ -11,7 +11,6 @@ import Projects from './components/sections/Projects';
 import Skills from './components/sections/Skills';
 import Certificates from './components/sections/Certificates';
 
-// AQUI ESTAVA O ERRO: Trocamos o jogo direto pelo HUB (Catálogo)
 import GameHub from './components/sections/GameHub'; 
 
 function App() {
