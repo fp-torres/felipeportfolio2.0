@@ -2,150 +2,203 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
 
+// Importação das Logos (Ajuste o caminho se a pasta for diferente)
+import logoCrase from '../../assets/imgs/crase_sigma_logo.jpg';
+import logoAllternativa from '../../assets/imgs/allternativa_filmes_x_logo.jpg';
+import logoUva from '../../assets/imgs/uva_logo.jpg';
+import logoSantoInacio from '../../assets/imgs/santoinaciorj_logo.jpg';
+
 export default function Experience() {
   const { t } = useLanguage();
 
-  // Lógica segura para traduzir o botão sem precisar alterar o content.js
+  // Lógica de fallback para o botão
   const viewDiplomaText = t.experience.viewDiploma || (t.nav.home === "Início" ? "Visualizar Diploma" : "View Diploma");
+
+  // Funções para mapear o nome da empresa/escola para a logo correta
+  const getCompanyLogo = (companyName) => {
+    if (companyName.toLowerCase().includes("crase")) return logoCrase;
+    if (companyName.toLowerCase().includes("allternativa")) return logoAllternativa;
+    return null; // Retorna nulo se não achar, para usar o ícone padrão
+  };
+
+  const getSchoolLogo = (schoolName) => {
+    if (schoolName.toLowerCase().includes("veiga") || schoolName.toLowerCase().includes("uva")) return logoUva;
+    if (schoolName.toLowerCase().includes("inácio")) return logoSantoInacio;
+    return null;
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { 
       opacity: 1,
-      transition: { staggerChildren: 0.2 }
+      transition: { staggerChildren: 0.15 }
     }
   };
 
   const itemVariants = {
-    hidden: { y: 30, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.5, type: "spring", stiffness: 100 } }
+    hidden: { x: -20, opacity: 0 },
+    visible: { x: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } }
   };
 
   return (
-    <section id="experience" className="py-24 relative overflow-hidden">
+    <section id="experience" className="py-24 relative border-t border-white/5 overflow-hidden">
       
-      {/* Elementos visuais de fundo */}
-      <div className="absolute top-40 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
-      <div className="absolute bottom-40 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+      {/* Background Sutil */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/5 blur-[120px] rounded-full pointer-events-none -z-10"></div>
 
-      <div className="flex flex-col items-center mb-16 relative z-10">
-        <h2 className="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 flex items-center gap-3">
-          <Icon icon="solar:suitcase-lines-bold-duotone" className="text-primary" />
+      {/* Header da Seção */}
+      <div className="flex flex-col items-center mb-20 relative z-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-mono text-sm mb-4">
+          <Icon icon="solar:cpu-bolt-bold" />
+          <span>{"< Sys.History />"}</span>
+        </div>
+        <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight text-center">
           {t.experience.title}
         </h2>
-        <div className="w-24 h-1 bg-gradient-to-r from-transparent via-primary to-transparent mt-4 rounded-full opacity-70"></div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-16 relative max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="grid lg:grid-cols-2 gap-12 md:gap-20 relative max-w-7xl mx-auto px-4 sm:px-6">
         
-        {/* === Coluna EXPERIÊNCIA (Timeline) === */}
+        {/* === Coluna EXPERIÊNCIA === */}
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          className="relative"
+          className="relative z-10"
         >
-          <h3 className="text-2xl font-bold text-white mb-10 flex items-center gap-3 border-l-4 border-primary pl-4 bg-gradient-to-r from-primary/10 to-transparent py-2 rounded-r-lg">
-             {t.experience.title}
-          </h3>
+          {/* Linha vertical principal */}
+          <div className="absolute left-[15px] sm:left-[23px] top-2 bottom-0 w-[2px] bg-gradient-to-b from-primary via-white/10 to-transparent"></div>
 
-          <div className="relative border-l-2 border-primary/20 ml-3 sm:ml-4 space-y-10">
-            {t.experience.items.map((job) => (
-              <motion.div 
-                key={job.id} 
-                variants={itemVariants}
-                className="relative pl-8 sm:pl-10 group"
-              >
-                {/* Ponto na Linha do Tempo */}
-                <div className="absolute -left-[25px] sm:-left-[26px] top-6 w-12 h-12 bg-[#0F172A] border-2 border-primary rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] group-hover:scale-110 group-hover:bg-primary transition-all duration-300 z-10">
-                    <Icon icon={job.icon || "solar:briefcase-bold"} className="text-primary group-hover:text-bg text-xl transition-colors" />
-                </div>
+          <div className="space-y-12">
+            {t.experience.items.map((job) => {
+              const Logo = getCompanyLogo(job.company);
+              
+              return (
+                <motion.div 
+                  key={job.id} 
+                  variants={itemVariants}
+                  className="relative pl-12 sm:pl-16 group"
+                >
+                  {/* Node da Timeline */}
+                  <div className="absolute left-[9px] sm:left-[17px] top-8 w-3.5 h-3.5 bg-surface border-2 border-primary rounded-full group-hover:bg-primary transition-colors duration-300 z-10 shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"></div>
 
-                {/* Card de Experiência */}
-                <div className="relative bg-gradient-to-br from-surface/80 to-surface/30 backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-white/10 hover:border-primary/50 transition-all duration-500 shadow-xl hover:shadow-[0_10_40px_rgba(255,209,0,0.15)] overflow-hidden">
-                    
-                    {/* Brilho de fundo no hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                    {/* Badge "Atual" */}
-                    {job.current && (
-                        <div className="absolute top-0 right-0 bg-primary text-bg text-xs font-extrabold px-4 py-1.5 rounded-bl-2xl rounded-tr-xl shadow-lg flex items-center gap-2">
-                            <span className="w-2 h-2 bg-bg rounded-full animate-pulse"></span> {t.nav.home === "Início" ? "Atualmente" : "Present"}
-                        </div>
-                    )}
-
-                    <div className="relative z-10">
-                        <div className="inline-flex items-center gap-2 text-xs font-mono text-primary mb-3 bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-                            <Icon icon="solar:calendar-bold" /> {job.period}
-                        </div>
-                        
-                        <h4 className="text-xl md:text-2xl font-bold text-white group-hover:text-primary transition-colors">{job.role}</h4>
-                        <p className="text-lg text-gray-400 font-medium mb-4 flex items-center gap-2">
-                            {job.company}
-                        </p>
-                        
-                        <p className="text-gray-300 text-sm leading-relaxed border-l-2 border-white/10 pl-4">
-                            {job.description}
-                        </p>
-                    </div>
-                </div>
-              </motion.div>
-            ))}
+                  {/* Card */}
+                  <div className="relative bg-surface/40 backdrop-blur-md p-6 sm:p-7 rounded-xl border border-white/10 group-hover:border-primary/40 group-hover:-translate-y-1 shadow-xl hover:shadow-[0_8px_30px_rgba(var(--primary-rgb),0.1)] transition-all duration-300">
+                      
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-5">
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                              {/* Avatar da Empresa / Logo - Ajustado para preencher todo o espaço */}
+                              <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center relative">
+                                  {Logo ? (
+                                      <img src={Logo} alt={job.company} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                  ) : (
+                                      <Icon icon={job.icon || "solar:briefcase-bold"} className="text-gray-400 text-2xl" />
+                                  )}
+                                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                              </div>
+                              
+                              <div className="min-w-0">
+                                  <h4 className="text-xl md:text-2xl font-bold text-white group-hover:text-primary transition-colors leading-tight truncate">{job.role}</h4>
+                                  {/* Classe truncate impede a quebra de linha */}
+                                  <p className="text-sm text-gray-400 font-mono mt-1 truncate">@ {job.company}</p>
+                              </div>
+                          </div>
+                          
+                          <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0">
+                              <span className="inline-flex items-center gap-2 text-xs font-mono text-gray-400 bg-black/20 px-3 py-1 rounded border border-white/5 whitespace-nowrap">
+                                  <Icon icon="solar:calendar-linear" /> {job.period}
+                              </span>
+                              {job.current && (
+                                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded border border-green-400/20 whitespace-nowrap">
+                                      <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                                      {t.nav.home === "Início" ? "Atual" : "Current"}
+                                  </span>
+                              )}
+                          </div>
+                      </div>
+                      
+                      <p className="text-gray-300 text-sm leading-relaxed font-sans mt-2">
+                          {job.description}
+                      </p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
 
-        {/* === Coluna FORMAÇÃO (Cards Bento) === */}
+        {/* === Coluna FORMAÇÃO === */}
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          className="space-y-8"
+          className="relative z-10 lg:mt-0 mt-12"
         >
-           <h3 className="text-2xl font-bold text-white mb-10 flex items-center gap-3 border-l-4 border-blue-500 pl-4 bg-gradient-to-r from-blue-500/10 to-transparent py-2 rounded-r-lg">
-             {t.experience.educationTitle}
-          </h3>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-sm mb-8 lg:hidden ml-[15px] sm:ml-[23px]">
+             <Icon icon="solar:book-bookmark-bold" />
+             <span>{"< Education />"}</span>
+          </div>
 
-           <div className="space-y-6">
-            {t.experience.education.map((edu) => (
-              <motion.div 
-                key={edu.id} 
-                variants={itemVariants}
-                className="bg-gradient-to-br from-surface/80 to-surface/30 backdrop-blur-md p-6 rounded-3xl border border-white/10 hover:border-blue-500/40 transition-all duration-500 group flex flex-col sm:flex-row gap-6 items-start relative overflow-hidden shadow-xl hover:shadow-[0_10_40px_rgba(59,130,246,0.15)] hover:-translate-y-1"
-              >
-                {/* Efeito de luz varrendo o card */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+          <div className="absolute left-[15px] sm:left-[23px] top-2 bottom-0 w-[2px] bg-gradient-to-b from-blue-500 via-white/10 to-transparent"></div>
 
-                {/* Ícone com Gradient e Sombra */}
-                <div className="shrink-0 p-4 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl text-blue-400 group-hover:from-blue-500 group-hover:to-purple-500 group-hover:text-white transition-all duration-500 shadow-[0_0_20px_rgba(59,130,246,0.15)] relative z-10">
-                    <Icon icon={edu.icon || "solar:hat-graduation-bold"} size={32} />
-                </div>
+          <div className="space-y-12">
+            {t.experience.education.map((edu) => {
+              const Logo = getSchoolLogo(edu.school);
 
-                <div className="flex-1 relative z-10">
-                    <h4 className="text-lg md:text-xl font-bold text-white group-hover:text-blue-400 transition-colors">{edu.course}</h4>
-                    <p className="text-gray-400 text-sm mb-2">{edu.school}</p>
+              return (
+                <motion.div 
+                  key={edu.id} 
+                  variants={itemVariants}
+                  className="relative pl-12 sm:pl-16 group"
+                >
+                  <div className="absolute left-[9px] sm:left-[17px] top-8 w-3.5 h-3.5 bg-surface border-2 border-blue-500 rounded-full group-hover:bg-blue-500 transition-colors duration-300 z-10 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+
+                  <div className="relative bg-surface/40 backdrop-blur-md p-6 sm:p-7 rounded-xl border border-white/10 hover:border-blue-500/40 transition-all duration-300 shadow-xl hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(59,130,246,0.1)]">
                     
-                    <div className="flex flex-wrap items-center gap-4 mt-4">
-                        <span className="text-xs text-blue-300 font-mono bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
-                            {edu.period}
-                        </span>
-                        
-                        {edu.diploma && (
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-5">
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                            {/* Avatar da Instituição / Logo */}
+                            <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center relative">
+                                {Logo ? (
+                                    <img src={Logo} alt={edu.school} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                ) : (
+                                    <Icon icon={edu.icon || "solar:diploma-bold"} className="text-blue-400 text-3xl" />
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            </div>
+
+                            <div className="min-w-0">
+                                <h4 className="text-xl md:text-2xl font-bold text-white group-hover:text-blue-400 transition-colors leading-tight truncate">{edu.course}</h4>
+                                <p className="text-sm text-gray-400 font-mono mt-1 truncate">{edu.school}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0">
+                            <span className="inline-flex items-center gap-2 text-xs font-mono text-gray-400 bg-black/20 px-3 py-1 rounded border border-white/5 whitespace-nowrap">
+                                <Icon icon="solar:clock-circle-linear" /> {edu.period}
+                            </span>
+                        </div>
+                    </div>
+
+                    {edu.diploma && (
+                        <div className="mt-4 pt-4 border-t border-white/5">
                             <a 
                                 href={edu.diploma} 
                                 target="_blank" 
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-2 text-xs font-bold text-white bg-blue-600/20 hover:bg-blue-600 px-4 py-1.5 rounded-full transition-all border border-blue-500/30 group-hover:border-blue-500 hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]"
+                                className="inline-flex items-center gap-2 text-xs font-mono font-bold text-blue-400 hover:text-white bg-blue-500/10 hover:bg-blue-500 px-3 py-1.5 rounded transition-all border border-blue-500/20"
                             >
-                                <Icon icon="solar:diploma-verified-bold" className="text-lg" />
+                                <Icon icon="solar:verified-check-bold" className="text-sm" />
                                 {viewDiplomaText}
                             </a>
-                        )}
-                    </div>
-                </div>
-              </motion.div>
-            ))}
+                        </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
 
