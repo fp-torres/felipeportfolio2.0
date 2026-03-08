@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Icon } from '@iconify/react';
+import NasaModal from '../NasaModal'; // Certifique-se de que o caminho está correto
 
 export default function Footer() {
   const { t } = useLanguage();
+  const [isNasaOpen, setIsNasaOpen] = useState(false);
 
   return (
     <footer id="contact" className="bg-surface relative pt-20 pb-10 mt-20 border-t border-white/5">
@@ -13,12 +16,12 @@ export default function Footer() {
             <p className="text-muted mb-8">{t.footer.subtitle}</p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="mailto:felipetorresaraujo@gmail.com" className="inline-flex items-center gap-2 px-8 py-3 bg-primary text-bg font-bold rounded-full hover:bg-primary-600 transition-all hover:scale-105">
+                <a href="mailto:felipetorresaraujo@gmail.com" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-primary text-bg font-bold rounded-full hover:bg-primary-600 transition-all hover:scale-105">
                     <Icon icon="solar:letter-bold" width="20" />
                     {t.footer.emailBtn}
                 </a>
                 
-                <a href={t.hero.resumeLink} target="_blank" className="inline-flex items-center gap-2 px-8 py-3 border border-white/20 text-white font-bold rounded-full hover:bg-white/10 transition-all hover:scale-105">
+                <a href={t.hero.resumeLink} target="_blank" rel="noreferrer" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 border border-white/20 text-white font-bold rounded-full hover:bg-white/10 transition-all hover:scale-105">
                     <Icon icon="solar:file-download-bold" width="20" />
                     {t.hero.ctaResume}
                 </a>
@@ -26,20 +29,30 @@ export default function Footer() {
         </div>
 
         {/* Redes Sociais */}
-        <div className="flex justify-center gap-8 mb-12">
-            <a href="https://linkedin.com/in/felipe-torres-id" target="_blank" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
-                <Icon icon="mdi:linkedin" width="36" />
+        <div className="flex justify-center gap-6 md:gap-8 mb-12">
+            <a href="https://linkedin.com/in/felipe-torres-id" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
+                <Icon icon="mdi:linkedin" width="32" className="md:w-9" />
             </a>
-            <a href="https://github.com/fp-torres" target="_blank" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
-                <Icon icon="mdi:github" width="36" />
+            <a href="https://github.com/fp-torres" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
+                <Icon icon="mdi:github" width="32" className="md:w-9" />
             </a>
-            <a href="https://instagram.com/fp.torresz" target="_blank" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
-                <Icon icon="mdi:instagram" width="36" />
+            <a href="https://instagram.com/fp.torresz" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
+                <Icon icon="mdi:instagram" width="32" className="md:w-9" />
             </a>
-             {/* WhatsApp */}
-            <a href="https://wa.me/5521967600280" target="_blank" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
-                <Icon icon="mdi:whatsapp" width="36" />
+            <a href="https://wa.me/5521967600280" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
+                <Icon icon="mdi:whatsapp" width="32" className="md:w-9" />
             </a>
+        </div>
+
+        {/* Gatilho Secreto (Easter Egg NASA) */}
+        <div className="flex justify-center mb-6">
+           <button 
+             onClick={() => setIsNasaOpen(true)}
+             className="opacity-10 hover:opacity-100 transition-opacity text-gray-600 hover:text-primary p-2 cursor-help"
+             title="Deep Space Signal"
+           >
+             <Icon icon="solar:satellite-linear" className="text-xl animate-pulse" />
+           </button>
         </div>
 
         <div className="pt-8 border-t border-white/5">
@@ -48,6 +61,9 @@ export default function Footer() {
             </p>
         </div>
       </div>
+
+      {/* Componente Modal Oculto */}
+      <NasaModal isOpen={isNasaOpen} onClose={() => setIsNasaOpen(false)} />
     </footer>
   );
 }

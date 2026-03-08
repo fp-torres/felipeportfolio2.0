@@ -1,4 +1,5 @@
 import { useLanguage } from '../../context/LanguageContext';
+import WakaTime from './WakaTime'; // Importando nosso novo componente!
 
 export default function Skills() {
   const { t } = useLanguage();
@@ -10,6 +11,11 @@ export default function Skills() {
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-white">
           <span className="border-b-4 border-primary pb-2">{t.skills.title}</span>
         </h2>
+
+        {/* O Dashboard WakaTime entra aqui, dando um show antes das tecnologias */}
+        <div className="mb-20">
+          <WakaTime />
+        </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {t.skills.list.map((skill, index) => (

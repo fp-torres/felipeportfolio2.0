@@ -3,6 +3,7 @@ import Navbar from './components/layout/Navbar';
 import Background from './components/layout/Background';
 import Footer from './components/layout/Footer';
 import ScrollToTop from './components/layout/ScrollToTop';
+import SpotifyWidget from './components/SpotifyWidget';
 
 // Seções
 import Hero from './components/sections/Hero'; 
@@ -10,13 +11,12 @@ import Experience from './components/sections/Experience';
 import Projects from './components/sections/Projects';
 import Skills from './components/sections/Skills';
 import Certificates from './components/sections/Certificates';
-
 import GameHub from './components/sections/GameHub'; 
 
 function App() {
   return (
     <LanguageProvider>
-      <div className="relative min-h-screen text-text overflow-x-hidden font-sans">
+      <div className="relative min-h-screen text-text overflow-x-hidden font-sans bg-bg">
         <Background />
         
         <Navbar />
@@ -26,15 +26,20 @@ function App() {
             
             <Experience />
             <Certificates />
+
+        
             <Projects />
             <Skills />
 
-            {/* Renderiza o Hub de Jogos em vez do jogo direto */}
+            {/* Hub de Jogos para fechar com interatividade */}
             <GameHub />
         </main>
         
         <Footer />
         <ScrollToTop />
+        
+        {/* Widget Flutuante que reage ao seu Spotify via ID: 402555995462565891 */}
+        <SpotifyWidget />
       </div>
     </LanguageProvider>
   );
