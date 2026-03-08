@@ -181,6 +181,5 @@ npm run dev
 # 👨‍💻 Sobre o Autor
 
 **Felipe Torres**
-Full Stack Developer
+Full Stack Developer 
 
-Desenvolvedor focado em **interfaces interativas, automação de sistemas e experiências digitais modernas**.
