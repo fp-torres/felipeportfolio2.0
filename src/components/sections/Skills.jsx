@@ -1,5 +1,5 @@
 import { useLanguage } from '../../context/LanguageContext';
-import WakaTime from './WakaTime'; // Importando nosso novo componente!
+import WakaTime from './WakaTime'; 
 
 export default function Skills() {
   const { t } = useLanguage();
@@ -12,7 +12,7 @@ export default function Skills() {
           <span className="border-b-4 border-primary pb-2">{t.skills.title}</span>
         </h2>
 
-        {/* O Dashboard WakaTime entra aqui, dando um show antes das tecnologias */}
+        {/* O Dashboard WakaTime entra aqui, entregando as métricas reais/simuladas */}
         <div className="mb-20">
           <WakaTime />
         </div>
@@ -21,10 +21,10 @@ export default function Skills() {
           {t.skills.list.map((skill, index) => (
             <div 
               key={index} 
-              className="flex flex-col items-center justify-center p-6 bg-surface/40 backdrop-blur-sm rounded-xl border border-white/10 hover:border-primary/50 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(var(--primary-rgb),0.15)] transition-all duration-300 group"
+              className="flex flex-col items-center justify-center p-6 bg-surface/40 backdrop-blur-sm rounded-xl border border-white/10 hover:border-primary/50 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(var(--primary-rgb),0.15)] transition-all duration-300 group cursor-default"
             >
               <i className={`${skill.icon} text-5xl mb-4 text-gray-400 group-hover:text-white transition-colors duration-300`}></i>
-              <span className="font-semibold text-gray-300 group-hover:text-primary transition-colors">{skill.name}</span>
+              <span className="font-semibold text-gray-300 group-hover:text-primary transition-colors text-center">{skill.name}</span>
             </div>
           ))}
         </div>

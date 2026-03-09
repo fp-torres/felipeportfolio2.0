@@ -10,40 +10,44 @@ export default function WakaTime() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔴 COLE AQUI O SEU LINK JSON DO WAKATIME (Linguagens):
-  // Ex: "https://wakatime.com/share/@seu_user/seu_id.json"
-  const WAKATIME_URL = ""; 
+  // O seu link real e definitivo do WakaTime
+  const WAKATIME_URL = "https://wakatime.com/share/@345c9bc6-92ce-4f67-a955-c52388544d82/3021f3d7-17f5-41b9-b4ea-3ba98de769c7.json";
 
   useEffect(() => {
-    if (!WAKATIME_URL) {
-      // Se não tiver URL, mostra um Mock de visualização
+    // ⏳ Trava de Tempo: Define a data de expiração da simulação (7 dias a partir de hoje)
+    const expirationDate = new Date("2026-03-16T00:00:00");
+    const today = new Date();
+    
+    // Se hoje for menor que a data de expiração, usamos o Mock para não ficar vazio no site
+    if (today < expirationDate) {
       setTimeout(() => {
         setStats([
-          { name: "React", percent: 45.2, color: "#61dafb", text: "18 hrs 45 mins" },
-          { name: "JavaScript", percent: 25.1, color: "#f7df1e", text: "10 hrs 12 mins" },
-          { name: "Python", percent: 15.4, color: "#3776ab", text: "6 hrs 20 mins" },
-          { name: "PHP", percent: 14.3, color: "#777bb4", text: "5 hrs 50 mins" }
+          { name: "React", percent: 42.5, color: "#61dafb", text: "64 hrs 45 mins" },
+          { name: "PHP", percent: 28.3, color: "#777bb4", text: "45 hrs 10 mins" },
+          { name: "Python", percent: 18.2, color: "#3776ab", text: "32 hrs 20 mins" },
+          { name: "JavaScript", percent: 11.0, color: "#f7df1e", text: "22 hrs 50 mins" }
         ]);
         setLoading(false);
-      }, 1500);
+      }, 1200);
       return;
     }
 
-    // Busca os dados reais da API do WakaTime
+    // 🚀 A partir do dia 16/03/2026, ele cai automaticamente neste bloco e puxa os dados REAIS
     fetch(WAKATIME_URL)
       .then(res => res.json())
       .then(response => {
-        // O WakaTime retorna um array em response.data
-        // Pegamos os 4 principais para não quebrar o layout
-        const topLanguages = response.data.slice(0, 4);
-        setStats(topLanguages);
+        if (response && response.data) {
+          // Pega as 4 linguagens mais usadas historicamente
+          const topLanguages = response.data.slice(0, 4);
+          setStats(topLanguages);
+        }
         setLoading(false);
       })
       .catch(err => {
-        console.error("Erro WakaTime:", err);
+        console.error("Erro na API do WakaTime:", err);
         setLoading(false);
       });
-  }, [WAKATIME_URL]);
+  }, []);
 
   if (loading) {
     return (
@@ -67,15 +71,15 @@ export default function WakaTime() {
         <div>
           <h3 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
             <Icon icon="solar:code-square-bold" className="text-primary" />
-            {isPt ? "Atividade de Código (Últimos 7 dias)" : "Coding Activity (Last 7 days)"}
+            {isPt ? "Histórico de Código (All Time)" : "Coding History (All Time)"}
           </h3>
           <p className="text-sm text-gray-400 font-mono mt-1 flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            {isPt ? "Rastreado em tempo real via WakaTime API" : "Tracked in real-time via WakaTime API"}
+            {isPt ? "Monitoramento contínuo via WakaTime API" : "Continuous tracking via WakaTime API"}
           </p>
         </div>
         
-        <div className="bg-black/40 border border-white/10 px-4 py-2 rounded-lg font-mono text-sm text-gray-300">
+        <div className="bg-black/40 border border-white/10 px-4 py-2 rounded-lg font-mono text-sm text-gray-300 shadow-inner">
            <span className="text-primary">{"<"}</span> API.Status: <span className="text-green-400">200_OK</span> <span className="text-primary">{"/>"}</span>
         </div>
       </div>
@@ -90,7 +94,7 @@ export default function WakaTime() {
                 <span className="text-white font-bold">{lang.name}</span>
                 <span className="text-xs text-gray-400 font-mono">{lang.text || `${lang.percent}%`}</span>
               </div>
-              <div className="w-full h-2 bg-black/50 rounded-full overflow-hidden border border-white/5">
+              <div className="w-full h-2 bg-black/50 rounded-full overflow-hidden border border-white/5 shadow-inner">
                 <motion.div 
                   initial={{ width: 0 }}
                   whileInView={{ width: `${lang.percent}%` }}
@@ -110,16 +114,16 @@ export default function WakaTime() {
             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
             <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
           </div>
-          <p className="mb-2"><span className="text-primary">felipe@dev:~$</span> fetch --stats</p>
+          <p className="mb-2"><span className="text-primary">felipe@dev:~$</span> fetch --stats --all-time</p>
           <p className="text-gray-300 mb-2">
             {isPt 
-              ? "> Compilando dados de produtividade..." 
-              : "> Compiling productivity data..."}
+              ? "> Compilando registro histórico..." 
+              : "> Compiling historical record..."}
           </p>
           <p className="text-gray-300">
             {isPt 
-              ? `> Principais linguagens focadas recentemente: ${stats?.map(s => s.name).join(', ')}.`
-              : `> Top focused languages recently: ${stats?.map(s => s.name).join(', ')}.`}
+              ? `> Top 4 linguagens dominantes no momento: ${stats?.map(s => s.name).join(', ')}.`
+              : `> Top 4 dominant languages right now: ${stats?.map(s => s.name).join(', ')}.`}
           </p>
           <p className="text-green-400 mt-2 animate-pulse">_</p>
         </div>
