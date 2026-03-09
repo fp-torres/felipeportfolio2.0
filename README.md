@@ -1,176 +1,165 @@
-# 🚀 Felipe Torres | Interactive Full Stack Portfolio v2.5
+# 🚀 Felipe Torres | Interactive Full Stack Portfolio v3.0
 
-Um portfólio pessoal moderno, **altamente interativo e bilíngue (PT/EN)**, focado em métricas reais de produtividade e interações dinâmicas utilizando APIs externas.
+Um portfólio pessoal de **alto desempenho**, **altamente interativo** e **bilíngue (PT/EN)**.
+Esta versão marca a transição de um **site estático** para uma **aplicação híbrida com infraestrutura de API própria**.
 
 🔗 **Visualizar Projeto Online**
-*(adicione aqui o link do deploy)*
+*(adicione aqui o link do deploy quando quiser)*
 
 ---
 
-# ✨ O que há de novo (v2.5)
+# ✨ O que há de novo (v3.0)
 
-Além das funcionalidades base, o portfólio agora atua como um **Centro de Operações em tempo real**.
-
-### 📊 WakaTime Integration
-
-Dashboard dinâmico na seção **Tech Stack** que consome a **API do WakaTime** para exibir:
-
-* Horas de codificação
-* Linguagens mais utilizadas
-* Estatísticas dos últimos **7 dias**
+A versão **3.0** foca em **autonomia e resiliência**, reduzindo a dependência de plataformas externas para status em tempo real.
 
 ---
 
-### 🎧 Spotify Live (Lanyard API)
+# 🎧 Spotify Direct API (Hybrid Mode)
 
-Widget flutuante que detecta e exibe **em tempo real** o que estou ouvindo no Spotify.
+Diferente da versão anterior, o widget agora utiliza uma **infraestrutura própria de integração**.
 
-Inclui:
+* **PHP Bridge**
+  Um servidor de backend leve atua como ponte (**Proxy**) para a API oficial do Spotify via OAuth2.
 
-* animação de **disco de vinil**
-* **equalizador rítmico**
-* atualização dinâmica via API
+* **Independência**
+  O widget funciona **24/7**, mesmo se o Discord estiver fechado.
 
----
-
-### 🛰️ NASA Easter Egg
-
-Um **sinal de rádio oculto no Footer** (ícone de satélite).
-
-Quando ativado:
-
-* abre um **terminal holográfico**
-* exibe a **Astronomy Picture of the Day (APOD)** da NASA
+* **Fallback Inteligente**
+  Caso a API direta não retorne dados, o sistema alterna automaticamente para a **Lanyard API (Discord)**, garantindo **100% de uptime** no status.
 
 ---
 
-### 📈 Git-Style Timeline
+# 📊 WakaTime Analytics
 
-Seção de experiência profissional redesenhada como um **branch de Git** contendo:
-
-* logos reais das empresas
-* badges de **"Atual"**
-* visual inspirado em histórico de commits
+Dashboard dinâmico que consome a **API do WakaTime** para exibir métricas reais de codificação, permitindo que visitantes vejam o esforço técnico por trás do projeto.
 
 ---
 
-### 🔄 CI/CD Automático
+# 🛰️ NASA Easter Egg (APOD)
 
-Pipeline de deploy automatizado utilizando **GitHub Actions**.
+Acesso interceptado via **sinal de rádio no Footer**.
 
-Fluxo:
+Utiliza a **NASA APOD API** para renderizar a **Astronomy Picture of the Day** em um **modal holográfico**, incluindo:
 
-1. Push na branch `main`
-2. Build automático
-3. Deploy via **FTP**
-4. Sincronização com **Hostinger**
+* tratamento de erros
+* estados de carregamento
+* renderização dinâmica
+
+---
+
+# 📱 Refatoração Mobile-First
+
+Todo o ecossistema foi refatorado para garantir **100% de responsividade**.
+
+A experiência mobile agora conta com:
+
+* gestos otimizados
+* melhor performance nas animações
+* otimização do **Framer Motion**
 
 ---
 
 # 🕹️ Arcade Zone
 
-Área de entretenimento desenvolvida **100% em React** com persistência de dados usando **localStorage**.
+Área de entretenimento desenvolvida **100% em React**, com persistência de dados local.
 
-### Jogos disponíveis
+### 🎮 Mini Games
 
-🎮 **Tech Memory**
-Encontre os pares dos ícones de tecnologia.
+* **Tech Memory**
+  Jogo de memória com ícones de tecnologia
 
-🐍 **Dev Snake**
-Clássico jogo da cobrinha com controles **mobile-first**.
+* **Dev Snake**
+  Clássico Snake com controles otimizados para mobile
 
-🎵 **Cyber Sequence**
-Teste de memória rítmica utilizando **Web Audio API**.
+* **Cyber Sequence**
+  Teste de memória rítmica usando **Web Audio API**
 
-🟩 **Matrix Recall**
-Desafios de padrões visuais em grid progressivo.
-
-🔐 **Decryptor**
-Quebra de senhas e lógica criptográfica.
-
-🧠 **Logic Quiz**
-Desafios de **lógica de programação**.
+* **Logic Quiz**
+  Desafios de lógica de programação
 
 ---
 
 # 🛠️ Tecnologias & APIs
 
-## Core
+## Core Stack
 
-* React.js
-* Vite
-* Tailwind CSS
-
-## Animações
-
-* Framer Motion
-
-## APIs Externas
-
-**WakaTime API**
-Estatísticas reais de código.
-
-**Lanyard API**
-Ponte entre **Discord / Spotify** e o frontend.
-
-**NASA APOD API**
-Imagem astronômica diária da NASA.
+* **Frontend:** React.js + Vite
+* **Styling:** Tailwind CSS
+* **Animações:** Framer Motion
+* **Backend:** PHP (API Bridge para OAuth2)
 
 ---
 
-# ⚙️ Infraestrutura
+## APIs Integradas
 
-* GitHub Actions — **CI/CD automático**
-* Hostinger — **Hospedagem**
+* **Spotify API**
+  Integração via **Client Credentials Flow**
+
+* **Lanyard API**
+  Status reativo via **Discord WebSocket**
+
+* **WakaTime API**
+  Métricas de produtividade
+
+* **NASA APOD API**
+  Conteúdo astronômico dinâmico
+
+---
+
+# ⚙️ Infraestrutura e CI/CD
+
+* **GitHub Actions**
+  Pipeline automatizado que realiza **build e deploy via FTP/SSH**
+
+* **Hospedagem**
+  Hostinger (Linux com suporte a **PHP 8.2+**)
+
+* **Versionamento**
+  Git com **branch main para produção**
 
 ---
 
 # 📁 Estrutura de Pastas
 
-Principais componentes adicionados ao projeto:
-
 ```plaintext
-src/
-├── components/
-│   ├── SpotifyWidget.jsx   # Monitoramento dinâmico de música
-│   ├── NasaModal.jsx       # Easter Egg interceptador de sinal
-│   └── sections/
-│       ├── WakaTime.jsx    # Dashboard de produtividade real
-│       └── Experience.jsx  # Timeline estilo Git
+felipe-portfolio/
+├── public/
+│   └── spotify.php           # Ponte segura para API do Spotify
+│
+├── src/
+│   ├── components/
+│   │   ├── SpotifyWidget.jsx # Lógica híbrida (PHP + Lanyard)
+│   │   │
+│   │   └── sections/
+│   │       ├── Experience.jsx # Timeline estilo Git Branch
+│   │       └── TechNews.jsx   # Feed dinâmico de notícias
 ```
 
 ---
 
 # ⚙️ Como rodar o projeto localmente
 
-### 1️⃣ Clone o repositório
+## 1️⃣ Clone e instale
 
 ```bash
 git clone https://github.com/fp-torres/felipeportfolio2.0.git
-```
-
----
-
-### 2️⃣ Instale as dependências
-
-```bash
+cd felipeportfolio2.0
 npm install
 ```
 
 ---
 
-### 3️⃣ Configure as chaves de API (opcional)
+## 2️⃣ Configure o servidor de API (PHP)
 
-Para liberar todas as funcionalidades:
+Como o projeto utiliza PHP para o Spotify, instale o **PHP CLI** e rode o servidor embutido:
 
-* Obtenha seu **Discord ID** para o Spotify Widget
-* Gere uma **WakaTime JSON Shareable URL**
-* Crie uma **NASA API Key** em
-  https://api.nasa.gov
+```bash
+php -S localhost:8000
+```
 
 ---
 
-### 4️⃣ Inicie o servidor local
+## 3️⃣ Inicie o React
 
 ```bash
 npm run dev
@@ -181,5 +170,15 @@ npm run dev
 # 👨‍💻 Sobre o Autor
 
 **Felipe Torres**
-Full Stack Developer 
+Desenvolvedor **Full Stack Trainee**
 
+Apaixonado por criar interfaces que misturam **estética cyberpunk** com **funcionalidade robusta**.
+
+GitHub:
+https://github.com/fp-torres
+
+---
+
+# 🚀 Deploy Status
+
+Esta versão dispara automaticamente o fluxo de **build e sincronização para produção** através do **GitHub Actions**.

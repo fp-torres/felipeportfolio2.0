@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Icon } from '@iconify/react';
-import NasaModal from '../NasaModal'; // Certifique-se de que o caminho está correto
+
+// Importa os componentes
+import NasaModal from '../NasaModal'; 
+import NasaTimeMachine from '../NasaTimeMachine'; 
+import TechNews from '../TechNews'; // Import do novo componente de notícias
 
 export default function Footer() {
   const { t } = useLanguage();
   const [isNasaOpen, setIsNasaOpen] = useState(false);
+  const [isTimeMachineOpen, setIsTimeMachineOpen] = useState(false);
 
   return (
-    <footer id="contact" className="bg-surface relative pt-20 pb-10 mt-20 border-t border-white/5">
-      <div className="max-w-4xl mx-auto px-6 text-center">
+    <footer id="contact" className="bg-surface relative pt-20 mt-20 border-t border-white/5 flex flex-col items-center">
+      <div className="max-w-4xl w-full mx-auto px-6 text-center pb-10">
         
         <div className="mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">{t.footer.title}</h2>
@@ -44,14 +49,24 @@ export default function Footer() {
             </a>
         </div>
 
-        {/* Gatilho Secreto (Easter Egg NASA) */}
-        <div className="flex justify-center mb-6">
+        {/* Gatilhos Secretos (Easter Eggs NASA) */}
+        <div className="flex justify-center items-center gap-4 mb-6">
+           {/* Satélite (Sinal de Hoje) */}
            <button 
              onClick={() => setIsNasaOpen(true)}
              className="opacity-10 hover:opacity-100 transition-opacity text-gray-600 hover:text-primary p-2 cursor-help"
-             title="Deep Space Signal"
+             title="Deep Space Signal (Hoje)"
            >
              <Icon icon="solar:satellite-linear" className="text-xl animate-pulse" />
+           </button>
+
+           {/* Telescópio (Máquina do Tempo) */}
+           <button 
+             onClick={() => setIsTimeMachineOpen(true)}
+             className="opacity-10 hover:opacity-100 transition-opacity text-gray-600 hover:text-primary p-2 cursor-help"
+             title="Time Machine (NASA)"
+           >
+             <Icon icon="solar:telescope-linear" className="text-xl animate-pulse" style={{ animationDelay: '1s' }} />
            </button>
         </div>
 
@@ -62,8 +77,13 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Componente Modal Oculto */}
+      {/* Renders dos Modais */}
       <NasaModal isOpen={isNasaOpen} onClose={() => setIsNasaOpen(false)} />
+      <NasaTimeMachine isOpen={isTimeMachineOpen} onClose={() => setIsTimeMachineOpen(false)} />
+      
+      {/* LETREIRO DE NOTÍCIAS AQUI - Base do Footer */}
+      <TechNews />
+
     </footer>
   );
 }

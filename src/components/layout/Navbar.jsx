@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Navbar() {
-  const { language, toggleLanguage, t } = useLanguage();
+  const { lang, toggleLanguage, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -16,18 +16,16 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // --- FUNÇÃO CORINGA PARA ROLAGEM SUAVE ---
-  // Essa função agora cuida de TODOS os cliques no mobile
   const handleMobileScroll = (e, targetId) => {
-    e.preventDefault(); // Impede o comportamento padrão que estava falhando
-    setIsOpen(false);   // Fecha o menu
+    e.preventDefault(); 
+    setIsOpen(false);   
     
     setTimeout(() => {
-      const id = targetId.replace('#', ''); // Remove o # se houver
+      const id = targetId.replace('#', ''); 
       const element = document.getElementById(id);
       
       if (element) {
-        const navbarHeight = 80; // Compensação da barra fixa
+        const navbarHeight = 80; 
         const elementPosition = element.getBoundingClientRect().top + window.scrollY;
         
         window.scrollTo({
@@ -35,7 +33,7 @@ export default function Navbar() {
           behavior: 'smooth'
         });
       }
-    }, 100); // Pequeno delay para o menu fechar visualmente antes de rolar
+    }, 100); 
   };
 
   const navLinks = [
@@ -58,11 +56,11 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 flex justify-between items-center relative">
         
         {/* LOGO */}
-        <a href="#" onClick={(e) => handleMobileScroll(e, 'hero')} className="text-2xl font-bold border-2 border-primary px-2 py-1 text-primary tracking-widest hover:bg-primary hover:text-bg transition-colors cursor-pointer">
+        <a href="#hero" onClick={(e) => handleMobileScroll(e, 'hero')} className="text-2xl font-bold border-2 border-primary px-2 py-1 text-primary tracking-widest hover:bg-primary hover:text-bg transition-colors cursor-pointer">
           FT
         </a>
 
-        {/* DESKTOP MENU (Mantivemos o padrão href aqui pois no desktop funciona bem) */}
+        {/* DESKTOP MENU */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((item) => (
             <a 
@@ -74,8 +72,9 @@ export default function Navbar() {
             </a>
           ))}
           
-          <button onClick={toggleLanguage} className="text-2xl hover:scale-110 transition-transform" title="Mudar idioma">
-             {language === 'pt' ? '🇧🇷' : '🇺🇸'}
+          {/* INVERSÃO DA BANDEIRA APLICADA AQUI */}
+          <button onClick={toggleLanguage} className="text-2xl hover:scale-110 transition-transform" title={lang === 'pt' ? "Mudar para Inglês" : "Change to Portuguese"}>
+             {lang === 'pt' ? '🇺🇸' : '🇧🇷'}
           </button>
 
           <a 
@@ -88,11 +87,11 @@ export default function Navbar() {
 
         {/* MOBILE CONTROLS */}
         <div className="md:hidden flex items-center gap-4">
-           <button onClick={toggleLanguage} className="text-2xl" title="Mudar idioma">
-             {language === 'pt' ? '🇧🇷' : '🇺🇸'}
+           {/* INVERSÃO DA BANDEIRA APLICADA AQUI TAMBÉM */}
+           <button onClick={toggleLanguage} className="text-2xl" title={lang === 'pt' ? "Mudar para Inglês" : "Change to Portuguese"}>
+             {lang === 'pt' ? '🇺🇸' : '🇧🇷'}
            </button>
 
-           {/* Botão Hamburguer */}
            <button 
              onClick={() => setIsOpen(!isOpen)} 
              className="text-3xl focus:outline-none transition-transform active:scale-90 p-1 text-primary" 
@@ -105,7 +104,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* MOBILE MENU DROPDOWN */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -117,22 +115,20 @@ export default function Navbar() {
           >
             <div className="flex flex-col items-center gap-2 p-6">
               
-              {/* LOOP DOS LINKS PRINCIPAIS */}
               {navLinks.map((item) => (
                 <a 
                   key={item.name}
                   href={item.href}
-                  onClick={(e) => handleMobileScroll(e, item.href)} // AQUI ESTÁ A CORREÇÃO MÁGICA
+                  onClick={(e) => handleMobileScroll(e, item.href)} 
                   className="w-full text-center py-4 rounded-xl text-gray-300 font-medium text-lg border border-transparent hover:bg-white/5 hover:border-white/10 hover:text-primary transition-all duration-300 active:scale-95 active:text-primary cursor-pointer"
                 >
                   {item.name}
                 </a>
               ))}
 
-              {/* Botão de Contato Mobile */}
               <a 
                 href="#contact" 
-                onClick={(e) => handleMobileScroll(e, '#contact')} // Usando a mesma função mágica
+                onClick={(e) => handleMobileScroll(e, '#contact')} 
                 className="w-full text-center mt-4 bg-primary text-bg py-4 rounded-xl font-bold text-lg hover:bg-yellow-400 transition-colors shadow-lg active:scale-95 cursor-pointer"
               >
                 {t.nav.contact}
