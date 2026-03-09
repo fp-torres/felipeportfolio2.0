@@ -14,9 +14,14 @@ export default function SpotifyWidget() {
   useEffect(() => {
     const fetchMusicData = async () => {
       try {
-        // --- TENTATIVA 1: PHP BRIDGE LOCAL ---
-        // Usamos localhost:8000 porque é onde seu PHP está rodando no terminal
-        const resSpotify = await fetch('http://localhost:8000/spotify.php');
+        // --- LOGICA DE URL DINÂMICA ---
+        // Se estiver local, usa a porta 8000. Se estiver online, usa o caminho relativo do site.
+        const apiUrl = window.location.hostname === 'localhost' 
+          ? 'http://localhost:8000/spotify.php' 
+          : '/spotify.php';
+
+        // --- TENTATIVA 1: PHP BRIDGE ---
+        const resSpotify = await fetch(apiUrl);
         
         if (resSpotify.ok) {
           const data = await resSpotify.json();
@@ -72,7 +77,6 @@ export default function SpotifyWidget() {
             className="bg-[#0a0f1d]/90 backdrop-blur-md border border-white/10 p-3 rounded-2xl shadow-[0_10px_40px_rgba(30,215,96,0.3)] flex items-center gap-4 max-w-[280px] sm:max-w-[320px] cursor-pointer group"
             onClick={() => window.open(spotifyData.url, '_blank')}
           >
-            {/* Capa do Álbum Giratória */}
             <div className="relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-xl overflow-hidden shadow-lg border border-white/5">
               <img 
                 src={spotifyData.album_art_url} 
