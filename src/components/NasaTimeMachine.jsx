@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
@@ -18,6 +18,11 @@ export default function NasaTimeMachine({ isOpen, onClose }) {
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
 
+  // Referências para o auto-focus
+  const dayRef = useRef(null);
+  const monthRef = useRef(null);
+  const yearRef = useRef(null);
+
   const NASA_KEY = "cAush8xjdh5wW0Vos2wTwCMoGFZdUbRbVocSenOu";
 
   // Função para traduzir textos usando o Google
@@ -33,8 +38,41 @@ export default function NasaTimeMachine({ isOpen, onClose }) {
     }
   };
 
+  // --- HANDLERS DE INPUT COM AUTO-FOCUS ---
+  const handleDayChange = (e) => {
+    const val = e.target.value.replace(/\D/g, ''); // Aceita apenas números
+    if (val.length <= 2) {
+      setDay(val);
+      if (val.length === 2 && parseInt(val) > 0) monthRef.current.focus();
+    }
+  };
+
+  const handleMonthChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '');
+    if (val.length <= 2) {
+      setMonth(val);
+      if (val.length === 2 && parseInt(val) > 0) yearRef.current.focus();
+    }
+  };
+
+  const handleYearChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '');
+    if (val.length <= 4) setYear(val);
+  };
+
+  // Handler para quando o usuário usar o calendário visual
+  const handleDatePicker = (e) => {
+    const dateVal = e.target.value; // Formato YYYY-MM-DD nativo do input type date
+    if (dateVal) {
+      const [y, m, d] = dateVal.split('-');
+      setYear(y);
+      setMonth(m);
+      setDay(d);
+    }
+  };
+
   const handleSearch = async () => {
-    if (!day || !month || !year) {
+    if (!day || !month || !year || year.length < 4) {
       setErrorMsg(isPt ? "Preencha a data completa." : "Fill the complete date.");
       return;
     }
@@ -101,7 +139,6 @@ export default function NasaTimeMachine({ isOpen, onClose }) {
     }
   }, [isOpen]);
 
-  // Define qual texto exibir com base no idioma
   const displayTitle = isPt && translatedData.title ? translatedData.title : data?.title;
   const displayExplanation = isPt && translatedData.explanation ? translatedData.explanation : data?.explanation;
 
@@ -139,35 +176,57 @@ export default function NasaTimeMachine({ isOpen, onClose }) {
               </button>
             </div>
 
-            {/* --- ÁREA DE INPUT (DATA DE NASCIMENTO) --- */}
-            <div className="px-6 md:px-8 py-6 border-b border-white/5 bg-black/20 shrink-0">
-               <p className="text-gray-300 text-sm mb-4 font-light text-center">
-                 {isPt ? "O que a NASA estava observando no dia em que você nasceu? (A partir de Junho/1995)" : "What was NASA observing on the day you were born? (From June 1995)"}
+            {/* --- ÁREA DE INPUT --- */}
+            <div className="px-6 md:px-8 py-6 border-b border-white/5 bg-black/20 shrink-0 flex flex-col items-center">
+               <p className="text-gray-300 text-sm mb-4 font-light text-center max-w-xl">
+                 {isPt ? "O que a NASA estava observando no dia em que você nasceu? (A partir de 16/06/1995)" : "What was NASA observing on the day you were born? (From 06/16/1995)"}
                </p>
                
                <div className="flex flex-wrap items-center justify-center gap-3">
+                  {/* Ícone de Calendário Nativo Camuflado */}
+                  <div className="relative flex items-center justify-center p-3 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/40 transition-colors cursor-pointer mr-1">
+                    <Icon icon="solar:calendar-date-bold" className="text-2xl text-primary" />
+                    <input 
+                      type="date"
+                      min="1995-06-16"
+                      max={new Date().toISOString().split("T")[0]}
+                      onChange={handleDatePicker}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      title={isPt ? "Escolher no calendário" : "Pick from calendar"}
+                    />
+                  </div>
+
                   <input 
-                    type="number" placeholder="DD" min="1" max="31"
-                    value={day} onChange={e => setDay(e.target.value)}
-                    className="w-16 bg-black/40 border border-primary/30 text-white text-center font-mono text-lg px-2 py-3 rounded-xl focus:outline-none focus:border-primary transition-colors placeholder:text-gray-600"
+                    ref={dayRef}
+                    type="text" 
+                    inputMode="numeric" 
+                    placeholder="DD"
+                    value={day} onChange={handleDayChange}
+                    className="w-16 bg-black/40 border border-primary/30 text-white text-center font-mono text-lg px-2 py-3 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-gray-600"
                   />
                   <span className="text-primary font-bold text-xl">/</span>
                   <input 
-                    type="number" placeholder="MM" min="1" max="12"
-                    value={month} onChange={e => setMonth(e.target.value)}
-                    className="w-16 bg-black/40 border border-primary/30 text-white text-center font-mono text-lg px-2 py-3 rounded-xl focus:outline-none focus:border-primary transition-colors placeholder:text-gray-600"
+                    ref={monthRef}
+                    type="text" 
+                    inputMode="numeric" 
+                    placeholder="MM"
+                    value={month} onChange={handleMonthChange}
+                    className="w-16 bg-black/40 border border-primary/30 text-white text-center font-mono text-lg px-2 py-3 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-gray-600"
                   />
                   <span className="text-primary font-bold text-xl">/</span>
                   <input 
-                    type="number" placeholder="AAAA" min="1995" max={new Date().getFullYear()}
-                    value={year} onChange={e => setYear(e.target.value)}
-                    className="w-24 bg-black/40 border border-primary/30 text-white text-center font-mono text-lg px-2 py-3 rounded-xl focus:outline-none focus:border-primary transition-colors placeholder:text-gray-600"
+                    ref={yearRef}
+                    type="text" 
+                    inputMode="numeric" 
+                    placeholder="AAAA"
+                    value={year} onChange={handleYearChange}
+                    className="w-24 bg-black/40 border border-primary/30 text-white text-center font-mono text-lg px-2 py-3 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-gray-600"
                   />
                   
                   <button 
                     onClick={handleSearch}
                     disabled={loading || isTranslating}
-                    className="ml-2 bg-primary text-bg font-bold px-6 py-3 rounded-xl hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
+                    className="ml-2 bg-primary text-bg font-bold px-6 py-3 rounded-xl hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
                   >
                     {loading || isTranslating ? <Icon icon="svg-spinners:pulse-rings-multiple" className="text-xl" /> : <Icon icon="solar:telescope-bold" className="text-xl" />}
                     {isPt ? "Viajar no Tempo" : "Time Travel"}
@@ -200,8 +259,8 @@ export default function NasaTimeMachine({ isOpen, onClose }) {
                       </h4>
                       <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
                         {isPt 
-                          ? `No dia ${day}/${month}/${year}, a NASA selecionou este registro visual específico como o mais fascinante do universo. A explicação abaixo foi escrita por um astrônomo na época.` 
-                          : `On ${month}/${day}/${year}, NASA selected this specific visual record as the most fascinating in the universe. The explanation below was written by an astronomer at the time.`}
+                          ? `No dia ${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}, a NASA selecionou este registro visual específico como o mais fascinante do universo. A explicação abaixo foi escrita por um astrônomo na época.` 
+                          : `On ${month.padStart(2, '0')}/${day.padStart(2, '0')}/${year}, NASA selected this specific visual record as the most fascinating in the universe. The explanation below was written by an astronomer at the time.`}
                       </p>
                     </div>
                   </div>
