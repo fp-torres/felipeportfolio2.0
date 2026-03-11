@@ -13,19 +13,19 @@ export default function SpotifyWidget() {
 
   useEffect(() => {
     const fetchMusicData = async () => {
+      // --- TENTATIVA 1: PHP BRIDGE (API Oficial na Hostinger) ---
       try {
-        // --- LOGICA DE URL DINÂMICA ---
-        // Se estiver local, usa a porta 8000. Se estiver online, usa o caminho relativo do site.
+        // Se estiver local (localhost), tenta a 8000, mas em produção acessa direto o arquivo na raiz
+        // Isso evita que AdBlocks barrem chamadas externas.
         const apiUrl = window.location.hostname === 'localhost' 
           ? 'http://localhost:8000/spotify.php' 
-          : '/spotify.php';
+          : '/spotify.php'; // Caminho relativo perfeito para a Hostinger
 
-        // --- TENTATIVA 1: PHP BRIDGE ---
         const resSpotify = await fetch(apiUrl);
         
         if (resSpotify.ok) {
           const data = await resSpotify.json();
-          if (data && data.isPlaying) {
+          if (data && data.isPlaying === true) {
             setSpotifyData({
               song: data.title,
               artist: data.artist,
@@ -33,30 +33,39 @@ export default function SpotifyWidget() {
               url: data.songUrl
             });
             setIsPlaying(true);
-            return;
+            return; // Sucesso com PHP Oficial, ignora o Lanyard
           }
         }
+      } catch (err) {
+        console.warn("Aviso: PHP Bridge local não encontrado ou recusado. Tentando API do Discord...");
+      }
 
-        // --- TENTATIVA 2: LANYARD (DISCORD) ---
+      // --- TENTATIVA 2: LANYARD (DISCORD) ---
+      // Lembrete: Se o seu AdBlock estiver muito agressivo, ele vai bloquear isso localmente.
+      try {
         const resLanyard = await fetch(`https://api.lanyard.rest/v1/users/${DISCORD_ID}`);
-        const jsonLanyard = await resLanyard.json();
         
-        if (jsonLanyard.success && jsonLanyard.data.listening_to_spotify) {
-          const spot = jsonLanyard.data.spotify;
-          setSpotifyData({
-            song: spot.song,
-            artist: spot.artist,
-            album_art_url: spot.album_art_url,
-            url: `https://open.spotify.com/track/${spot.track_id}`
-          });
-          setIsPlaying(true);
-          return;
+        if (resLanyard.ok) {
+          const jsonLanyard = await resLanyard.json();
+          if (jsonLanyard.success && jsonLanyard.data.listening_to_spotify) {
+            const spot = jsonLanyard.data.spotify;
+            setSpotifyData({
+              song: spot.song,
+              artist: spot.artist,
+              album_art_url: spot.album_art_url,
+              url: `https://open.spotify.com/track/$$${spot.track_id}` // Template literal corrigido
+            });
+            setIsPlaying(true);
+            return;
+          }
         }
 
         setIsPlaying(false);
         setSpotifyData(null);
       } catch (err) {
+        console.error("Erro na API do Lanyard (Verifique se não foi bloqueado por AdBlock):", err);
         setIsPlaying(false);
+        setSpotifyData(null);
       }
     };
 

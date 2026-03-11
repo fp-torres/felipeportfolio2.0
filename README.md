@@ -154,7 +154,7 @@ npm install
 Como o projeto utiliza PHP para o Spotify, instale o **PHP CLI** e rode o servidor embutido:
 
 ```bash
-php -S localhost:8000
+php -S localhost:8000 -t public
 ```
 
 ---
