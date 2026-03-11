@@ -4,30 +4,39 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET");
 header("Content-Type: application/json");
 
-// Suas credenciais oficiais
-$client_id = "9207258357794e99b8f058f14a6ad933";
-$client_secret = "dc47ec4b3f194681bbc3e8f9b5f7727b";
-$refresh_token = "AQCb6Hm4LSJXVQP7KO2haveoZTdsbtDXiaNQd9SxYmViX1z4NdEjLzl319KMcR8d3LoAhp1iBMhFabatvUvK7hCr3tLmSZxkLPq93t0PMk3mghDibf5p2-MVpOC3BoXVoAg";
+// Tenta carregar as senhas com segurança
+if (!file_exists('config.php')) {
+    echo json_encode(["isPlaying" => false, "error" => "Arquivo config.php ausente no servidor."]);
+    exit;
+}
+require_once 'config.php';
 
-// 1. Solicitação de Access Token
+// 1. Pede o Access Token usando as variáveis seguras
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'https://accounts.spotify.com/api/token'); // URL REAL
+curl_setopt($ch, CURLOPT_URL, 'https://accounts.spotify.com/api/token');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 curl_setopt($ch, CURLOPT_POST, 1);
-curl_setopt($ch, CURLOPT_POSTFIELDS, "grant_type=refresh_token&refresh_token=$refresh_token");
+curl_setopt($ch, CURLOPT_POSTFIELDS, "grant_type=refresh_token&refresh_token=" . $SPOTIFY_REFRESH_TOKEN);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Authorization: Basic ' . base64_encode($client_id . ':' . $client_secret),
+    'Authorization: Basic ' . base64_encode($SPOTIFY_CLIENT_ID . ':' . $SPOTIFY_CLIENT_SECRET),
     'Content-Type: application/x-www-form-urlencoded'
 ]);
 
 $response = curl_exec($ch);
 $token_data = json_decode($response);
+
+// Proteção caso o token expire ou dê erro
+if (!isset($token_data->access_token)) {
+    echo json_encode(["isPlaying" => false, "error" => "Falha ao gerar access token"]);
+    exit;
+}
+
 $access_token = $token_data->access_token;
 curl_close($ch);
 
-// 2. Busca da música atual
+// 2. Busca a música atual
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'https://api.spotify.com/v1/me/player/currently-playing'); // URL REAL
+curl_setopt($ch, CURLOPT_URL, 'https://api.spotify.com/v1/me/player/currently-playing');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $access_token"]);
 
@@ -42,9 +51,15 @@ if ($status == 204 || !$result) {
 
 $song = json_decode($result);
 
-// 3. Retorno padronizado
+// Verifica se realmente tem uma música tocando
+if (!isset($song->is_playing) || !$song->is_playing || !isset($song->item)) {
+    echo json_encode(["isPlaying" => false]);
+    exit;
+}
+
+// 3. Retorno padronizado para o React
 echo json_encode([
-    "isPlaying" => $song->is_playing,
+    "isPlaying" => true,
     "title" => $song->item->name,
     "artist" => $song->item->artists[0]->name,
     "albumImageUrl" => $song->item->album->images[0]->url,
