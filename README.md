@@ -1,184 +1,216 @@
-# 🚀 Felipe Torres | Interactive Full Stack Portfolio v3.0
+# 🚀 Felipe Torres | Interactive Full Stack Portfolio
 
-Um portfólio pessoal de **alto desempenho**, **altamente interativo** e **bilíngue (PT/EN)**.
-Esta versão marca a transição de um **site estático** para uma **aplicação híbrida com infraestrutura de API própria**.
+<div align="center">
 
-🔗 **Visualizar Projeto Online**
-*(adicione aqui o link do deploy quando quiser)*
+![Visitor Count](https://komarev.com/ghpvc/?username=fp-torres&color=blueviolet&style=for-the-badge)
 
----
+[![Portfolio](https://img.shields.io/badge/🌐_Live_Portfolio-000?style=for-the-badge&logo=vercel&logoColor=white)](https://felipeportfolio.forgedevapps.com/)
+[![GitHub](https://img.shields.io/badge/GitHub-fp--torres-181717?style=for-the-badge&logo=github)](https://github.com/fp-torres)
 
-# ✨ O que há de novo (v3.0)
-
-A versão **3.0** foca em **autonomia e resiliência**, reduzindo a dependência de plataformas externas para status em tempo real.
+</div>
 
 ---
 
-# 🎧 Spotify Direct API (Hybrid Mode)
+# 🧑‍💻 About The Project
 
-Diferente da versão anterior, o widget agora utiliza uma **infraestrutura própria de integração**.
+An **immersive, high-performance and bilingual (PT/EN) personal portfolio** built to showcase my work as a developer and audiovisual editor.
 
-* **PHP Bridge**
-  Um servidor de backend leve atua como ponte (**Proxy**) para a API oficial do Spotify via OAuth2.
+This project evolved from a simple static site into a **hybrid full-stack application with its own API infrastructure**, designed for **resilience, performance and independence from third-party services**.
 
-* **Independência**
-  O widget funciona **24/7**, mesmo se o Discord estiver fechado.
+🔗 **Live Website**
 
-* **Fallback Inteligente**
-  Caso a API direta não retorne dados, o sistema alterna automaticamente para a **Lanyard API (Discord)**, garantindo **100% de uptime** no status.
+https://felipeportfolio.forgedevapps.com/
 
 ---
 
-# 📊 WakaTime Analytics
+# 🎥 Live Preview
 
-Dashboard dinâmico que consome a **API do WakaTime** para exibir métricas reais de codificação, permitindo que visitantes vejam o esforço técnico por trás do projeto.
+<p align="center">
 
----
+<img src="https://felipeportfolio.forgedevapps.com/preview.gif" width="800">
 
-# 🛰️ NASA Easter Egg (APOD)
-
-Acesso interceptado via **sinal de rádio no Footer**.
-
-Utiliza a **NASA APOD API** para renderizar a **Astronomy Picture of the Day** em um **modal holográfico**, incluindo:
-
-* tratamento de erros
-* estados de carregamento
-* renderização dinâmica
+</p>
 
 ---
 
-# 📱 Refatoração Mobile-First
+# ⚡ Main Features
 
-Todo o ecossistema foi refatorado para garantir **100% de responsividade**.
+## 🎧 Spotify Direct API (Hybrid System)
 
-A experiência mobile agora conta com:
+Custom music widget powered by a **self-hosted API bridge**.
 
-* gestos otimizados
-* melhor performance nas animações
-* otimização do **Framer Motion**
+Features:
 
----
+- Secure **PHP proxy** for Spotify OAuth2
+- Works **independently from Discord**
+- **Automatic fallback** to Discord Lanyard API
+- Real-time music detection
 
-# 🕹️ Arcade Zone
-
-Área de entretenimento desenvolvida **100% em React**, com persistência de dados local.
-
-### 🎮 Mini Games
-
-* **Tech Memory**
-  Jogo de memória com ícones de tecnologia
-
-* **Dev Snake**
-  Clássico Snake com controles otimizados para mobile
-
-* **Cyber Sequence**
-  Teste de memória rítmica usando **Web Audio API**
-
-* **Logic Quiz**
-  Desafios de lógica de programação
+Result: **24/7 uptime music status.**
 
 ---
 
-# 🛠️ Tecnologias & APIs
+## 🛰️ NASA Easter Egg (APOD)
 
-## Core Stack
+Hidden feature accessible through a **radio signal interaction in the website footer**.
 
-* **Frontend:** React.js + Vite
-* **Styling:** Tailwind CSS
-* **Animações:** Framer Motion
-* **Backend:** PHP (API Bridge para OAuth2)
+Capabilities:
 
----
-
-## APIs Integradas
-
-* **Spotify API**
-  Integração via **Client Credentials Flow**
-
-* **Lanyard API**
-  Status reativo via **Discord WebSocket**
-
-* **WakaTime API**
-  Métricas de produtividade
-
-* **NASA APOD API**
-  Conteúdo astronômico dinâmico
+- Fetches **Astronomy Picture of the Day**
+- Animated **holographic modal**
+- Error handling and loading animations
 
 ---
 
-# ⚙️ Infraestrutura e CI/CD
+## 📊 WakaTime Analytics
 
-* **GitHub Actions**
-  Pipeline automatizado que realiza **build e deploy via FTP/SSH**
+Real coding statistics pulled from the **WakaTime API**.
 
-* **Hospedagem**
-  Hostinger (Linux com suporte a **PHP 8.2+**)
+Displays:
 
-* **Versionamento**
-  Git com **branch main para produção**
+- Coding activity
+- Language usage
+- Real developer metrics
 
 ---
 
-# 📁 Estrutura de Pastas
+## 📱 Mobile-First Architecture
 
-```plaintext
-felipe-portfolio/
+The entire UI was refactored to ensure **perfect mobile experience**.
+
+Includes:
+
+- Touch optimized interactions
+- Conditional rendering for performance
+- Smooth animations with **Framer Motion**
+
+---
+
+## 🕹️ Arcade Zone
+
+Interactive entertainment area fully built in **React**.
+
+Games included:
+
+🎮 **Tech Memory**  
+Memory game using tech stack icons
+
+🐍 **Dev Snake**  
+Classic Snake adapted for **mobile D-Pad controls**
+
+🎵 **Cyber Sequence**  
+Audio-based memory game using **Web Audio API**
+
+🧠 **Logic Quiz**  
+Programming logic challenges
+
+High scores are stored locally.
+
+---
+
+# 🛠️ Tech Stack
+
+<div align="center">
+
+<img src="https://skillicons.dev/icons?i=react,vite,tailwind,php,js,html,css,git,github,linux&perline=5" />
+
+</div>
+
+---
+
+# 🧱 Architecture
+
+| Layer | Technology |
+|------|------------|
+| Frontend | React + Vite |
+| Styling | Tailwind CSS |
+| Animations | Framer Motion |
+| Backend Proxy | PHP |
+| APIs | Spotify, Lanyard, WakaTime, NASA |
+| Hosting | Linux Server |
+| CI/CD | GitHub Actions |
+| Version Control | Git |
+
+---
+
+# ⚙️ CI/CD Pipeline
+
+The project uses **GitHub Actions** for automated deployment.
+
+Workflow:
+
+1️⃣ Push to `main`  
+2️⃣ Vite production build runs automatically  
+3️⃣ Files deploy to **Hostinger server via FTP/SSH**  
+4️⃣ Sensitive files ignored via `.gitignore`
+
+Example ignored file:
+
+
+config.php
+
+
+---
+
+# 📂 Project Structure
+
+```text
+felipeportfolio2.0/
+│
 ├── public/
-│   └── spotify.php           # Ponte segura para API do Spotify
+│   ├── config.php
+│   └── spotify.php
 │
 ├── src/
 │   ├── components/
-│   │   ├── SpotifyWidget.jsx # Lógica híbrida (PHP + Lanyard)
-│   │   │
+│   │   ├── SpotifyWidget.jsx
 │   │   └── sections/
-│   │       ├── Experience.jsx # Timeline estilo Git Branch
-│   │       └── TechNews.jsx   # Feed dinâmico de notícias
-```
-
----
-
-# ⚙️ Como rodar o projeto localmente
-
-## 1️⃣ Clone e instale
-
-```bash
+│   │       ├── Experience.jsx
+│   │       └── TechNews.jsx
+│   │
+│   └── context/
+│       └── LanguageContext.jsx
+🚀 Running Locally
+1️⃣ Clone Repository
 git clone https://github.com/fp-torres/felipeportfolio2.0.git
+
 cd felipeportfolio2.0
+
 npm install
-```
+2️⃣ Configure Spotify API
 
----
+Create:
 
-## 2️⃣ Configure o servidor de API (PHP)
+public/config.php
 
-Como o projeto utiliza PHP para o Spotify, instale o **PHP CLI** e rode o servidor embutido:
+Add:
 
-```bash
+CLIENT_ID
+
+CLIENT_SECRET
+
+REFRESH_TOKEN
+
+Start PHP server:
+
 php -S localhost:8000 -t public
-```
-
----
-
-## 3️⃣ Inicie o React
-
-```bash
+3️⃣ Start Frontend
 npm run dev
-```
 
----
+Open:
 
-# 👨‍💻 Sobre o Autor
+http://localhost:5173
 
-**Felipe Torres**
-Desenvolvedor **Full Stack Trainee**
+The React app will communicate with the PHP API bridge automatically.
 
-Apaixonado por criar interfaces que misturam **estética cyberpunk** com **funcionalidade robusta**.
+📊 GitHub Stats
+<div align="center">
 
-GitHub:
-https://github.com/fp-torres
+</div>
+🧑‍💻 Author
 
----
+Felipe Torres
 
-# 🚀 Deploy Status
+Trainee Developer
 
-Esta versão dispara automaticamente o fluxo de **build e sincronização para produção** através do **GitHub Actions**.
+📍 Rio de Janeiro, Brazil
