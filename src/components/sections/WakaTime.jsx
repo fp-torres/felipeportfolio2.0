@@ -9,44 +9,50 @@ export default function WakaTime() {
   
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // O seu link real e definitivo do WakaTime
-  const WAKATIME_URL = "https://wakatime.com/share/@345c9bc6-92ce-4f67-a955-c52388544d82/3021f3d7-17f5-41b9-b4ea-3ba98de769c7.json";
+  const [apiStatus, setApiStatus] = useState("200_OK");
 
   useEffect(() => {
-    // ⏳ Trava de Tempo: Define a data de expiração da simulação (7 dias a partir de hoje)
-    const expirationDate = new Date("2026-03-16T00:00:00");
-    const today = new Date();
-    
-    // Se hoje for menor que a data de expiração, usamos o Mock para não ficar vazio no site
-    if (today < expirationDate) {
-      setTimeout(() => {
-        setStats([
-          { name: "React", percent: 42.5, color: "#61dafb", text: "64 hrs 45 mins" },
-          { name: "PHP", percent: 28.3, color: "#777bb4", text: "45 hrs 10 mins" },
-          { name: "Python", percent: 18.2, color: "#3776ab", text: "32 hrs 20 mins" },
-          { name: "JavaScript", percent: 11.0, color: "#f7df1e", text: "22 hrs 50 mins" }
-        ]);
-        setLoading(false);
-      }, 1200);
-      return;
-    }
+    const fetchWakaTimeData = async () => {
+      try {
+        // Aponta para o nosso próprio PHP Bridge (lidando com localhost e produção)
+        const apiUrl = window.location.hostname === 'localhost' 
+          ? 'http://localhost:8000/wakatime.php' 
+          : '/wakatime.php';
 
-    // 🚀 A partir do dia 16/03/2026, ele cai automaticamente neste bloco e puxa os dados REAIS
-    fetch(WAKATIME_URL)
-      .then(res => res.json())
-      .then(response => {
-        if (response && response.data) {
-          // Pega as 4 linguagens mais usadas historicamente
-          const topLanguages = response.data.slice(0, 4);
-          setStats(topLanguages);
+        const response = await fetch(apiUrl);
+        
+        if (response.ok) {
+          const result = await response.json();
+
+          if (result && result.data && result.data.length > 0) {
+            setStats(result.data);
+            setApiStatus("200_OK");
+            return; // Sucesso absoluto
+          }
         }
+        
+        // Se a resposta não for OK ou vier vazia
+        throw new Error("Dados ausentes ou erro no PHP Bridge");
+
+      } catch (err) {
+        console.error("Erro no WakaTime Bridge:", err);
+        setApiStatus("ERR_CONNECTION");
+        
+        // Fallback visual para a tela não quebrar
+        setStats([
+          { name: "React", percent: 45, color: "#61dafb", text: "Offline" },
+          { name: "PHP", percent: 25, color: "#777bb4", text: "Offline" },
+          { name: "JavaScript", percent: 18, color: "#f7df1e", text: "Offline" },
+          { name: "Tailwind", percent: 12, color: "#38B2AC", text: "Offline" }
+        ]);
+      } finally {
         setLoading(false);
-      })
-      .catch(err => {
-        console.error("Erro na API do WakaTime:", err);
-        setLoading(false);
-      });
+      }
+    };
+
+    fetchWakaTimeData();
+    const interval = setInterval(fetchWakaTimeData, 300000); // 5 minutos
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
@@ -64,7 +70,6 @@ export default function WakaTime() {
       viewport={{ once: true }}
       className="w-full max-w-4xl mx-auto bg-[#0a0f1d] rounded-2xl border border-white/5 p-6 md:p-8 shadow-2xl relative overflow-hidden group hover:border-white/10 transition-colors"
     >
-      {/* Luz de fundo tech */}
       <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors"></div>
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 relative z-10 gap-4">
@@ -74,19 +79,18 @@ export default function WakaTime() {
             {isPt ? "Histórico de Código (All Time)" : "Coding History (All Time)"}
           </h3>
           <p className="text-sm text-gray-400 font-mono mt-1 flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span className={`w-2 h-2 rounded-full animate-pulse ${apiStatus === "200_OK" ? "bg-green-500" : "bg-red-500"}`}></span>
             {isPt ? "Monitoramento contínuo via WakaTime API" : "Continuous tracking via WakaTime API"}
           </p>
         </div>
         
         <div className="bg-black/40 border border-white/10 px-4 py-2 rounded-lg font-mono text-sm text-gray-300 shadow-inner">
-           <span className="text-primary">{"<"}</span> API.Status: <span className="text-green-400">200_OK</span> <span className="text-primary">{"/>"}</span>
+           <span className="text-primary">{"<"}</span> API.Status: <span className={apiStatus === "200_OK" ? "text-green-400" : "text-red-500"}>{apiStatus}</span> <span className="text-primary">{"/>"}</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
         
-        {/* Barras de Progresso das Linguagens */}
         <div className="space-y-5">
           {stats?.map((lang, index) => (
             <div key={index}>
@@ -100,14 +104,13 @@ export default function WakaTime() {
                   whileInView={{ width: `${lang.percent}%` }}
                   transition={{ duration: 1.5, ease: "easeOut" }}
                   className="h-full rounded-full"
-                  style={{ backgroundColor: lang.color || "#FFD100", opacity: 0.9 }}
+                  style={{ backgroundColor: lang.color || "#FFD100", opacity: apiStatus === "200_OK" ? 0.9 : 0.4 }}
                 ></motion.div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Card de Informação Adicional / Terminal Falso */}
         <div className="bg-black/60 border border-white/5 rounded-xl p-5 font-mono text-sm text-gray-400 flex flex-col justify-center shadow-inner">
           <div className="flex gap-2 mb-4 border-b border-white/10 pb-2">
             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
@@ -125,7 +128,7 @@ export default function WakaTime() {
               ? `> Top 4 linguagens dominantes no momento: ${stats?.map(s => s.name).join(', ')}.`
               : `> Top 4 dominant languages right now: ${stats?.map(s => s.name).join(', ')}.`}
           </p>
-          <p className="text-green-400 mt-2 animate-pulse">_</p>
+          <p className={`mt-2 animate-pulse ${apiStatus === "200_OK" ? "text-green-400" : "text-red-500"}`}>_</p>
         </div>
 
       </div>
