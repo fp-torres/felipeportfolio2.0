@@ -6,8 +6,13 @@ import forgeImg from '../assets/imgs/forgedevapps.png';
 import costsImg from '../assets/imgs/costs.jpeg';
 import steakImg from '../assets/imgs/img4.png'; 
 
-// Currículos
-import cvPt from '../assets/curriculo/cvfelipetorres.pdf';
+// --- PREVIEWS DOS CURRÍCULOS (PORTUGUÊS) ---
+import imgCvModernPt from '../assets/imgs/preview-cv-moderno-pt.png';
+import imgCvCorporatePt from '../assets/imgs/preview-cv-corporativo-pt.png';
+
+// Currículos PDFs (Português)
+import cvCompletePt from '../assets/curriculo/cv_Felipe_Torres_ptbr.pdf';
+import cvFocusedPt from '../assets/curriculo/Felipe_Torres_cv_ptbr.pdf';
 import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática.pdf';
 
 // Certificados
@@ -38,7 +43,6 @@ export const pt = {
     name: "Felipe Torres",
     role: "Desenvolvedor Full Stack",
     image: profileImg,
-    resumeLink: cvPt,
     ctaResume: "Baixar CV",
     aboutTitle: "Sobre Mim",
     aboutText: "Desenvolvedor Full Stack com foco em React, Node.js e arquitetura moderna. Transformo ideias complexas em software robusto e escalável.",
@@ -52,6 +56,25 @@ export const pt = {
       profileBtn: "Ver Perfil GitHub"
     }
   },
+  
+  // --- TEXTOS DO MODAL E IMAGENS EM PT ---
+  cvModal: {
+    title: "Escolha o formato do Currículo",
+    subtitle: "O mesmo conteúdo estruturado de duas formas diferentes para atender a cada etapa do recrutamento.",
+    modern: {
+      title: "Design Moderno",
+      desc: "Com foto e design elaborado. Excelente para leitura humana, envio direto por e-mail e networking.",
+      link: cvCompletePt,
+      image: imgCvModernPt
+    },
+    corporate: {
+      title: "Formato Corporativo (ATS)",
+      desc: "Clean e tradicional. 100% legível para sistemas automatizados de triagem de vagas (Gupy, Kenoby, etc).",
+      link: cvFocusedPt,
+      image: imgCvCorporatePt
+    }
+  },
+
   experience: {
     title: "Trajetória Profissional",
     educationTitle: "Formação Acadêmica",
@@ -147,7 +170,7 @@ export const pt = {
       { id: 11, name: "Rio Innovation Week", issuer: "Participação 2023", image: certRiw },
     ]
   },
-skills: {
+  skills: {
     title: "Tech Stack",
     list: [
       { name: "React", icon: "devicon-react-original" },

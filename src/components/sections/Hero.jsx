@@ -3,39 +3,33 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
 
+import CvModal from '../CvModal'; // Importando o Modal
+
 export default function Hero() {
   const { t } = useLanguage();
   const [githubData, setGithubData] = useState(null);
-  
-  // Inicia com 7 quadradinhos "vazios" (cinza)
   const [activitySquares, setActivitySquares] = useState(Array(7).fill(false));
+  
+  // Estado para controlar o modal de currículo
+  const [isCvModalOpen, setIsCvModalOpen] = useState(false);
 
   useEffect(() => {
-    // 1. Busca dados do perfil (Repos e Followers REAIS)
     fetch('https://api.github.com/users/fp-torres')
       .then((res) => res.json())
       .then((data) => setGithubData(data))
       .catch((err) => console.error("Erro ao buscar perfil GitHub:", err));
 
-    // 2. Busca eventos públicos para montar a atividade REAl dos últimos 7 dias
     fetch('https://api.github.com/users/fp-torres/events/public')
       .then((res) => res.json())
       .then((events) => {
         if (!Array.isArray(events)) return;
-
-        // Gera as datas dos últimos 7 dias (ex: ['2023-10-20', '2023-10-21'...])
         const last7Days = Array.from({ length: 7 }).map((_, i) => {
           const d = new Date();
-          d.setDate(d.getDate() - (6 - i)); // Do 6º dia atrás até hoje
+          d.setDate(d.getDate() - (6 - i)); 
           return d.toISOString().split('T')[0];
         });
-
-        // Extrai apenas as datas em que houve alguma atividade sua (commits, stars, PRs)
         const activeDays = new Set(events.map(event => event.created_at.split('T')[0]));
-
-        // Compara os últimos 7 dias com as datas de atividade
         const realActivity = last7Days.map(day => activeDays.has(day));
-        
         setActivitySquares(realActivity);
       })
       .catch((err) => console.error("Erro ao buscar eventos GitHub:", err));
@@ -97,16 +91,19 @@ export default function Hero() {
                 </div>
 
                 <div className="flex gap-3 justify-center md:justify-start">
-                     <a href={t.hero.resumeLink} target="_blank" className="flex items-center gap-2 bg-primary text-bg font-bold px-5 py-2 rounded-full hover:bg-white transition-colors">
+                     {/* BOTAO ATUALIZADO PARA ABRIR O MODAL */}
+                     <button 
+                        onClick={() => setIsCvModalOpen(true)}
+                        className="flex items-center gap-2 bg-primary text-bg font-bold px-5 py-2 rounded-full hover:bg-white transition-colors"
+                     >
                         <Icon icon="solar:file-download-bold" /> {t.hero.ctaResume}
-                    </a>
+                    </button>
                     <a href="#contact" className="flex items-center gap-2 border border-white/20 text-white font-bold px-5 py-2 rounded-full hover:bg-white/10 transition-colors">
                         <Icon icon="solar:letter-bold" /> {t.nav.contact}
                     </a>
                 </div>
             </div>
 
-            {/* ÍCONE DE FUNDO (Removido no mobile usando "hidden md:block") */}
             <div className="hidden md:block absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
                <Icon icon="solar:code-square-bold" width="200" />
             </div>
@@ -142,7 +139,6 @@ export default function Hero() {
             <div className="mt-8 pt-6 border-t border-white/10">
                  <p className="text-xs text-gray-500 mb-2">{t.hero.recentActivity}</p>
                  <div className="flex gap-1">
-                    {/* Renderiza a atividade real da API do Github */}
                     {activitySquares.map((isActive, index) => (
                         <div 
                             key={index} 
@@ -164,7 +160,7 @@ export default function Hero() {
              </p>
           </BentoCard>
 
-          {/* 4. CARD ESPECIALIDADE MELHORADO */}
+          {/* 4. CARD ESPECIALIDADE */}
           <BentoCard className="md:col-span-1 md:row-span-1 relative overflow-hidden flex flex-col justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
              
@@ -195,6 +191,9 @@ export default function Hero() {
 
         </div>
       </div>
+
+      {/* RENDERIZANDO O MODAL AQUI */}
+      <CvModal isOpen={isCvModalOpen} onClose={() => setIsCvModalOpen(false)} />
     </section>
   );
 }

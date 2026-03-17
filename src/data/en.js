@@ -6,8 +6,13 @@ import forgeImg from '../assets/imgs/forgedevapps.png';
 import costsImg from '../assets/imgs/costs.jpeg';
 import steakImg from '../assets/imgs/img4.png'; 
 
-// Currículos
-import cvEn from '../assets/curriculo/enresumefelipetorres.pdf';
+// --- PREVIEWS DOS CURRÍCULOS (INGLÊS) ---
+import imgCvModernEn from '../assets/imgs/preview-cv-moderno-en.png';
+import imgCvCorporateEn from '../assets/imgs/preview-cv-corporativo-en.png';
+
+// Currículos PDFs (Versão Inglês)
+import cvCompleteEn from '../assets/curriculo/cv_Felipe_Torres_en.pdf';
+import cvFocusedEn from '../assets/curriculo/Felipe_Torres_cv_en.pdf';
 import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática.pdf';
 
 // Certificados
@@ -38,7 +43,6 @@ export const en = {
     name: "Felipe Torres",
     role: "Full Stack Developer",
     image: profileImg,
-    resumeLink: cvEn,
     ctaResume: "Download CV",
     aboutTitle: "About Me",
     aboutText: "Full Stack Developer focused on React, Node.js, and modern architecture. I transform complex ideas into robust and scalable software.",
@@ -52,6 +56,25 @@ export const en = {
       profileBtn: "View GitHub Profile"
     }
   },
+  
+  // --- TEXTOS DO MODAL E IMAGENS EM EN ---
+  cvModal: {
+    title: "Choose Resume Format",
+    subtitle: "The same structured content in two different formats to fit any recruitment stage.",
+    modern: {
+      title: "Modern Design",
+      desc: "Styled design with photo. Great for human reading, direct email applications, and networking.",
+      link: cvCompleteEn,
+      image: imgCvModernEn
+    },
+    corporate: {
+      title: "Corporate Format (ATS)",
+      desc: "Clean and traditional. 100% readable for automated Applicant Tracking Systems (ATS).",
+      link: cvFocusedEn,
+      image: imgCvCorporateEn
+    }
+  },
+
   experience: {
     title: "Professional Path",
     educationTitle: "Education",
