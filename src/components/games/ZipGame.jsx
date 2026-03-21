@@ -3,7 +3,6 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Icon } from '@iconify/react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Tempo (segundos) por questão antes de contar como erro
 const TIME_PER_QUESTION = 20;
 
 export default function ZipGame({ onBack }) {
@@ -22,11 +21,10 @@ export default function ZipGame({ onBack }) {
   const [hintVisible,       setHintVisible]        = useState(false);
   const [timeLeft,          setTimeLeft]           = useState(TIME_PER_QUESTION);
 
-  const inputRef    = useRef(null);
-  const timerRef    = useRef(null);
+  const inputRef     = useRef(null);
+  const timerRef     = useRef(null);
   const isMountedRef = useRef(true);
 
-  // ── Marca desmontagem para evitar setState em componente morto ─────────────
   useEffect(() => {
     isMountedRef.current = true;
     return () => { isMountedRef.current = false; clearInterval(timerRef.current); };
@@ -38,15 +36,12 @@ export default function ZipGame({ onBack }) {
     focusInput();
   }, []);
 
-  // ── Foca input de forma segura ─────────────────────────────────────────────
   const focusInput = useCallback(() => {
-    // Usa rAF para garantir que o DOM está montado/visível
     requestAnimationFrame(() => {
       if (isMountedRef.current) inputRef.current?.focus();
     });
   }, []);
 
-  // ── Timer por questão ──────────────────────────────────────────────────────
   const startTimer = useCallback(() => {
     clearInterval(timerRef.current);
     if (!isMountedRef.current) return;
@@ -54,11 +49,9 @@ export default function ZipGame({ onBack }) {
 
     timerRef.current = setInterval(() => {
       if (!isMountedRef.current) { clearInterval(timerRef.current); return; }
-
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          // Tempo esgotado = erro automático
           handleTimeout();
           return 0;
         }
@@ -91,7 +84,6 @@ export default function ZipGame({ onBack }) {
 
   const currentLevel = levels[currentLevelIndex];
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (status !== 'playing') return;
@@ -103,8 +95,7 @@ export default function ZipGame({ onBack }) {
     clearInterval(timerRef.current);
 
     if (cleanInput === cleanAnswer) {
-      // ── Acerto ──
-      const bonus    = Math.ceil((timeLeft / TIME_PER_QUESTION) * 50); // até 50 pts de bônus por velocidade
+      const bonus    = Math.ceil((timeLeft / TIME_PER_QUESTION) * 50);
       const newScore = score + 100 + bonus;
 
       setFeedback('correct');
@@ -120,7 +111,6 @@ export default function ZipGame({ onBack }) {
         setFeedback(null);
         setUserInput('');
         setHintVisible(false);
-
         if (currentLevelIndex + 1 < levels.length) {
           setCurrentLevelIndex(prev => prev + 1);
         } else {
@@ -128,7 +118,6 @@ export default function ZipGame({ onBack }) {
         }
       }, 900);
     } else {
-      // ── Erro ──
       setFeedback('wrong');
       const newLives = lives - 1;
       setLives(newLives);
@@ -159,7 +148,6 @@ export default function ZipGame({ onBack }) {
     focusInput();
   };
 
-  // ── Cor do timer ──────────────────────────────────────────────────────────
   const timerColor =
     timeLeft <= 5  ? 'text-red-400'    :
     timeLeft <= 10 ? 'text-yellow-400' : 'text-green-400';
@@ -170,29 +158,48 @@ export default function ZipGame({ onBack }) {
     timerPct <= 50 ? 'bg-yellow-500' : 'bg-green-500';
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-[#0d1117] rounded-3xl border border-gray-800 p-6 shadow-2xl font-mono relative overflow-hidden">
+    <div className="w-full max-w-lg mx-auto bg-[#0d1117] rounded-3xl border border-gray-800 p-4 sm:p-6 shadow-2xl font-mono relative overflow-hidden">
 
-      {/* Efeito de scan lines */}
+      {/* CRT scan-lines */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 pointer-events-none opacity-20 bg-[length:100%_2px,3px_100%]" />
 
       {/* ── Header ── */}
-      <div className="relative z-10 flex justify-between items-start mb-6">
-        <button onClick={onBack} className="text-gray-500 hover:text-white flex items-center gap-2 text-xs font-bold transition-colors">
-          <Icon icon="solar:arrow-left-bold" /> {common?.exit}
+      <div className="relative z-10 flex flex-wrap justify-between items-start gap-2 mb-4">
+        <button
+          onClick={onBack}
+          className="text-gray-500 hover:text-white flex items-center gap-1.5 text-xs font-bold transition-colors"
+        >
+          <Icon icon="solar:arrow-left-bold" /> {common?.exit ?? 'Exit'}
         </button>
 
         <div className="flex flex-col items-end gap-1">
-          <div className="text-xs text-gray-500">{common?.level} {currentLevelIndex + 1}/{levels.length}</div>
+          <div className="text-xs text-gray-500 whitespace-nowrap">
+            {common?.level ?? 'Level'} {currentLevelIndex + 1}/{levels.length}
+          </div>
           <div className="flex gap-1 mt-0.5">
             {[...Array(3)].map((_, i) => (
-              <Icon key={i} icon="solar:heart-bold" className={i < lives ? 'text-red-500' : 'text-gray-800'} />
+              <Icon
+                key={i}
+                icon="solar:heart-bold"
+                className={i < lives ? 'text-red-500' : 'text-gray-800'}
+              />
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── Área principal ── */}
-      <div className="relative z-10 min-h-[280px] flex flex-col items-center justify-center py-4">
+      {/* ── Title Banner ── */}
+      <div className="relative z-10 text-center mb-4">
+        <div className="inline-flex items-center gap-2 border border-green-900/60 bg-green-950/30 rounded-full px-4 py-1.5">
+          <Icon icon="solar:code-bold" className="text-green-500 text-sm" />
+          <span className="text-sm font-bold text-green-400 tracking-widest uppercase">
+            {txt?.title ?? 'Logic Quiz'}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Main area ── */}
+      <div className="relative z-10 min-h-[260px] flex flex-col items-center justify-center py-2">
 
         {status === 'playing' && currentLevel && (
           <>
@@ -200,12 +207,17 @@ export default function ZipGame({ onBack }) {
               key={currentLevel.id}
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="mb-6 w-full text-center"
+              className="mb-5 w-full text-center"
             >
-              <div className="text-green-500 text-xs mb-2 tracking-widest opacity-70">/// {txt?.title} ///</div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">{currentLevel.question}</h2>
+              <div className="text-green-500 text-xs mb-2 tracking-widest opacity-70">
+                /// {txt?.subtitle ?? txt?.title ?? 'LOGIC QUIZ'} ///
+              </div>
 
-              {/* Timer visual */}
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-4 break-words px-2">
+                {currentLevel.question}
+              </h2>
+
+              {/* Timer bar */}
               <div className="w-full bg-gray-800 rounded-full h-1.5 mb-1 overflow-hidden max-w-xs mx-auto">
                 <motion.div
                   className={`h-1.5 rounded-full transition-colors ${timerBar}`}
@@ -215,13 +227,15 @@ export default function ZipGame({ onBack }) {
               </div>
               <div className={`text-xs font-mono mb-3 ${timerColor}`}>{timeLeft}s</div>
 
-              {/* Dica – disponível ao clicar (antes custava uma vida, agora é livre) */}
+              {/* Hint toggle */}
               <button
                 onClick={() => setHintVisible(v => !v)}
                 className="text-xs text-gray-600 hover:text-yellow-400 transition-colors flex items-center gap-1 mx-auto mb-1"
               >
                 <Icon icon="solar:eye-bold" />
-                {hintVisible ? (txt?.hideHint || 'Ocultar dica') : (txt?.showHint || 'Ver dica')}
+                {hintVisible
+                  ? (txt?.hideHint ?? 'Hide hint')
+                  : (txt?.showHint ?? 'Show hint')}
               </button>
 
               <AnimatePresence>
@@ -232,36 +246,38 @@ export default function ZipGame({ onBack }) {
                     exit={{ height: 0, opacity: 0 }}
                     className="text-xs text-yellow-500 overflow-hidden"
                   >
-                    {currentLevel.hint}
+                    {txt?.hint ?? 'Hint:'} {currentLevel.hint}
                   </motion.p>
                 )}
               </AnimatePresence>
             </motion.div>
 
             {/* Input */}
-            <form onSubmit={handleSubmit} className="relative max-w-xs w-full mx-auto">
+            <div className="relative max-w-xs w-full mx-auto">
               <input
                 ref={inputRef}
                 type="text"
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                className={`w-full bg-black/50 border-2 rounded-lg px-4 py-3 pr-14 text-center text-xl text-white outline-none focus:border-green-500 transition-all ${
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                className={`w-full bg-black/50 border-2 rounded-lg px-4 py-3 pr-14 text-center text-lg sm:text-xl text-white outline-none focus:border-green-500 transition-all ${
                   feedback === 'wrong'   ? 'border-red-500'   :
                   feedback === 'correct' ? 'border-green-500' : 'border-gray-700'
                 }`}
-                placeholder={txt?.placeholder}
+                placeholder={txt?.placeholder ?? 'Answer...'}
                 autoComplete="off"
                 autoCapitalize="characters"
               />
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 className="absolute right-2 top-2 bottom-2 bg-green-600 hover:bg-green-500 text-black px-3 rounded font-bold transition-colors"
               >
                 <Icon icon="solar:arrow-right-bold" />
               </button>
-            </form>
+            </div>
 
-            {/* Feedback – dentro do container, não flutuando para fora */}
+            {/* Feedback */}
             <div className="h-8 flex items-center justify-center mt-3">
               <AnimatePresence mode="wait">
                 {feedback === 'correct' && (
@@ -273,11 +289,10 @@ export default function ZipGame({ onBack }) {
                     className="text-green-400 font-bold flex items-center gap-2 text-sm"
                   >
                     <Icon icon="solar:verified-check-bold" />
-                    {txt?.correct}
-                    {/* Bônus de velocidade */}
+                    {txt?.correct ?? 'CORRECT!'}
                     {Math.ceil((timeLeft / TIME_PER_QUESTION) * 50) > 0 && (
                       <span className="text-yellow-400 text-xs">
-                        +{Math.ceil((timeLeft / TIME_PER_QUESTION) * 50)} bônus
+                        +{Math.ceil((timeLeft / TIME_PER_QUESTION) * 50)} {txt?.bonus ?? 'bonus'}
                       </span>
                     )}
                   </motion.div>
@@ -290,7 +305,7 @@ export default function ZipGame({ onBack }) {
                     exit={{ y: -6, opacity: 0 }}
                     className="text-red-400 font-bold flex items-center gap-2 text-sm"
                   >
-                    <Icon icon="solar:close-circle-bold" /> {txt?.wrong}
+                    <Icon icon="solar:close-circle-bold" /> {txt?.wrong ?? 'WRONG!'}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -300,39 +315,46 @@ export default function ZipGame({ onBack }) {
 
         {/* ── Game Over ── */}
         {status === 'gameover' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8 text-center">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center">
             <Icon icon="solar:bomb-emoji-bold" className="text-red-500 text-6xl mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-white mb-2">{common?.gameOver}</h3>
-            <div className="text-xl font-mono text-green-400 mb-8">{common?.score}: {score}</div>
+            <h3 className="text-2xl font-bold text-white mb-2">{common?.gameOver ?? 'Game Over'}</h3>
+            <div className="text-xl font-mono text-green-400 mb-8">
+              {common?.score ?? 'Score'}: {score}
+            </div>
             <button
               onPointerDown={restartGame}
               className="bg-white text-black px-8 py-3 rounded-full font-bold hover:scale-105 transition-transform"
             >
-              {common?.restart}
+              {common?.restart ?? 'Restart'}
             </button>
           </motion.div>
         )}
 
-        {/* ── Vitória ── */}
+        {/* ── Won ── */}
         {status === 'won' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8 text-center">
-            <Icon icon="solar:cup-star-bold" className="text-yellow-400 text-6xl mx-auto mb-4 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
-            <h3 className="text-2xl font-bold text-white mb-2">{txt?.hackComplete}</h3>
-            <div className="text-xl font-mono text-green-400 mb-8">{common?.score}: {score}</div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center">
+            <Icon
+              icon="solar:cup-star-bold"
+              className="text-yellow-400 text-6xl mx-auto mb-4 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]"
+            />
+            <h3 className="text-2xl font-bold text-white mb-2">{txt?.hackComplete ?? 'HACK COMPLETE!'}</h3>
+            <div className="text-xl font-mono text-green-400 mb-8">
+              {common?.score ?? 'Score'}: {score}
+            </div>
             <button
               onPointerDown={restartGame}
               className="bg-green-500 text-black px-8 py-3 rounded-full font-bold hover:scale-105 transition-transform"
             >
-              {common?.playAgain}
+              {common?.playAgain ?? 'Play Again'}
             </button>
           </motion.div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="border-t border-gray-800 pt-3 flex justify-between text-xs text-gray-600 font-mono relative z-10 mt-2">
+      {/* ── Footer ── */}
+      <div className="border-t border-gray-800 pt-3 flex flex-wrap justify-between gap-2 text-xs text-gray-600 font-mono relative z-10 mt-2">
         <span>ZIP_PROTOCOL_V2.0</span>
-        <span>{common?.record?.toUpperCase()}: {highScore}</span>
+        <span>{(common?.record ?? 'Record').toUpperCase()}: {highScore}</span>
       </div>
     </div>
   );

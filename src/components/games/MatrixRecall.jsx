@@ -13,7 +13,6 @@ const BASE_LEVELS = [
   { id: 7, size: 6, tiles: 9 },
 ];
 
-// Gera nível – após o 7º entra em modo infinito com grids maiores
 const getLevel = (idx) => {
   if (idx < BASE_LEVELS.length) return BASE_LEVELS[idx];
   const extra = idx - BASE_LEVELS.length + 1;
@@ -24,16 +23,15 @@ const getLevel = (idx) => {
 
 export default function MatrixRecall({ onBack }) {
   const { t } = useLanguage();
-
   const common = t?.minigames?.common;
   const txt    = t?.minigames?.matrix;
 
   const [levelIndex,  setLevelIndex]  = useState(0);
   const [pattern,     setPattern]     = useState([]);
-  const [goldenTile,  setGoldenTile]  = useState(null);   // índice do tile bônus
-  const [goldenUsed,  setGoldenUsed]  = useState(false);  // se já foi clicado
+  const [goldenTile,  setGoldenTile]  = useState(null);
+  const [goldenUsed,  setGoldenUsed]  = useState(false);
   const [selected,    setSelected]    = useState([]);
-  const [status,      setStatus]      = useState('preview'); // preview|countdown|playing|won|error|lost
+  const [status,      setStatus]      = useState('idle'); // idle | preview | countdown | playing | won | error | lost
   const [countdown,   setCountdown]   = useState(3);
   const [lives,       setLives]       = useState(3);
   const [highScore,   setHighScore]   = useState(1);
@@ -44,10 +42,9 @@ export default function MatrixRecall({ onBack }) {
   useEffect(() => {
     const saved = localStorage.getItem('matrixRecallRecord');
     if (saved) setHighScore(parseInt(saved));
-    startLevel(0);
+    // Do NOT auto-start — wait for the player to press Start
   }, []);
 
-  // ─── Countdown ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (status !== 'countdown') return;
     if (countdown <= 0) { setStatus('playing'); return; }
@@ -55,17 +52,14 @@ export default function MatrixRecall({ onBack }) {
     return () => clearTimeout(id);
   }, [status, countdown]);
 
-  // ─── Inicializa nível ────────────────────────────────────────────────────────
   const startLevel = (idx) => {
-    const lvl = getLevel(idx);
+    const lvl   = getLevel(idx);
     const total = lvl.size * lvl.size;
 
-    // Cria padrão aleatório
     const patSet = new Set();
     while (patSet.size < lvl.tiles) patSet.add(Math.floor(Math.random() * total));
     const patArr = [...patSet];
 
-    // Tile dourado: uma célula que NÃO está no padrão
     const nonPat = [];
     for (let i = 0; i < total; i++) { if (!patSet.has(i)) nonPat.push(i); }
     const golden = nonPat.length > 0
@@ -78,9 +72,7 @@ export default function MatrixRecall({ onBack }) {
     setSelected([]);
     setLevelIndex(idx);
 
-    // Tempo de preview escalado pelo número de tiles
     const previewMs = 1000 + lvl.tiles * 200;
-
     setStatus('preview');
     setTimeout(() => {
       setStatus('countdown');
@@ -88,7 +80,6 @@ export default function MatrixRecall({ onBack }) {
     }, previewMs);
   };
 
-  // ─── Clique em tile ──────────────────────────────────────────────────────────
   const handleTileClick = (index) => {
     if (status !== 'playing') return;
     if (selected.includes(index)) return;
@@ -96,7 +87,6 @@ export default function MatrixRecall({ onBack }) {
     const newSelected = [...selected, index];
     setSelected(newSelected);
 
-    // ★ Tile dourado: restaura 1 vida (máx 3)
     if (index === goldenTile && !goldenUsed) {
       setGoldenUsed(true);
       setLives(prev => Math.min(prev + 1, 3));
@@ -104,7 +94,6 @@ export default function MatrixRecall({ onBack }) {
     }
 
     if (pattern.includes(index)) {
-      // Acerto correto
       const correctCount = newSelected.filter(i => pattern.includes(i)).length;
       if (correctCount === pattern.length) {
         setStatus('won');
@@ -116,7 +105,6 @@ export default function MatrixRecall({ onBack }) {
         setTimeout(() => startLevel(levelIndex + 1), 950);
       }
     } else {
-      // Erro
       setStatus('error');
       const newLives = lives - 1;
       setLives(newLives);
@@ -128,17 +116,17 @@ export default function MatrixRecall({ onBack }) {
   };
 
   const restartGame = () => { setLives(3); startLevel(0); };
+  const beginGame   = () => { setLives(3); startLevel(0); };
 
-  // ─── Render individual de tile ───────────────────────────────────────────────
   const renderTile = (index) => {
     const isPattern  = pattern.includes(index);
     const isSelected = selected.includes(index);
     const isGolden   = index === goldenTile && !goldenUsed;
     const wasGolden  = index === goldenTile && goldenUsed && isSelected;
 
-    let bg    = 'bg-white/5 hover:bg-white/10';
-    let icon  = null;
-    let anim  = {};
+    let bg   = 'bg-white/5 hover:bg-white/10';
+    let icon = null;
+    let anim = {};
 
     if (status === 'preview') {
       if (isPattern) {
@@ -148,18 +136,16 @@ export default function MatrixRecall({ onBack }) {
         icon = <Icon icon="solar:star-bold" className="text-black text-xs" />;
       }
     } else if (status === 'countdown') {
-      // Grid escondido durante countdown
       bg = 'bg-white/5';
     } else if (status === 'playing' || status === 'won' || status === 'error') {
       if (isSelected) {
         if (wasGolden) {
-          // Tile dourado clicado – feedback dourado
           bg   = 'bg-yellow-400 shadow-[0_0_15px_#facc15]';
           icon = <Icon icon="solar:star-bold" className="text-black text-sm" />;
           anim = { scale: [1, 1.2, 1] };
         } else if (isPattern) {
           bg   = 'bg-green-500 shadow-[0_0_15px_#22c55e]';
-          anim = { scale: [1, 1.15, 1] };       // bounce de acerto
+          anim = { scale: [1, 1.15, 1] };
           if (currentLevel.size < 6) {
             icon = <Icon icon="solar:check-circle-bold" className="text-white text-lg" />;
           }
@@ -168,12 +154,11 @@ export default function MatrixRecall({ onBack }) {
           icon = <Icon icon="solar:close-circle-bold" className="text-white text-lg" />;
         }
       } else if (isGolden) {
-        // Tile dourado ainda não clicado – pulsa sutilmente
         bg   = 'bg-yellow-400/25 border border-yellow-400/50 animate-pulse';
         icon = <Icon icon="solar:star-bold" className="text-yellow-300 text-xs" />;
       }
     } else if (status === 'lost') {
-      if (isPattern)                      bg = 'bg-white/20 animate-pulse';
+      if (isPattern)              bg = 'bg-white/20 animate-pulse';
       if (isSelected && !isPattern) bg = 'bg-red-500/50';
     }
 
@@ -182,10 +167,7 @@ export default function MatrixRecall({ onBack }) {
         key={index}
         animate={anim}
         transition={{ duration: 0.22 }}
-        className={`
-          w-full aspect-square rounded-lg flex items-center justify-center
-          transition-all duration-100 border border-white/5 ${bg}
-        `}
+        className={`w-full aspect-square rounded-lg flex items-center justify-center transition-all duration-100 border border-white/5 ${bg}`}
         onPointerDown={() => handleTileClick(index)}
         disabled={status !== 'playing'}
       >
@@ -198,13 +180,15 @@ export default function MatrixRecall({ onBack }) {
     <div className="w-full max-w-lg mx-auto bg-[#0F172A] rounded-3xl border border-white/10 p-4 sm:p-6 shadow-2xl relative min-h-[500px] flex flex-col">
 
       {/* ── Header ── */}
-      <div className="flex justify-between items-center mb-6">
-        <button onClick={onBack} className="text-white/50 hover:text-white flex items-center gap-2 text-sm font-bold">
-          <Icon icon="solar:arrow-left-bold" /> {common?.exit}
+      <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
+        <button
+          onClick={onBack}
+          className="text-white/50 hover:text-white flex items-center gap-1.5 text-sm font-bold transition-colors"
+        >
+          <Icon icon="solar:arrow-left-bold" /> {common?.exit ?? 'Exit'}
         </button>
 
         <div className="flex flex-col items-end gap-1">
-          {/* Corações com animação ao ganhar vida */}
           <div className="flex gap-1">
             {[...Array(3)].map((_, i) => (
               <motion.div
@@ -219,32 +203,73 @@ export default function MatrixRecall({ onBack }) {
               </motion.div>
             ))}
           </div>
-          <div className="text-xs text-gray-500 flex items-center gap-1">
-            {common?.level} {levelIndex + 1}
+          <div className="text-xs text-gray-500 flex items-center gap-1 font-mono">
+            {common?.level ?? 'Level'} {levelIndex + 1}
             {isInfinite && <span className="text-orange-400 font-bold">∞</span>}
-            {' • '} Max {highScore}
+            {' · '}
+            <span className="text-gray-600">
+              {common?.max ?? 'Max'} {highScore}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* ── Área do jogo ── */}
+      {/* ── Title Banner ── */}
+      <div className="text-center mb-3">
+        <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">
+          <Icon icon="solar:widget-5-bold" className="text-primary text-sm" />
+          <span className="text-sm font-bold text-white tracking-wider">{txt?.title ?? 'Matrix Recall'}</span>
+        </div>
+      </div>
+
+      {/* ── Game area ── */}
       <div className="flex-1 flex flex-col items-center justify-center w-full">
-        {status === 'lost' ? (
+        {status === 'idle' ? (
+          <div className="text-center animate-in fade-in zoom-in duration-300 flex flex-col items-center gap-4 px-4">
+            <Icon icon="solar:widget-5-bold" className="text-primary text-6xl" />
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-1">{txt?.title ?? 'Matrix Recall'}</h3>
+              <p className="text-gray-400 text-sm max-w-xs">
+                {txt?.description ?? 'Memorize the highlighted tiles, then repeat the pattern from memory.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-gray-500 font-mono bg-white/5 border border-white/10 rounded-xl px-4 py-2">
+              <span className="flex items-center gap-1">
+                <Icon icon="solar:heart-bold" className="text-red-500" /> 3 {common?.lives ?? 'lives'}
+              </span>
+              <span className="text-gray-700">·</span>
+              <span className="flex items-center gap-1">
+                <Icon icon="solar:star-bold" className="text-yellow-400" /> {txt?.goldenHint ?? '+1 life bonus available'}
+              </span>
+            </div>
+            <button
+              onPointerDown={beginGame}
+              className="bg-primary text-bg px-10 py-3 rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg mt-1"
+            >
+              <Icon icon="solar:play-bold" /> {common?.start ?? txt?.start ?? 'Start'}
+            </button>
+            {highScore > 1 && (
+              <p className="text-gray-600 text-xs font-mono">
+                {common?.record ?? 'Record'}: {common?.level ?? 'Level'} {highScore}
+              </p>
+            )}
+          </div>
+        ) : status === 'lost' ? (
           <div className="text-center animate-in zoom-in duration-300">
             <Icon icon="solar:sad-face-bold" className="text-red-500 text-6xl mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-white mb-2">{txt?.fail}</h3>
-            <p className="text-gray-400 mb-6">{common?.gameOver}</p>
+            <h3 className="text-2xl font-bold text-white mb-2">{txt?.fail ?? 'SYSTEM FAILURE'}</h3>
+            <p className="text-gray-400 mb-6">{common?.gameOver ?? 'Game Over'}</p>
             <button
               onClick={restartGame}
               className="bg-primary text-bg px-8 py-3 rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2 mx-auto"
             >
-              <Icon icon="solar:restart-bold" /> {common?.tryAgain}
+              <Icon icon="solar:restart-bold" /> {common?.tryAgain ?? 'Try Again'}
             </button>
           </div>
         ) : (
           <div className="relative w-full max-w-[min(90vw,400px)]">
 
-            {/* ── Overlay de countdown animado ── */}
+            {/* Countdown overlay */}
             <AnimatePresence mode="wait">
               {status === 'countdown' && countdown > 0 && (
                 <motion.div
@@ -262,7 +287,7 @@ export default function MatrixRecall({ onBack }) {
               )}
             </AnimatePresence>
 
-            {/* ── Grid ── */}
+            {/* Grid */}
             <div
               className="grid gap-2 sm:gap-3 w-full"
               style={{ gridTemplateColumns: `repeat(${currentLevel.size}, 1fr)` }}
@@ -275,11 +300,11 @@ export default function MatrixRecall({ onBack }) {
         )}
       </div>
 
-      {/* ── Footer de status ── */}
-      <div className="text-center h-12 flex items-center justify-center mt-4 gap-2 flex-wrap">
+      {/* ── Status footer ── */}
+      <div className="text-center min-h-[48px] flex items-center justify-center mt-4 gap-2 flex-wrap">
         {status === 'preview' && (
           <p className="text-primary font-bold animate-pulse text-xl tracking-widest">
-            {txt?.memorize}
+            {txt?.memorize ?? 'MEMORIZE!'}
           </p>
         )}
 
@@ -288,17 +313,16 @@ export default function MatrixRecall({ onBack }) {
         )}
 
         {status === 'playing' && (
-          <p className="text-gray-400 text-sm animate-in fade-in flex items-center gap-2">
-            {txt?.repeat}
-            {/* Indica que o tile dourado está disponível */}
+          <p className="text-gray-400 text-sm animate-in fade-in flex items-center gap-2 flex-wrap justify-center">
+            {txt?.repeat ?? 'Repeat the pattern.'}
             {goldenTile !== null && !goldenUsed && (
               <span className="text-yellow-400 text-xs flex items-center gap-1 bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/20">
-                <Icon icon="solar:star-bold" /> +1 vida disponível
+                <Icon icon="solar:star-bold" /> {txt?.goldenHint ?? '+1 life available'}
               </span>
             )}
             {goldenUsed && (
               <span className="text-green-400 text-xs flex items-center gap-1">
-                <Icon icon="solar:heart-bold" /> +1 vida!
+                <Icon icon="solar:heart-bold" /> {txt?.goldenUsed ?? '+1 life!'}
               </span>
             )}
           </p>
@@ -306,7 +330,7 @@ export default function MatrixRecall({ onBack }) {
 
         {status === 'won' && (
           <p className="text-green-400 font-bold flex items-center gap-2">
-            <Icon icon="solar:verified-check-bold" /> {txt?.success}
+            <Icon icon="solar:verified-check-bold" /> {txt?.success ?? 'SUCCESS!'}
           </p>
         )}
 
