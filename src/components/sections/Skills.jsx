@@ -121,8 +121,8 @@ function SkillCard({ name, color, icon, index, visible }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Skills() {
-  const { t, language } = useLanguage();
-  const isPt = language === 'pt';
+  const { t, lang } = useLanguage();
+  const isPt = lang === 'pt';
 
   const [activeCategory,    setActiveCategory]    = useState('all');
   const [displayedCategory, setDisplayedCategory] = useState('all');
