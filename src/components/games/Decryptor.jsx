@@ -39,6 +39,45 @@ const keyboardCols = (optCount) => {
   return 5;
 };
 
+// ── Defined OUTSIDE Decryptor so its reference is stable across renders ──
+const GuessRow = ({ turn, slotCount, compact = false, txt }) => {
+  if (turn.isHint) {
+    return (
+      <div className="flex items-center gap-2 text-yellow-400 text-xs w-full flex-wrap bg-yellow-500/10 border border-yellow-500/20 p-2 rounded-lg">
+        <Icon icon="solar:eye-bold" />
+        <span>{txt?.hintRow ?? 'Hint: position'} {turn.hintReveal.index + 1} =</span>
+        <div className={`${compact ? 'w-6 h-6' : 'w-7 h-7'} rounded bg-black/40 flex items-center justify-center`}>
+          <Icon icon={turn.hintReveal.symbol.icon} className={turn.hintReveal.symbol.color} />
+        </div>
+        <span className="ml-auto text-yellow-600 text-[10px]">−1 attempt</span>
+      </div>
+    );
+  }
+  const iconSz = compact ? 'w-6 h-6' : 'w-8 h-8 sm:w-9 sm:h-9';
+  return (
+    <div className={`flex items-center justify-between ${compact ? 'p-1.5' : 'p-2'} bg-white/5 rounded-lg border border-white/5`}>
+      <div className={`flex ${compact ? 'gap-1' : 'gap-1 sm:gap-2'}`}>
+        {turn.guess.map((s, i) => (
+          <div key={i} className={`${iconSz} rounded bg-black/40 flex items-center justify-center shrink-0`}>
+            <Icon icon={s.icon} className={`${s.color} ${compact ? 'text-xs' : 'text-sm sm:text-base'}`} />
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-0.5 ml-2 flex-wrap justify-end max-w-[52px] shrink-0">
+        {[...Array(turn.exact)].map((_, i) =>
+          <div key={`e${i}`} className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_4px_#22c55e]" />
+        )}
+        {[...Array(turn.partial)].map((_, i) =>
+          <div key={`p${i}`} className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_4px_#eab308]" />
+        )}
+        {[...Array(slotCount - turn.exact - turn.partial)].map((_, i) =>
+          <div key={`w${i}`} className="w-2.5 h-2.5 rounded-full bg-gray-700" />
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function Decryptor({ onBack }) {
   const { t } = useLanguage();
   const common = t?.minigames?.common;
@@ -156,44 +195,6 @@ export default function Decryptor({ onBack }) {
     progressPct > 50 ? 'bg-yellow-500' : 'bg-green-500';
   const cols = keyboardCols(config.options);
 
-  const GuessRow = ({ turn, slotCount, compact = false }) => {
-    if (turn.isHint) {
-      return (
-        <div className="flex items-center gap-2 text-yellow-400 text-xs w-full flex-wrap bg-yellow-500/10 border border-yellow-500/20 p-2 rounded-lg">
-          <Icon icon="solar:eye-bold" />
-          <span>{txt?.hintRow ?? 'Hint: position'} {turn.hintReveal.index + 1} =</span>
-          <div className={`${compact ? 'w-6 h-6' : 'w-7 h-7'} rounded bg-black/40 flex items-center justify-center`}>
-            <Icon icon={turn.hintReveal.symbol.icon} className={turn.hintReveal.symbol.color} />
-          </div>
-          <span className="ml-auto text-yellow-600 text-[10px]">−1 attempt</span>
-        </div>
-      );
-    }
-    const iconSz = compact ? 'w-6 h-6' : 'w-8 h-8 sm:w-9 sm:h-9';
-    return (
-      <div className={`flex items-center justify-between ${compact ? 'p-1.5' : 'p-2'} bg-white/5 rounded-lg border border-white/5`}>
-        <div className={`flex ${compact ? 'gap-1' : 'gap-1 sm:gap-2'}`}>
-          {turn.guess.map((s, i) => (
-            <div key={i} className={`${iconSz} rounded bg-black/40 flex items-center justify-center shrink-0`}>
-              <Icon icon={s.icon} className={`${s.color} ${compact ? 'text-xs' : 'text-sm sm:text-base'}`} />
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-0.5 ml-2 flex-wrap justify-end max-w-[52px] shrink-0">
-          {[...Array(turn.exact)].map((_, i) =>
-            <div key={`e${i}`} className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_4px_#22c55e]" />
-          )}
-          {[...Array(turn.partial)].map((_, i) =>
-            <div key={`p${i}`} className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_4px_#eab308]" />
-          )}
-          {[...Array(slotCount - turn.exact - turn.partial)].map((_, i) =>
-            <div key={`w${i}`} className="w-2.5 h-2.5 rounded-full bg-gray-700" />
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="w-full max-w-lg mx-auto bg-[#0F172A] rounded-3xl border border-white/10 p-3 sm:p-4 shadow-2xl relative flex flex-col h-[85vh] max-h-[720px]">
 
@@ -220,7 +221,6 @@ export default function Decryptor({ onBack }) {
             {hintUsed ? (txt?.hintUsed ?? 'Used') : (txt?.hint ?? 'Hint')}
           </button>
 
-          {/* FIX: `text-white` removed — was conflicting with `text-purple-300` on same element */}
           <div className="font-mono text-xs text-purple-300 bg-purple-500/20 px-3 py-1 rounded-lg border border-purple-500/30 whitespace-nowrap">
             {common?.level ?? 'Level'} {level}
           </div>
@@ -278,7 +278,7 @@ export default function Decryptor({ onBack }) {
         )}
 
         {guesses.map((turn, idx) => (
-          <GuessRow key={idx} turn={turn} slotCount={config.slots} />
+          <GuessRow key={idx} turn={turn} slotCount={config.slots} txt={txt} />
         ))}
 
         {gameStatus === 'playing' && (
@@ -380,7 +380,7 @@ export default function Decryptor({ onBack }) {
                     style={{ maxHeight: '260px' }}
                   >
                     {guesses.map((turn, idx) => (
-                      <GuessRow key={idx} turn={turn} slotCount={config.slots} compact />
+                      <GuessRow key={idx} turn={turn} slotCount={config.slots} compact txt={txt} />
                     ))}
                   </div>
 
