@@ -196,14 +196,10 @@ export const en = {
     ]
   },
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // MINIGAMES  (all keys used by every game component)
-  // ─────────────────────────────────────────────────────────────────────────────
   minigames: {
     sectionTitle: "Arcade Zone",
     sectionSubtitle: "Challenge your mind with our mini-games.",
 
-    // ── Keys shared by every game ──────────────────────────────────────────────
     common: {
       score:     "Score",
       record:    "Record",
@@ -223,7 +219,6 @@ export const en = {
       exit:      "Exit",
     },
 
-    // ── Descriptions shown in game-selection cards ────────────────────────────
     descriptions: {
       memory:    { title: "Tech Memory",    desc: "Find the technology pairs."         },
       snake:     { title: "Dev Snake",      desc: "Classic Snake with tech visuals."   },
@@ -233,7 +228,6 @@ export const en = {
       zip:       { title: "Logic Quiz",     desc: "Quick logic questions."             },
     },
 
-    // ── Tech Memory ───────────────────────────────────────────────────────────
     memory: {
       title:      "Tech Memory",
       subtitle:   "Test your memory across different levels.",
@@ -250,7 +244,6 @@ export const en = {
       },
     },
 
-    // ── Dev Snake ─────────────────────────────────────────────────────────────
     snake: {
       title:          "Dev Snake",
       start:          "Start",
@@ -265,7 +258,6 @@ export const en = {
       levelReached:   "reached",
     },
 
-    // ── Cyber Sequence ────────────────────────────────────────────────────────
     sequence: {
       title:       "Cyber Sequence",
       start:       "Start",
@@ -273,14 +265,12 @@ export const en = {
       watch:       "Watch carefully...",
       wrong:       "Game Over!",
       phaseLabel:  "round",
-      // Dynamic strings – {n} is replaced with the round number / lives count
       phaseComplete: "✓ Round {n} complete!",
       livesLeft:     "✗ Wrong! {n} {life} remaining",
       life:          "life",
       lives:         "lives",
     },
 
-    // ── Matrix Recall ─────────────────────────────────────────────────────────
     matrix: {
       title:       "Matrix Recall",
       start:       "Start",
@@ -296,20 +286,25 @@ export const en = {
 
     // ── Decryptor ─────────────────────────────────────────────────────────────
     decryptor: {
-      title:        "Decryptor",
-      accessGranted:"ACCESS GRANTED!",
-      accessDenied: "ACCESS DENIED",
-      cracked:      "You cracked the encryption.",
-      enter:        "ENTER",
-      hint:         "Hint",
-      hintUsed:     "Used",
-      hintRow:      "Hint: position",
-      exactMatch:   "Correct Position",
-      partialMatch: "Right Symbol, Wrong Spot",
-      placeholder:  "Select icons below to guess the password.",
+      title:         "Decryptor",
+      accessGranted: "ACCESS GRANTED!",
+      accessDenied:  "ACCESS DENIED",
+      cracked:       "You cracked the encryption.",
+      enter:         "ENTER",
+      hint:          "Hint",
+      hintUsed:      "Used",
+      hintRow:       "Hint: position",
+      exactMatch:    "Correct Position",
+      partialMatch:  "Right Symbol, Wrong Spot",
+      placeholder:   "Select icons below to guess the password.",
+      tries:         "tries",
+      remaining:     "left",
+      attemptsUsed:  "attempts used",
+      nextChallenge: "Next challenge unlocked",
+      codeWas:       "The code was:",
+      allAttempts:   "All attempts",
     },
 
-    // ── Logic Quiz (Zip) ──────────────────────────────────────────────────────
     zip: {
       title:        "Logic Quiz",
       subtitle:     "LOGIC QUIZ",

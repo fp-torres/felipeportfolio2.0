@@ -196,14 +196,10 @@ export const pt = {
     ],
   },
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // MINIGAMES  (todas as chaves usadas por cada componente de jogo)
-  // ─────────────────────────────────────────────────────────────────────────────
   minigames: {
     sectionTitle:   "Arcade Zone",
     sectionSubtitle:"Desafie sua mente com nossos mini-games.",
 
-    // ── Chaves compartilhadas por todos os jogos ──────────────────────────────
     common: {
       score:     "Pontos",
       record:    "Recorde",
@@ -223,7 +219,6 @@ export const pt = {
       exit:      "Sair",
     },
 
-    // ── Descrições nos cards de seleção de jogo ───────────────────────────────
     descriptions: {
       memory:    { title: "Tech Memory",    desc: "Encontre os pares das tecnologias."   },
       snake:     { title: "Dev Snake",      desc: "Clássico Snake com visual tech."      },
@@ -233,7 +228,6 @@ export const pt = {
       zip:       { title: "Logic Quiz",     desc: "Perguntas de lógica rápida."          },
     },
 
-    // ── Tech Memory ───────────────────────────────────────────────────────────
     memory: {
       title:      "Tech Memory",
       subtitle:   "Teste sua memória em diferentes níveis.",
@@ -250,7 +244,6 @@ export const pt = {
       },
     },
 
-    // ── Dev Snake ─────────────────────────────────────────────────────────────
     snake: {
       title:          "Dev Snake",
       start:          "Iniciar",
@@ -265,7 +258,6 @@ export const pt = {
       levelReached:   "atingido",
     },
 
-    // ── Cyber Sequence ────────────────────────────────────────────────────────
     sequence: {
       title:       "Cyber Sequence",
       start:       "Iniciar",
@@ -273,14 +265,12 @@ export const pt = {
       watch:       "Observe com atenção...",
       wrong:       "Fim de Jogo!",
       phaseLabel:  "fase",
-      // Strings dinâmicas – {n} é substituído pelo número da fase / vidas restantes
       phaseComplete:"✓ Fase {n} completa!",
       livesLeft:    "✗ Errou! {n} {life} restante{plural}",
       life:         "vida",
       lives:        "vidas",
     },
 
-    // ── Matrix Recall ─────────────────────────────────────────────────────────
     matrix: {
       title:       "Matrix Recall",
       start:       "Iniciar",
@@ -296,20 +286,25 @@ export const pt = {
 
     // ── Decryptor ─────────────────────────────────────────────────────────────
     decryptor: {
-      title:        "Decryptor",
-      accessGranted:"ACESSO LIBERADO!",
-      accessDenied: "ACESSO NEGADO",
-      cracked:      "Você quebrou a criptografia.",
-      enter:        "ENTER",
-      hint:         "Dica",
-      hintUsed:     "Usada",
-      hintRow:      "Dica: posição",
-      exactMatch:   "Posição Correta",
-      partialMatch: "Símbolo Certo, Lugar Errado",
-      placeholder:  "Selecione os ícones abaixo para tentar descobrir a senha.",
+      title:         "Decryptor",
+      accessGranted: "ACESSO LIBERADO!",
+      accessDenied:  "ACESSO NEGADO",
+      cracked:       "Você quebrou a criptografia.",
+      enter:         "ENTER",
+      hint:          "Dica",
+      hintUsed:      "Usada",
+      hintRow:       "Dica: posição",
+      exactMatch:    "Posição Correta",
+      partialMatch:  "Símbolo Certo, Lugar Errado",
+      placeholder:   "Selecione os ícones abaixo para tentar descobrir a senha.",
+      tries:         "tentativas",
+      remaining:     "restantes",
+      attemptsUsed:  "tentativas usadas",
+      nextChallenge: "Próximo desafio desbloqueado",
+      codeWas:       "O código era:",
+      allAttempts:   "Todas as tentativas",
     },
 
-    // ── Logic Quiz (Zip) ──────────────────────────────────────────────────────
     zip: {
       title:       "Logic Quiz",
       subtitle:    "LOGIC QUIZ",
