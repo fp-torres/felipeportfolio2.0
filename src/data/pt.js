@@ -16,7 +16,8 @@ import cvFocusedPt from '../assets/curriculo/Felipe_Torres_cv_ptbr.pdf';
 import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática.pdf';
 
 // Certificados
-import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png';
+import certIotIaPucrs from '../assets/imgs/certs/CURSO DE EXTENSÃO EM INTERNET DAS COISAS, IA E A REVOLUÇÃO CONECTADA PUCRS.png';
+import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png'; // <-- ESSA LINHA ESTAVA FALTANDO!
 import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.png';
 import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.png';
 import certCyber from '../assets/imgs/certs/Introduction to Cybersecurity.png';
@@ -155,6 +156,7 @@ export const pt = {
     seeMore: "Ver Todos",
     seeLess: "Ver Menos",
     items: [
+      { id: 13, name: "IoT, IA e a Revolução Conectada", issuer: "PUCRS",                 image: certIotIaPucrs },
       { id: 12, name: "Scrum Fundamentals Certified", issuer: "SCRUMstudy",         image: certScrum    },
       { id: 1,  name: "POO - Java",                   issuer: "Curso em Vídeo",      image: certPoo      },
       { id: 2,  name: "Git e GitHub",                  issuer: "Curso em Vídeo",      image: certGit      },
@@ -284,7 +286,6 @@ export const pt = {
       goldenUsed:  "+1 vida!",
     },
 
-    // ── Decryptor ─────────────────────────────────────────────────────────────
     decryptor: {
       title:         "Decryptor",
       accessGranted: "ACESSO LIBERADO!",

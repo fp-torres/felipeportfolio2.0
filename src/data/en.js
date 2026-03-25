@@ -16,6 +16,7 @@ import cvFocusedEn from '../assets/curriculo/Felipe_Torres_cv_en.pdf';
 import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática.pdf';
 
 // Certificados
+import certIotIaPucrs from '../assets/imgs/certs/CURSO DE EXTENSÃO EM INTERNET DAS COISAS, IA E A REVOLUÇÃO CONECTADA PUCRS.png'; 
 import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png';
 import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.png';
 import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.png';
@@ -155,18 +156,19 @@ export const en = {
     seeMore: "See All",
     seeLess: "See Less",
     items: [
-      { id: 12, name: "Scrum Fundamentals Certified", issuer: "SCRUMstudy", image: certScrum }, 
-      { id: 1,  name: "OOP - Java",           issuer: "Online Course",      image: certPoo      },
-      { id: 2,  name: "Git & GitHub",          issuer: "Online Course",      image: certGit      },
-      { id: 3,  name: "DB Admin",              issuer: "Fundação Bradesco",  image: certDbAdmin  },
-      { id: 4,  name: "Impl DB",               issuer: "Fundação Bradesco",  image: certImplDb   },
-      { id: 5,  name: "Data Modeling",         issuer: "Fundação Bradesco",  image: certModeling },
-      { id: 6,  name: "IT Security",           issuer: "Bradesco",           image: certSecurity },
-      { id: 7,  name: "Cybersecurity Intro",   issuer: "Cisco",              image: certCyber    },
-      { id: 8,  name: "Project Mgmt",          issuer: "Fundação Bradesco",  image: certGestao   },
-      { id: 9,  name: "IoT Intro",             issuer: "Cisco",              image: certIot      },
-      { id: 10, name: "Hardware & Software",   issuer: "Cisco",              image: certHardware },
-      { id: 11, name: "Rio Innovation Week",   issuer: "Participation 2023", image: certRiw      },
+      { id: 13, name: "IoT, AI & Connected Revolution", issuer: "PUCRS",             image: certIotIaPucrs }, // NOVO CERTIFICADO
+      { id: 12, name: "Scrum Fundamentals Certified", issuer: "SCRUMstudy",          image: certScrum }, 
+      { id: 1,  name: "OOP - Java",                   issuer: "Online Course",       image: certPoo },
+      { id: 2,  name: "Git & GitHub",                 issuer: "Online Course",       image: certGit },
+      { id: 3,  name: "DB Admin",                     issuer: "Fundação Bradesco",   image: certDbAdmin },
+      { id: 4,  name: "Impl DB",                      issuer: "Fundação Bradesco",   image: certImplDb },
+      { id: 5,  name: "Data Modeling",                issuer: "Fundação Bradesco",   image: certModeling },
+      { id: 6,  name: "IT Security",                  issuer: "Bradesco",            image: certSecurity },
+      { id: 7,  name: "Cybersecurity Intro",          issuer: "Cisco",               image: certCyber },
+      { id: 8,  name: "Project Mgmt",                 issuer: "Fundação Bradesco",   image: certGestao },
+      { id: 9,  name: "IoT Intro",                    issuer: "Cisco",               image: certIot },
+      { id: 10, name: "Hardware & Software",          issuer: "Cisco",               image: certHardware },
+      { id: 11, name: "Rio Innovation Week",          issuer: "Participation 2023",  image: certRiw },
     ]
   },
   skills: {
@@ -284,7 +286,6 @@ export const en = {
       goldenUsed:  "+1 life!",
     },
 
-    // ── Decryptor ─────────────────────────────────────────────────────────────
     decryptor: {
       title:         "Decryptor",
       accessGranted: "ACCESS GRANTED!",
