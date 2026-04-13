@@ -2,6 +2,7 @@
 import profileImg from '../assets/imgs/img2.jpg';
 
 // Imagens de Projetos
+import torresBurgerImg from '../assets/imgs/web-home-dark.png'; // <-- IMAGEM DO NOVO PROJETO AQUI
 import forgeImg from '../assets/imgs/forgedevapps.png'; 
 import costsImg from '../assets/imgs/costs.jpeg';
 import steakImg from '../assets/imgs/img4.png'; 
@@ -17,7 +18,7 @@ import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática
 
 // Certificados
 import certIotIaPucrs from '../assets/imgs/certs/CURSO DE EXTENSÃO EM INTERNET DAS COISAS, IA E A REVOLUÇÃO CONECTADA PUCRS.png';
-import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png'; // <-- ESSA LINHA ESTAVA FALTANDO!
+import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png'; 
 import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.png';
 import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.png';
 import certCyber from '../assets/imgs/certs/Introduction to Cybersecurity.png';
@@ -119,6 +120,16 @@ export const pt = {
   projects: {
     title: "Projetos",
     items: [
+      {
+        id: 4, // ID 4 para não conflitar com os outros
+        title:      "TorresBurgers Full Stack",
+        description:"Sistema completo para hamburgueria com painel administrativo, pedidos em tempo real e controle de estoque.",
+        image:      torresBurgerImg,
+        techs:      ["React", "Node.js", "Express", "MySQL"],
+        link:       null,
+        github:     "https://github.com/fp-torres/TorresBurguers",
+        video:      null,
+      },
       {
         id: 1,
         title:      "ForgeDevApps",

@@ -2,6 +2,7 @@
 import profileImg from '../assets/imgs/img2.jpg';
 
 // Imagens de Projetos
+import torresBurgerImg from '../assets/imgs/web-home-dark.png'; // <-- IMAGEM DO NOVO PROJETO AQUI
 import forgeImg from '../assets/imgs/forgedevapps.png'; 
 import costsImg from '../assets/imgs/costs.jpeg';
 import steakImg from '../assets/imgs/img4.png'; 
@@ -120,6 +121,16 @@ export const en = {
     title: "Projects",
     items: [
       {
+        id: 4, // Adicionado como primeiro da lista
+        title: "TorresBurgers Full Stack",
+        description: "Complete burger shop system with admin dashboard, real-time ordering, and inventory management.",
+        image: torresBurgerImg,
+        techs: ["React", "Node.js", "Express", "MySQL"],
+        link: null,
+        github: "https://github.com/fp-torres/TorresBurguers",
+        video: null
+      },
+      {
         id: 1,
         title: "ForgeDevApps",
         description: "Institutional platform focused on high performance.",
@@ -156,7 +167,7 @@ export const en = {
     seeMore: "See All",
     seeLess: "See Less",
     items: [
-      { id: 13, name: "IoT, AI & Connected Revolution", issuer: "PUCRS",             image: certIotIaPucrs }, // NOVO CERTIFICADO
+      { id: 13, name: "IoT, AI & Connected Revolution", issuer: "PUCRS",             image: certIotIaPucrs }, 
       { id: 12, name: "Scrum Fundamentals Certified", issuer: "SCRUMstudy",          image: certScrum }, 
       { id: 1,  name: "OOP - Java",                   issuer: "Online Course",       image: certPoo },
       { id: 2,  name: "Git & GitHub",                 issuer: "Online Course",       image: certGit },
