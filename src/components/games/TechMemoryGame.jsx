@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../../context/useLanguage';
 import { Icon } from '@iconify/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 
 const allTechIcons = [
   { id: 1,  icon: 'devicon:react',       name: 'React'  },
@@ -20,9 +20,20 @@ const allTechIcons = [
 
 const DIFFICULTY_CONFIG = {
   easy:   { pairs: 6,  cols: 'grid-cols-3 sm:grid-cols-4', cardSize: 'w-16 h-16 sm:w-20 sm:h-20' },
-  medium: { pairs: 8,  cols: 'grid-cols-4',                cardSize: 'w-14 h-14 sm:w-18 sm:h-18' },
+  medium: { pairs: 8,  cols: 'grid-cols-4',                cardSize: 'w-14 h-14 sm:w-[4.5rem] sm:h-[4.5rem]' },
   hard:   { pairs: 12, cols: 'grid-cols-4 sm:grid-cols-6', cardSize: 'w-12 h-12 sm:w-16 sm:h-16' },
 };
+
+function getSavedMemoryRecords() {
+  const defaults = { easy: 999, medium: 999, hard: 999 };
+
+  try {
+    const saved = JSON.parse(localStorage.getItem('techMemoryRecords'));
+    return saved && typeof saved === 'object' ? { ...defaults, ...saved } : defaults;
+  } catch {
+    return defaults;
+  }
+}
 
 export default function TechMemoryGame({ onBack }) {
   const { t } = useLanguage();
@@ -38,19 +49,13 @@ export default function TechMemoryGame({ onBack }) {
   const [gameActive,  setGameActive]  = useState(false);
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [difficulty,  setDifficulty]  = useState('medium');
-  const [records,     setRecords]     = useState({ easy: 999, medium: 999, hard: 999 });
+  const [records,     setRecords]     = useState(getSavedMemoryRecords);
 
   const [elapsed,  setElapsed]  = useState(0);
   const timerRef   = useRef(null);
+  const revealTimerRef = useRef(null);
   const elapsedRef = useRef(0);
   const movesRef   = useRef(0);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('techMemoryRecords');
-      if (saved) setRecords(JSON.parse(saved));
-    } catch (_) {}
-  }, []);
 
   const startTimer = () => {
     clearInterval(timerRef.current);
@@ -62,12 +67,16 @@ export default function TechMemoryGame({ onBack }) {
     }, 1000);
   };
   const stopTimer = () => clearInterval(timerRef.current);
-  useEffect(() => () => clearInterval(timerRef.current), []);
+  useEffect(() => () => {
+    clearInterval(timerRef.current);
+    window.clearTimeout(revealTimerRef.current);
+  }, []);
 
   const formatTime = (s) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   const startGame = (diff) => {
+    window.clearTimeout(revealTimerRef.current);
     const { pairs } = DIFFICULTY_CONFIG[diff];
     const icons = [...allTechIcons].sort(() => Math.random() - 0.5).slice(0, pairs);
     const deck  = [...icons, ...icons]
@@ -87,7 +96,21 @@ export default function TechMemoryGame({ onBack }) {
     startTimer();
   };
 
-  const handleClick = useCallback((uid) => {
+  const handleWin = (finalMoves) => {
+    stopTimer();
+    setWon(true);
+    setRecords((previous) => {
+      if (finalMoves < previous[difficulty]) {
+        const next = { ...previous, [difficulty]: finalMoves };
+        localStorage.setItem('techMemoryRecords', JSON.stringify(next));
+        setIsNewRecord(true);
+        return next;
+      }
+      return previous;
+    });
+  };
+
+  const handleClick = (uid) => {
     if (disabled || flipped.includes(uid) || solved.includes(uid)) return;
 
     if (flipped.length === 0) { setFlipped([uid]); return; }
@@ -100,41 +123,29 @@ export default function TechMemoryGame({ onBack }) {
       movesRef.current = newMoves;
       setMoves(newMoves);
 
-      setCards(prev => {
-        const a = prev.find(c => c.uid === pair[0]);
-        const b = prev.find(c => c.uid === uid);
+      const firstCard = cards.find((card) => card.uid === pair[0]);
+      const secondCard = cards.find((card) => card.uid === uid);
 
-        if (a?.id === b?.id) {
-          setSolved(s => {
-            const next = [...s, pair[0], uid];
-            if (next.length === prev.length) setTimeout(() => handleWin(newMoves), 500);
-            return next;
-          });
+      if (firstCard?.id === secondCard?.id) {
+        const nextSolved = [...solved, pair[0], uid];
+        setSolved(nextSolved);
+        setFlipped([]);
+        setDisabled(false);
+
+        if (nextSolved.length === cards.length) {
+          revealTimerRef.current = window.setTimeout(() => handleWin(newMoves), 500);
+        }
+      } else {
+        revealTimerRef.current = window.setTimeout(() => {
           setFlipped([]);
           setDisabled(false);
-        } else {
-          setTimeout(() => { setFlipped([]); setDisabled(false); }, 950);
-        }
-        return prev;
-      });
-    }
-  }, [disabled, flipped, solved]);
-
-  const handleWin = (finalMoves) => {
-    stopTimer();
-    setWon(true);
-    setRecords(prev => {
-      if (finalMoves < prev[difficulty]) {
-        const next = { ...prev, [difficulty]: finalMoves };
-        localStorage.setItem('techMemoryRecords', JSON.stringify(next));
-        setIsNewRecord(true);
-        return next;
+        }, 950);
       }
-      return prev;
-    });
+    }
   };
 
   const handleBack = () => {
+    window.clearTimeout(revealTimerRef.current);
     if (gameActive) { stopTimer(); setGameActive(false); setWon(false); }
     else onBack?.();
   };
@@ -239,7 +250,7 @@ export default function TechMemoryGame({ onBack }) {
                   style={{ perspective: '800px' }}
                   onPointerDown={() => handleClick(card.uid)}
                 >
-                  <motion.div
+                  <Motion.div
                     initial={false}
                     animate={{ rotateY: isFlipped ? 180 : 0 }}
                     transition={{ duration: 0.35, ease: 'easeInOut' }}
@@ -267,7 +278,7 @@ export default function TechMemoryGame({ onBack }) {
                         <span className="text-[9px] text-white/40 mt-1 font-mono">{card.name}</span>
                       )}
                     </div>
-                  </motion.div>
+                  </Motion.div>
                 </div>
               );
             })}
@@ -278,7 +289,7 @@ export default function TechMemoryGame({ onBack }) {
       {/* ── Win overlay ── */}
       <AnimatePresence>
         {won && (
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -310,7 +321,7 @@ export default function TechMemoryGame({ onBack }) {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
     </div>

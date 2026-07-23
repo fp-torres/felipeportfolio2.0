@@ -1,6 +1,6 @@
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/useLanguage';
 import { Icon } from '@iconify/react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 
 // Importação das Logos
 import logoCrase from '../../assets/imgs/crase_sigma_logo.jpg';
@@ -54,7 +54,7 @@ export default function Experience() {
       <div className="grid lg:grid-cols-2 gap-16 md:gap-12 lg:gap-16 relative max-w-7xl mx-auto px-4 sm:px-6">
         
         {/* === Coluna EXPERIÊNCIA === */}
-        <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} className="relative z-10">
+        <Motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} className="relative z-10">
           
           <div className="space-y-12 pl-6 sm:pl-8 md:pl-10 relative">
             {/* Trilho da Linha Vertical */}
@@ -63,7 +63,7 @@ export default function Experience() {
             {t.experience.items.map((job) => {
               const Logo = getCompanyLogo(job.company);
               return (
-                <motion.div key={job.id} variants={itemVariants} className="relative group">
+                <Motion.div key={job.id} variants={itemVariants} className="relative group">
                   
                   {/* Node da Timeline */}
                   <div className="absolute -left-[31px] sm:-left-[39px] md:-left-[47px] top-6 w-3.5 h-3.5 bg-surface border-2 border-primary rounded-full group-hover:bg-primary transition-colors duration-300 z-10 shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"></div>
@@ -107,14 +107,14 @@ export default function Experience() {
                           {job.description}
                       </p>
                   </div>
-                </motion.div>
+                </Motion.div>
               );
             })}
           </div>
-        </motion.div>
+        </Motion.div>
 
         {/* === Coluna FORMAÇÃO === */}
-        <motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} className="relative z-10 lg:mt-0 mt-8">
+        <Motion.div variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} className="relative z-10 lg:mt-0 mt-8">
           
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-xs mb-8 lg:hidden ml-6 sm:ml-8 md:ml-10">
              <Icon icon="solar:book-bookmark-bold" />
@@ -128,7 +128,7 @@ export default function Experience() {
             {t.experience.education.map((edu) => {
               const Logo = getSchoolLogo(edu.school);
               return (
-                <motion.div key={edu.id} variants={itemVariants} className="relative group">
+                <Motion.div key={edu.id} variants={itemVariants} className="relative group">
                   
                   {/* Node da Timeline */}
                   <div className="absolute -left-[31px] sm:-left-[39px] md:-left-[47px] top-6 w-3.5 h-3.5 bg-surface border-2 border-blue-500 rounded-full group-hover:bg-blue-500 transition-colors duration-300 z-10 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
@@ -173,11 +173,11 @@ export default function Experience() {
                         </div>
                     )}
                   </div>
-                </motion.div>
+                </Motion.div>
               );
             })}
           </div>
-        </motion.div>
+        </Motion.div>
 
       </div>
     </section>

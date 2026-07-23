@@ -1,254 +1,144 @@
-<div align="center">
+# Felipe Torres — Portfólio
 
-███████╗███████╗██╗ ██╗██████╗ ███████╗ ████████╗ ██████╗ ██████╗ ██████╗ ███████╗███████╗
-██╔════╝██╔════╝██║ ██║██╔══██╗██╔════╝ ╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝
-█████╗ █████╗ ██║ ██║██████╔╝█████╗ ██║ ██║ ██║██████╔╝██████╔╝█████╗ ███████╗
-██╔══╝ ██╔══╝ ██║ ██║██╔═══╝ ██╔══╝ ██║ ██║ ██║██╔══██╗██╔══██╗██╔══╝ ╚════██║
-██║ ███████╗███████╗██║██║ ███████╗ ██║ ╚██████╔╝██║ ██║██║ ██║███████╗███████║
-╚═╝ ╚══════╝╚══════╝╚═╝╚═╝ ╚══════╝ ╚═╝ ╚═════╝ ╚═╝ ╚═╝╚═╝ ╚═╝╚══════╝╚══════╝
+Portfólio bilíngue e responsivo desenvolvido com React, Vite e Tailwind CSS. O projeto reúne trajetória profissional, projetos, certificações, stack, métricas reais de programação e uma arcade com seis minigames.
 
-text
+## Principais recursos
 
-### ⚡ Felipe Torres — Full Stack Developer & Audiovisual Editor
+- Interface em português e inglês, com preferência salva no navegador.
+- Perfil e atividade pública carregados pela API do GitHub.
+- WakaTime com períodos de 7 dias, 30 dias e histórico completo.
+- Cache em duas camadas para manter a última leitura real quando a API oscilar.
+- Widget do Spotify com bridge PHP e fallback pelo Discord/Lanyard.
+- NASA APOD, máquina do tempo e radar de notícias como easter eggs.
+- Seis minigames responsivos com recordes locais.
+- Carregamento sob demanda dos jogos e imagens WebP otimizadas.
+- Navegação por teclado, foco visível, suporte a movimento reduzido e menus/modais acessíveis.
+- Deploy automático na Hostinger por GitHub Actions.
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=1000&color=A855F7&center=true&vCenter=true&multiline=true&repeat=false&width=800&height=100&lines=Building+immersive+digital+experiences+since+day+one.;React+%E2%80%A2+PHP+%E2%80%A2+Tailwind+%E2%80%A2+APIs+%E2%80%A2+CI%2FCD;Based+in+Rio+de+Janeiro+%F0%9F%87%A7%F0%9F%87%B7" alt="Typing SVG" />
+## Stack
 
-<br/>
+- React 19
+- Vite 7
+- Tailwind CSS
+- Framer Motion
+- PHP/cURL para as integrações privadas
+- GitHub Actions + FTP
 
-[![Portfolio](https://img.shields.io/badge/🌐_Live_Portfolio-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://felipeportfolio.forgedevapps.com/)
-[![GitHub](https://img.shields.io/badge/GitHub-fp--torres-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/fp-torres)
-[![Location](https://img.shields.io/badge/📍_Rio_de_Janeiro-009c3b?style=for-the-badge&logoColor=white)](https://felipeportfolio.forgedevapps.com/)
-[![Visitors](https://komarev.com/ghpvc/?username=fp-torres&color=a855f7&style=for-the-badge&label=VISITORS)](https://github.com/fp-torres)
+## WakaTime
 
-</div>
+O portfólio abre por padrão as estatísticas dos últimos 30 dias, o que representa melhor a atividade recente do que o histórico total. O endpoint aceita somente:
 
----
+- `last_7_days`
+- `last_30_days`
+- `all_time`
 
-## 🧬 O Projeto
+O bridge PHP mantém um cache de 15 minutos no diretório temporário do servidor. Se o WakaTime responder com processamento pendente, limite de requisições ou indisponibilidade, o último resultado válido continua visível e é identificado como cache. O navegador também guarda a última leitura válida; números fictícios não são usados.
 
-> *Um portfólio não é só uma vitrine — é uma declaração de intenções.*
+## Executando localmente
 
-Este projeto evoluiu de um site estático para uma **aplicação full-stack híbrida com infraestrutura de API própria**, totalmente bilíngue (🇧🇷 PT / 🇺🇸 EN), projetada para **máxima resiliência, performance e independência de serviços de terceiros**.
+Requisitos:
 
-<div align="center">
+- Node.js 22+
+- npm
+- PHP 7.4+ com extensão cURL
 
-<img src="https://felipeportfolio.forgedevapps.com/preview.gif" width="800" alt="Portfolio Preview" style="border-radius: 12px"/>
+Instale as dependências:
 
-</div>
+```bash
+npm ci
+```
 
-<br/>
+Crie a configuração local sem versionar credenciais:
 
-<div align="center">
+```bash
+cp public/config.example.php public/config.php
+```
 
-[![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![PHP](https://img.shields.io/badge/PHP-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
-[![Framer Motion](https://img.shields.io/badge/Framer_Motion-EF0074?style=flat-square&logo=framer&logoColor=white)](https://www.framer.com/motion/)
-[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)](https://github.com/features/actions)
-[![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)](https://www.linux.org/)
+Preencha `public/config.php` ou exporte estas variáveis:
 
-</div>
+```text
+SPOTIFY_CLIENT_ID
+SPOTIFY_CLIENT_SECRET
+SPOTIFY_REFRESH_TOKEN
+WAKATIME_TOKEN
+```
 
----
+Inicie o PHP em um terminal:
 
-## ⚡ Features em Destaque
+```bash
+npm run dev:api
+```
 
-<table align="center">
-<tr>
-<td width="50%" valign="top">
+Inicie o Vite em outro terminal:
 
-### 🎧 Spotify Widget — Sistema Híbrido
-
-Widget de música em tempo real com **API bridge self-hosted**.
-
-- 🔐 **PHP proxy seguro** com OAuth2 do Spotify  
-- 🔄 **Fallback automático** para Discord Lanyard API  
-- 🟢 **Uptime 24/7** — independente de serviços externos  
-- 🎵 Detecção de música em tempo real  
-
-</td>
-<td width="50%" valign="top">
-
-### 🛰️ NASA Easter Egg (APOD)
-
-Feature oculta acessível por uma **interação de sinal de rádio** no footer.
-
-- 🔭 Busca a **Astronomy Picture of the Day**  
-- 🌌 Modal holográfico animado  
-- 💫 Loading animations + error handling  
-- 🥚 É um easter egg — vai lá achar!  
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-### 📊 WakaTime Analytics
-
-Estatísticas reais de código direto da **WakaTime API**.
-
-- ⏱️ Atividade de codificação  
-- 🧑‍💻 Uso por linguagem  
-- 📈 Métricas genuínas de desenvolvedor  
-
-</td>
-<td width="50%" valign="top">
-
-### 📱 Mobile-First Architecture
-
-UI completamente refatorada para **experiência mobile perfeita**.
-
-- 👆 Interações otimizadas para touch  
-- 🎬 Animações suaves com **Framer Motion**  
-- ⚡ Renderização condicional para performance  
-
-</td>
-</tr>
-</table>
-
----
-
-## 🕹️ Arcade Zone
-
-> Uma área de entretenimento interativa 100% em React. Porque portfólios chatos são para os outros.
-
-<div align="center">
-
-| Jogo | Descrição | Plataforma |
-|:----:|-----------|:----------:|
-| 🃏 **Tech Memory** | Jogo da memória com ícones do tech stack | 🖥️ 📱 |
-| 🐍 **Dev Snake** | Snake clássico com **D-Pad mobile** | 🖥️ 📱 |
-| 🎵 **Cyber Sequence** | Jogo de memória auditiva com **Web Audio API** | 🖥️ 📱 |
-| 🧠 **Logic Quiz** | Desafios de lógica de programação | 🖥️ 📱 |
-
-</div>
-
-> 🏆 High scores salvos localmente — vai lá bater o recorde.
-
----
-
-## 🧱 Arquitetura
-┌─────────────────────────────────────────────────────────────────┐
-│ FELIPE PORTFOLIO │
-│ │
-│ ┌──────────────┐ ┌──────────────────────────────────┐ │
-│ │ FRONTEND │ │ BACKEND PROXY │ │
-│ │ │ │ │ │
-│ │ React + Vite│◄──────►│ PHP (OAuth2 Bridge) │ │
-│ │ Tailwind CSS│ │ │ │
-│ │ Framer Motion └──────────┬───────────────────────┘ │
-│ └──────────────┘ │ │
-│ ┌──────┼──────┐ │
-│ ▼ ▼ ▼ │
-│ Spotify NASA WakaTime │
-│ API APOD API │
-│ │ │
-│ Lanyard API (fallback) │
-└─────────────────────────────────────────────────────────────────┘
-
-text
-
-<div align="center">
-
-| Camada | Tecnologia |
-|--------|-----------|
-| 🖼️ Frontend | React + Vite |
-| 🎨 Styling | Tailwind CSS |
-| 🎬 Animações | Framer Motion |
-| 🔌 Backend Proxy | PHP |
-| 🌐 APIs | Spotify · Lanyard · WakaTime · NASA |
-| 🖥️ Hosting | Linux Server (Hostinger) |
-| 🚀 CI/CD | GitHub Actions |
-| 🔧 Versionamento | Git |
-
-</div>
-
----
-
-## ⚙️ Pipeline de CI/CD
-
-```yaml
-# .github/workflows/deploy.yml (simplificado)
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    steps:
-      - ✅  Checkout do repositório
-      - 📦  npm install
-      - 🏗️  vite build (produção)
-      - 🚀  Deploy via FTP/SSH → Hostinger
-      - 🔒  Arquivos sensíveis ignorados (.gitignore)
-config.php com credenciais nunca sobe pro repositório. Nunca mesmo.
-
-🚀 Rodando Localmente
-1️⃣ Clone o repositório
-bash
-git clone https://github.com/fp-torres/felipeportfolio2.0.git
-cd felipeportfolio2.0
-npm install
-2️⃣ Configure a Spotify API
-Crie o arquivo public/config.php:
-
-php
-<?php
-define('CLIENT_ID',     'SEU_CLIENT_ID');
-define('CLIENT_SECRET', 'SEU_CLIENT_SECRET');
-define('REFRESH_TOKEN', 'SEU_REFRESH_TOKEN');
-Suba o servidor PHP:
-
-bash
-php -S localhost:8000 -t public
-3️⃣ Inicie o frontend
-bash
+```bash
 npm run dev
-# Acesse: http://localhost:5173
-O app React se conecta automaticamente ao PHP bridge. ✅
+```
 
-📂 Estrutura do Projeto
-text
-felipeportfolio2.0/
-│
-├── 📁 public/
-│   ├── config.php          # 🔒 Credenciais (não commitado)
-│   └── spotify.php         # 🎧 OAuth2 Bridge
-│
-├── 📁 src/
-│   ├── 📁 components/
-│   │   ├── SpotifyWidget.jsx
-│   │   └── 📁 sections/
-│   │       ├── Experience.jsx
-│   │       └── TechNews.jsx
-│   │
-│   └── 📁 context/
-│       └── LanguageContext.jsx   # 🌐 PT / EN
-│
-├── 📁 .github/
-│   └── 📁 workflows/
-│       └── deploy.yml           # 🚀 CI/CD Pipeline
-│
-└── vite.config.js
-📊 GitHub Stats
-<div align="center"><img height="180em" src="https://github-readme-stats.vercel.app/api?username=fp-torres&show_icons=true&theme=tokyonight&include_all_commits=true&count_private=true&hide_border=true"/> <img height="180em" src="https://github-readme-stats.vercel.app/api/top-langs/?username=fp-torres&layout=compact&langs_count=8&theme=tokyonight&hide_border=true"/></div><div align="center"><img src="https://github-readme-streak-stats.herokuapp.com/?user=fp-torres&theme=tokyonight&hide_border=true" /></div>
-🛠️ Tech Stack Completa
-<div align="center"><img src="https://skillicons.dev/icons?i=react,vite,tailwind,php,js,html,css,git,github,linux&perline=5" /></div>
-<div align="center">
-👨‍💻 Autor
-Felipe Torres
-Trainee Developer · Audiovisual Editor
-📍 Rio de Janeiro, Brasil 🇧🇷
+O Vite encaminha `/spotify.php` e `/wakatime.php` para `127.0.0.1:8000`.
 
+## Validação
 
-https://img.shields.io/badge/%F0%9F%8C%90_felipeportfolio.forgedevapps.com-000?style=for-the-badge
-https://img.shields.io/badge/GitHub-fp--torres-181717?style=for-the-badge&logo=github
+```bash
+npm run lint
+npm run build
+npm run preview
+```
 
+Também é possível validar os bridges:
 
-"Feito com ☕, 🎧 e muita dedicação"
+```bash
+php -l public/wakatime.php
+php -l public/spotify.php
+```
 
-⭐ Se você gostou do projeto, deixe uma estrela no repositório!
+## Deploy
 
-</div> ```
+Um push na branch `main` executa:
+
+1. `npm ci`
+2. `npm run lint`
+3. `npm run build`
+4. criação segura de `dist/config.php` a partir dos secrets
+5. sincronização de `dist/` com a Hostinger
+
+Secrets exigidos no repositório:
+
+```text
+FTP_SERVER
+FTP_USERNAME
+FTP_PASSWORD
+SPOTIFY_CLIENT_ID
+SPOTIFY_CLIENT_SECRET
+SPOTIFY_REFRESH_TOKEN
+WAKATIME_TOKEN
+```
+
+`public/config.php` está no `.gitignore` e não deve ser incluído em commits ou arquivos compartilhados. Se uma credencial for exposta, revogue-a e gere outra.
+
+## Estrutura
+
+```text
+public/
+  config.example.php
+  spotify.php
+  wakatime.php
+src/
+  components/
+    games/
+    layout/
+    sections/
+  context/
+  data/
+```
+
+## Arcade
+
+- Tech Memory
+- Dev Snake
+- Cyber Sequence
+- Matrix Recall
+- Decryptor
+- Logic Quiz
+
+Os recordes ficam somente no `localStorage` do visitante.

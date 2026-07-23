@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useLanguage } from '../context/LanguageContext';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
+import { useLanguage } from '../context/useLanguage';
 
 export default function NasaTimeMachine({ isOpen, onClose }) {
   const { t } = useLanguage();
@@ -23,7 +23,7 @@ export default function NasaTimeMachine({ isOpen, onClose }) {
   const monthRef = useRef(null);
   const yearRef = useRef(null);
 
-  const NASA_KEY = "cAush8xjdh5wW0Vos2wTwCMoGFZdUbRbVocSenOu";
+  const NASA_KEY = 'DEMO_KEY';
 
   // Função para traduzir textos usando o Google
   const translateText = async (text) => {
@@ -145,13 +145,13 @@ export default function NasaTimeMachine({ isOpen, onClose }) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-bg/95 backdrop-blur-xl"
         >
-          <motion.div 
+          <Motion.div 
             initial={{ scale: 0.95, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             className="relative w-full max-w-3xl bg-surface border border-primary/30 rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(var(--primary-rgb),0.15)] flex flex-col max-h-[90vh]"
@@ -248,7 +248,7 @@ export default function NasaTimeMachine({ isOpen, onClose }) {
                    <p className="font-mono text-sm text-center max-w-md">{errorMsg}</p>
                 </div>
               ) : data ? (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <Motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   
                   {/* CAIXA EXPLICATIVA PARA LEIGOS */}
                   <div className="mb-6 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-start gap-3">
@@ -301,7 +301,7 @@ export default function NasaTimeMachine({ isOpen, onClose }) {
                     </p>
                   </div>
 
-                </motion.div>
+                </Motion.div>
               ) : (
                 <div className="h-48 flex flex-col items-center justify-center text-gray-600 gap-4 opacity-50">
                    <Icon icon="solar:stars-line-duotone" className="text-6xl" />
@@ -311,8 +311,8 @@ export default function NasaTimeMachine({ isOpen, onClose }) {
                 </div>
               )}
             </div>
-          </motion.div>
-        </motion.div>
+          </Motion.div>
+        </Motion.div>
       )}
     </AnimatePresence>
   );

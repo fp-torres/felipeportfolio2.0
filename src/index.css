@@ -4,15 +4,40 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+  --primary-rgb: 255, 209, 0;
+}
+
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 6rem;
 }
 
 body {
   @apply bg-bg text-text font-sans antialiased overflow-x-hidden;
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  text-rendering: optimizeLegibility;
 }
 
-/* Customização da barra de rolagem (opcional, para ficar estilo "dark tech") */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid rgb(var(--primary-rgb));
+  outline-offset: 3px;
+}
+
+img {
+  max-width: 100%;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -21,6 +46,18 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   @apply bg-surface rounded-full border border-gray-700;
+}
+
+.spotify-widget {
+  bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
 }
 
 @layer utilities {
@@ -36,5 +73,20 @@ body {
   }
   .rotate-y-180 {
     transform: rotateY(180deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

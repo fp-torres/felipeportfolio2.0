@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/useLanguage';
 import { Icon } from '@iconify/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 
 const TIME_PER_QUESTION = 20;
+
+function getSavedZipHighScore() {
+  try {
+    return Number.parseInt(localStorage.getItem('zipHighScore') || '0', 10) || 0;
+  } catch {
+    return 0;
+  }
+}
 
 export default function ZipGame({ onBack }) {
   const { t } = useLanguage();
@@ -17,24 +25,15 @@ export default function ZipGame({ onBack }) {
   const [lives,             setLives]              = useState(3);
   const [status,            setStatus]             = useState('playing');
   const [feedback,          setFeedback]           = useState(null);
-  const [highScore,         setHighScore]          = useState(0);
+  const [highScore,         setHighScore]          = useState(getSavedZipHighScore);
   const [hintVisible,       setHintVisible]        = useState(false);
   const [timeLeft,          setTimeLeft]           = useState(TIME_PER_QUESTION);
 
   const inputRef     = useRef(null);
   const timerRef     = useRef(null);
+  const feedbackTimerRef = useRef(null);
+  const handleTimeoutRef = useRef(null);
   const isMountedRef = useRef(true);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => { isMountedRef.current = false; clearInterval(timerRef.current); };
-  }, []);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('zipHighScore');
-    if (saved) setHighScore(parseInt(saved));
-    focusInput();
-  }, []);
 
   const focusInput = useCallback(() => {
     requestAnimationFrame(() => {
@@ -52,7 +51,7 @@ export default function ZipGame({ onBack }) {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          handleTimeout();
+          handleTimeoutRef.current?.();
           return 0;
         }
         return prev - 1;
@@ -60,27 +59,51 @@ export default function ZipGame({ onBack }) {
     }, 1000);
   }, []);
 
-  useEffect(() => {
-    if (status === 'playing') startTimer();
-    else clearInterval(timerRef.current);
-  }, [currentLevelIndex, status]);
-
-  const handleTimeout = () => {
+  const handleTimeout = useCallback(() => {
     if (!isMountedRef.current) return;
+
+    const nextLives = lives - 1;
     setFeedback('wrong');
-    setLives(prev => {
-      const next = prev - 1;
-      setTimeout(() => {
-        if (!isMountedRef.current) return;
-        setFeedback(null);
-        setUserInput('');
-        setHintVisible(false);
-        if (next <= 0) setStatus('gameover');
-        else { startTimer(); focusInput(); }
-      }, 1000);
-      return next;
-    });
-  };
+    setLives(nextLives);
+    window.clearTimeout(feedbackTimerRef.current);
+    feedbackTimerRef.current = window.setTimeout(() => {
+      if (!isMountedRef.current) return;
+      setFeedback(null);
+      setUserInput('');
+      setHintVisible(false);
+      if (nextLives <= 0) {
+        setStatus('gameover');
+      } else {
+        startTimer();
+        focusInput();
+      }
+    }, 1000);
+  }, [focusInput, lives, startTimer]);
+
+  useEffect(() => {
+    handleTimeoutRef.current = handleTimeout;
+  }, [handleTimeout]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    focusInput();
+
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(timerRef.current);
+      window.clearTimeout(feedbackTimerRef.current);
+    };
+  }, [focusInput]);
+
+  useEffect(() => {
+    if (status !== 'playing') {
+      clearInterval(timerRef.current);
+      return undefined;
+    }
+
+    const startDelay = window.setTimeout(startTimer, 0);
+    return () => window.clearTimeout(startDelay);
+  }, [currentLevelIndex, startTimer, status]);
 
   const currentLevel = levels[currentLevelIndex];
 
@@ -106,7 +129,8 @@ export default function ZipGame({ onBack }) {
         localStorage.setItem('zipHighScore', newScore.toString());
       }
 
-      setTimeout(() => {
+      window.clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = window.setTimeout(() => {
         if (!isMountedRef.current) return;
         setFeedback(null);
         setUserInput('');
@@ -122,7 +146,8 @@ export default function ZipGame({ onBack }) {
       const newLives = lives - 1;
       setLives(newLives);
 
-      setTimeout(() => {
+      window.clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = window.setTimeout(() => {
         if (!isMountedRef.current) return;
         setFeedback(null);
         setUserInput('');
@@ -138,6 +163,7 @@ export default function ZipGame({ onBack }) {
 
   const restartGame = () => {
     clearInterval(timerRef.current);
+    window.clearTimeout(feedbackTimerRef.current);
     setCurrentLevelIndex(0);
     setScore(0);
     setLives(3);
@@ -203,7 +229,7 @@ export default function ZipGame({ onBack }) {
 
         {status === 'playing' && currentLevel && (
           <>
-            <motion.div
+            <Motion.div
               key={currentLevel.id}
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -219,7 +245,7 @@ export default function ZipGame({ onBack }) {
 
               {/* Timer bar */}
               <div className="w-full bg-gray-800 rounded-full h-1.5 mb-1 overflow-hidden max-w-xs mx-auto">
-                <motion.div
+                <Motion.div
                   className={`h-1.5 rounded-full transition-colors ${timerBar}`}
                   animate={{ width: `${timerPct}%` }}
                   transition={{ duration: 0.9, ease: 'linear' }}
@@ -240,17 +266,17 @@ export default function ZipGame({ onBack }) {
 
               <AnimatePresence>
                 {hintVisible && (
-                  <motion.p
+                  <Motion.p
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     className="text-xs text-yellow-500 overflow-hidden"
                   >
                     {txt?.hint ?? 'Hint:'} {currentLevel.hint}
-                  </motion.p>
+                  </Motion.p>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </Motion.div>
 
             {/* Input */}
             <div className="relative max-w-xs w-full mx-auto">
@@ -281,7 +307,7 @@ export default function ZipGame({ onBack }) {
             <div className="h-8 flex items-center justify-center mt-3">
               <AnimatePresence mode="wait">
                 {feedback === 'correct' && (
-                  <motion.div
+                  <Motion.div
                     key="ok"
                     initial={{ y: 6, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -295,10 +321,10 @@ export default function ZipGame({ onBack }) {
                         +{Math.ceil((timeLeft / TIME_PER_QUESTION) * 50)} {txt?.bonus ?? 'bonus'}
                       </span>
                     )}
-                  </motion.div>
+                  </Motion.div>
                 )}
                 {feedback === 'wrong' && (
-                  <motion.div
+                  <Motion.div
                     key="err"
                     initial={{ y: 6, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -306,7 +332,7 @@ export default function ZipGame({ onBack }) {
                     className="text-red-400 font-bold flex items-center gap-2 text-sm"
                   >
                     <Icon icon="solar:close-circle-bold" /> {txt?.wrong ?? 'WRONG!'}
-                  </motion.div>
+                  </Motion.div>
                 )}
               </AnimatePresence>
             </div>
@@ -315,7 +341,7 @@ export default function ZipGame({ onBack }) {
 
         {/* ── Game Over ── */}
         {status === 'gameover' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center">
+          <Motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center">
             <Icon icon="solar:bomb-emoji-bold" className="text-red-500 text-6xl mx-auto mb-4" />
             <h3 className="text-2xl font-bold text-white mb-2">{common?.gameOver ?? 'Game Over'}</h3>
             <div className="text-xl font-mono text-green-400 mb-8">
@@ -327,12 +353,12 @@ export default function ZipGame({ onBack }) {
             >
               {common?.restart ?? 'Restart'}
             </button>
-          </motion.div>
+          </Motion.div>
         )}
 
         {/* ── Won ── */}
         {status === 'won' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center">
+          <Motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center">
             <Icon
               icon="solar:cup-star-bold"
               className="text-yellow-400 text-6xl mx-auto mb-4 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]"
@@ -347,7 +373,7 @@ export default function ZipGame({ onBack }) {
             >
               {common?.playAgain ?? 'Play Again'}
             </button>
-          </motion.div>
+          </Motion.div>
         )}
       </div>
 

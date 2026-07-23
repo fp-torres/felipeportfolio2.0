@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
-import { useLanguage } from '../context/LanguageContext';
+import { useLanguage } from '../context/useLanguage';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -86,19 +86,29 @@ export default function TechNews() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [news, setNews] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [fetched, setFetched] = useState(false);
   const panelRef = useRef(null);
 
   // Fetch only when first opened
   useEffect(() => {
     if (!isOpen || fetched) return;
-    setLoading(true);
-    fetch('https://dev.to/api/articles?tag=programming&top=1&per_page=9')
-      .then(res => res.json())
+    const controller = new AbortController();
+
+    fetch('https://dev.to/api/articles?tag=programming&top=1&per_page=9', {
+      signal: controller.signal,
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`DEV.to HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => { setNews(data); setFetched(true); })
-      .catch(err => console.error('TechNews fetch error:', err))
+      .catch(err => {
+        if (err.name !== 'AbortError') console.error('TechNews fetch error:', err);
+      })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [isOpen, fetched]);
 
   // Close on outside click
@@ -127,6 +137,10 @@ export default function TechNews() {
     : 'Top reads from the dev community';
   const loadingText = isPt ? 'Sintonizando o sinal...' : 'Tuning the signal...';
   const emptyText = isPt ? 'Sem sinal no momento.' : 'No signal right now.';
+  const togglePanel = () => {
+    if (!isOpen && !fetched) setLoading(true);
+    setIsOpen((value) => !value);
+  };
 
   return (
     <>
@@ -156,7 +170,7 @@ export default function TechNews() {
 
       {/* Trigger pill */}
       <button
-        onClick={() => setIsOpen(v => !v)}
+        onClick={togglePanel}
         aria-label={label}
         className={`
           relative flex items-center justify-center gap-2

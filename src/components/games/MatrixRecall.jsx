@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../../context/useLanguage';
 import { Icon } from '@iconify/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 
 const BASE_LEVELS = [
   { id: 1, size: 3, tiles: 3 },
@@ -21,6 +21,34 @@ const getLevel = (idx) => {
   return { id: idx + 1, size, tiles };
 };
 
+const createRound = (level) => {
+  const total = level.size * level.size;
+  const pattern = new Set();
+
+  while (pattern.size < level.tiles) {
+    pattern.add(Math.floor(Math.random() * total));
+  }
+
+  const availableGoldenTiles = Array.from(
+    { length: total },
+    (_, index) => index,
+  ).filter((index) => !pattern.has(index));
+
+  const goldenTile = availableGoldenTiles.length > 0
+    ? availableGoldenTiles[Math.floor(Math.random() * availableGoldenTiles.length)]
+    : null;
+
+  return { pattern: [...pattern], goldenTile };
+};
+
+function getSavedMatrixRecord() {
+  try {
+    return Number.parseInt(localStorage.getItem('matrixRecallRecord') || '1', 10) || 1;
+  } catch {
+    return 1;
+  }
+}
+
 export default function MatrixRecall({ onBack }) {
   const { t } = useLanguage();
   const common = t?.minigames?.common;
@@ -34,47 +62,43 @@ export default function MatrixRecall({ onBack }) {
   const [status,      setStatus]      = useState('idle'); // idle | preview | countdown | playing | won | error | lost
   const [countdown,   setCountdown]   = useState(3);
   const [lives,       setLives]       = useState(3);
-  const [highScore,   setHighScore]   = useState(1);
+  const [highScore,   setHighScore]   = useState(getSavedMatrixRecord);
+  const transitionTimerRef = useRef(null);
 
   const currentLevel = getLevel(levelIndex);
   const isInfinite   = levelIndex >= BASE_LEVELS.length;
 
   useEffect(() => {
-    const saved = localStorage.getItem('matrixRecallRecord');
-    if (saved) setHighScore(parseInt(saved));
-    // Do NOT auto-start — wait for the player to press Start
+    return () => window.clearTimeout(transitionTimerRef.current);
   }, []);
 
   useEffect(() => {
     if (status !== 'countdown') return;
-    if (countdown <= 0) { setStatus('playing'); return; }
-    const id = setTimeout(() => setCountdown(c => c - 1), 700);
+    const id = setTimeout(() => {
+      if (countdown <= 1) {
+        setCountdown(0);
+        setStatus('playing');
+      } else {
+        setCountdown(countdown - 1);
+      }
+    }, 700);
     return () => clearTimeout(id);
   }, [status, countdown]);
 
   const startLevel = (idx) => {
     const lvl   = getLevel(idx);
-    const total = lvl.size * lvl.size;
+    const round = createRound(lvl);
 
-    const patSet = new Set();
-    while (patSet.size < lvl.tiles) patSet.add(Math.floor(Math.random() * total));
-    const patArr = [...patSet];
-
-    const nonPat = [];
-    for (let i = 0; i < total; i++) { if (!patSet.has(i)) nonPat.push(i); }
-    const golden = nonPat.length > 0
-      ? nonPat[Math.floor(Math.random() * nonPat.length)]
-      : null;
-
-    setPattern(patArr);
-    setGoldenTile(golden);
+    window.clearTimeout(transitionTimerRef.current);
+    setPattern(round.pattern);
+    setGoldenTile(round.goldenTile);
     setGoldenUsed(false);
     setSelected([]);
     setLevelIndex(idx);
 
     const previewMs = 1000 + lvl.tiles * 200;
     setStatus('preview');
-    setTimeout(() => {
+    transitionTimerRef.current = window.setTimeout(() => {
       setStatus('countdown');
       setCountdown(3);
     }, previewMs);
@@ -102,13 +126,13 @@ export default function MatrixRecall({ onBack }) {
           setHighScore(newRecord);
           localStorage.setItem('matrixRecallRecord', newRecord.toString());
         }
-        setTimeout(() => startLevel(levelIndex + 1), 950);
+        transitionTimerRef.current = window.setTimeout(() => startLevel(levelIndex + 1), 950);
       }
     } else {
       setStatus('error');
       const newLives = lives - 1;
       setLives(newLives);
-      setTimeout(() => {
+      transitionTimerRef.current = window.setTimeout(() => {
         if (newLives <= 0) setStatus('lost');
         else startLevel(levelIndex);
       }, 950);
@@ -163,7 +187,7 @@ export default function MatrixRecall({ onBack }) {
     }
 
     return (
-      <motion.button
+      <Motion.button
         key={index}
         animate={anim}
         transition={{ duration: 0.22 }}
@@ -172,7 +196,7 @@ export default function MatrixRecall({ onBack }) {
         disabled={status !== 'playing'}
       >
         {icon}
-      </motion.button>
+      </Motion.button>
     );
   };
 
@@ -191,7 +215,7 @@ export default function MatrixRecall({ onBack }) {
         <div className="flex flex-col items-end gap-1">
           <div className="flex gap-1">
             {[...Array(3)].map((_, i) => (
-              <motion.div
+              <Motion.div
                 key={i}
                 animate={i === lives - 1 && lives > 0 ? { scale: [1, 1.4, 1] } : {}}
                 transition={{ duration: 0.3 }}
@@ -200,7 +224,7 @@ export default function MatrixRecall({ onBack }) {
                   icon="solar:heart-bold"
                   className={`transition-colors duration-300 ${i < lives ? 'text-red-500' : 'text-gray-800'}`}
                 />
-              </motion.div>
+              </Motion.div>
             ))}
           </div>
           <div className="text-xs text-gray-500 flex items-center gap-1 font-mono">
@@ -272,7 +296,7 @@ export default function MatrixRecall({ onBack }) {
             {/* Countdown overlay */}
             <AnimatePresence mode="wait">
               {status === 'countdown' && countdown > 0 && (
-                <motion.div
+                <Motion.div
                   key={countdown}
                   initial={{ scale: 2.2, opacity: 0 }}
                   animate={{ scale: 1,   opacity: 1 }}
@@ -283,7 +307,7 @@ export default function MatrixRecall({ onBack }) {
                   <span className="text-8xl font-black text-primary drop-shadow-[0_0_30px_rgba(250,204,21,0.7)]">
                     {countdown}
                   </span>
-                </motion.div>
+                </Motion.div>
               )}
             </AnimatePresence>
 

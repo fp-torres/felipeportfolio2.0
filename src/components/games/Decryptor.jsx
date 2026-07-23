@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/useLanguage';
 import { Icon } from '@iconify/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 
 const ALL_SYMBOLS = [
   { id: 'A', icon: 'solar:code-circle-bold',        color: 'text-green-400'   },
@@ -90,7 +90,6 @@ export default function Decryptor({ onBack }) {
   const [gameStatus,   setGameStatus]   = useState('playing');
   const [highScore,    setHighScore]    = useState(1);
   const [hintUsed,     setHintUsed]     = useState(false);
-  const [hintReveal,   setHintReveal]   = useState(null);
 
   const scrollRef  = useRef(null);
   const historyRef = useRef(null);
@@ -117,7 +116,6 @@ export default function Decryptor({ onBack }) {
     setGameStatus('playing');
     setLevel(lvl);
     setHintUsed(false);
-    setHintReveal(null);
   };
 
   const handleSelectSymbol = (symbol) => {
@@ -143,7 +141,6 @@ export default function Decryptor({ onBack }) {
       if (!alreadyExact) { revealIdx = i; break; }
     }
     const revealed = { index: revealIdx, symbol: secretCode[revealIdx] };
-    setHintReveal(revealed);
     setGuesses(prev => [
       ...prev,
       { isHint: true, hintReveal: revealed, guess: [], exact: 0, partial: 0 },
@@ -311,13 +308,13 @@ export default function Decryptor({ onBack }) {
       {/* ── End-game overlay ── */}
       <AnimatePresence>
         {gameStatus !== 'playing' && (
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           >
-            <motion.div
+            <Motion.div
               initial={{ opacity: 0, scale: 0.92, y: 16 }}
               animate={{ opacity: 1, scale: 1,    y: 0  }}
               exit={{ opacity: 0, scale: 0.92, y: 16 }}
@@ -394,8 +391,8 @@ export default function Decryptor({ onBack }) {
                   </div>
                 </>
               )}
-            </motion.div>
-          </motion.div>
+            </Motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
 

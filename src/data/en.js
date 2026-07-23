@@ -2,14 +2,14 @@
 import profileImg from '../assets/imgs/img2.jpg';
 
 // Imagens de Projetos
-import torresBurgerImg from '../assets/imgs/web-home-dark.png'; // <-- IMAGEM DO NOVO PROJETO AQUI
-import forgeImg from '../assets/imgs/forgedevapps.png'; 
-import costsImg from '../assets/imgs/costs.jpeg';
-import steakImg from '../assets/imgs/img4.png'; 
+import torresBurgerImg from '../assets/imgs/web-home-dark.webp';
+import forgeImg from '../assets/imgs/forgedevapps.webp';
+import costsImg from '../assets/imgs/costs.webp';
+import steakImg from '../assets/imgs/img4.webp';
 
 // --- PREVIEWS DOS CURRÍCULOS (INGLÊS) ---
-import imgCvModernEn from '../assets/imgs/preview-cv-moderno-en.png';
-import imgCvCorporateEn from '../assets/imgs/preview-cv-corporativo-en.png';
+import imgCvModernEn from '../assets/imgs/preview-cv-moderno-en.webp';
+import imgCvCorporateEn from '../assets/imgs/preview-cv-corporativo-en.webp';
 
 // Currículos PDFs (Versão Inglês)
 import cvCompleteEn from '../assets/curriculo/cv_Felipe_Torres_en.pdf';
@@ -17,19 +17,19 @@ import cvFocusedEn from '../assets/curriculo/Felipe_Torres_cv_en.pdf';
 import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática.pdf';
 
 // Certificados
-import certIotIaPucrs from '../assets/imgs/certs/CURSO DE EXTENSÃO EM INTERNET DAS COISAS, IA E A REVOLUÇÃO CONECTADA PUCRS.png'; 
-import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png';
-import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.png';
-import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.png';
-import certCyber from '../assets/imgs/certs/Introduction to Cybersecurity.png';
-import certIot from '../assets/imgs/certs/Introduction to LOT.png';
-import certGit from '../assets/imgs/certs/Introdução ao Git e GitHub.png';
-import certGestao from '../assets/imgs/certs/Introdução à Gestão de Projetos.png';
-import certPoo from '../assets/imgs/certs/Introdução à Programação Orientada a Objetos (POO).png';
-import certModeling from '../assets/imgs/certs/Modelagem de Dados.png';
-import certRiw from '../assets/imgs/certs/Rio Innovation Week 2023.png';
-import certSecurity from '../assets/imgs/certs/Segurança em Tecnologia da Informação.png';
-import certScrum from '../assets/imgs/certs/scrumcertificado.png'; 
+import certIotIaPucrs from '../assets/imgs/certs/CURSO DE EXTENSÃO EM INTERNET DAS COISAS, IA E A REVOLUÇÃO CONECTADA PUCRS.webp';
+import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.webp';
+import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.webp';
+import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.webp';
+import certCyber from '../assets/imgs/certs/Introduction to Cybersecurity.webp';
+import certIot from '../assets/imgs/certs/Introduction to LOT.webp';
+import certGit from '../assets/imgs/certs/Introdução ao Git e GitHub.webp';
+import certGestao from '../assets/imgs/certs/Introdução à Gestão de Projetos.webp';
+import certPoo from '../assets/imgs/certs/Introdução à Programação Orientada a Objetos (POO).webp';
+import certModeling from '../assets/imgs/certs/Modelagem de Dados.webp';
+import certRiw from '../assets/imgs/certs/Rio Innovation Week 2023.webp';
+import certSecurity from '../assets/imgs/certs/Segurança em Tecnologia da Informação.webp';
+import certScrum from '../assets/imgs/certs/scrumcertificado.webp';
 
 export const en = {
   nav: {
@@ -47,7 +47,7 @@ export const en = {
     image: profileImg,
     ctaResume: "Download CV",
     aboutTitle: "About Me",
-    aboutText: "Full Stack Developer focused on React, Node.js, and modern architecture. I transform complex ideas into robust and scalable software.",
+    aboutText: "Full Stack Developer working with React, Python/Flask, and API integrations. I turn complex business rules into reliable, intuitive, and scalable systems.",
     recentActivity: "Recent Activity:",
     location: "Rio de Janeiro, BR",
     available: "Available",
@@ -82,10 +82,10 @@ export const en = {
     items: [
       {
         id: 1,
-        role: "Trainee Developer",
+        role: "Full Stack Jr Developer",
         company: "Crase Sigma",
         period: "2026 - Present",
-        description: "Development of complete web systems. Direct involvement in business rules, API integration, and performance optimization.",
+        description: "Development of internal systems with React, Angular, Laravel, Python, and Flask. Working across automation, API integrations, business rules, failure handling, and performance optimization.",
         current: true,
         icon: "solar:code-square-bold"
       },

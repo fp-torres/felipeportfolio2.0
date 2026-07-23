@@ -1,42 +1,55 @@
-name: Deploy Automático Hostinger
+name: Deploy Hostinger
 
 on:
   push:
     branches:
-      - main # O deploy só acontece quando envia para a main
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portfolio-production
+  cancel-in-progress: true
 
 jobs:
   web-deploy:
-    name: 🎉 Deploy
+    name: Build, validar e publicar
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
-    - name: 🚚 Obter código mais recente
+    - name: Obter código
       uses: actions/checkout@v4
     
-    - name: ⚙️ Instalar Node.js
+    - name: Configurar Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
+        cache: npm
 
-    - name: 📦 Instalar Dependências
-      run: npm install
+    - name: Instalar dependências
+      run: npm ci
 
-    - name: 🛠️ Buildar o Projeto (Vite)
+    - name: Validar código
+      run: npm run lint
+
+    - name: Gerar build
       run: npm run build
 
-    - name: 🔐 Gerar config.php dinamicamente
+    - name: Gerar configuração privada
       run: |
         cat << 'EOF' > ./dist/config.php
         <?php
-        // ATENÇÃO: Arquivo gerado automaticamente pelo GitHub Actions
         $SPOTIFY_CLIENT_ID = "${{ secrets.SPOTIFY_CLIENT_ID }}";
         $SPOTIFY_CLIENT_SECRET = "${{ secrets.SPOTIFY_CLIENT_SECRET }}";
         $SPOTIFY_REFRESH_TOKEN = "${{ secrets.SPOTIFY_REFRESH_TOKEN }}";
         $WAKATIME_TOKEN = "${{ secrets.WAKATIME_TOKEN }}";
         EOF
+        chmod 600 ./dist/config.php
 
-    - name: 🚀 Sincronizar arquivos para a Hostinger
+    - name: Publicar na Hostinger
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
         server: ${{ secrets.FTP_SERVER }}

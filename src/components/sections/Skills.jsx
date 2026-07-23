@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/useLanguage';
 import WakaTime from './WakaTime';
 
 // ─── Skill metadata ───────────────────────────────────────────────────────────

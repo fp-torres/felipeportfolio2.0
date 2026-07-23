@@ -16,29 +16,31 @@ import GameHub from './components/sections/GameHub';
 function App() {
   return (
     <LanguageProvider>
-      <div className="relative min-h-screen text-text overflow-x-hidden font-sans bg-bg">
+      <div className="relative isolate min-h-screen text-text overflow-x-hidden font-sans bg-bg">
+        <a
+          href="#main-content"
+          className="fixed left-4 top-3 z-[200] -translate-y-20 rounded-lg bg-primary px-4 py-2 font-bold text-bg transition-transform focus:translate-y-0"
+        >
+          Pular para o conteúdo
+        </a>
+
         <Background />
-        
         <Navbar />
         
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-20">
-            <Hero />
-            
-            <Experience />
-            <Certificates />
-
-        
-            <Projects />
-            <Skills />
-
-            {/* Hub de Jogos para fechar com interatividade */}
-            <GameHub />
+        <main
+          id="main-content"
+          className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-10 sm:space-y-14 lg:space-y-20"
+        >
+          <Hero />
+          <Experience />
+          <Certificates />
+          <Projects />
+          <Skills />
+          <GameHub />
         </main>
         
         <Footer />
         <ScrollToTop />
-        
-        {/* Widget Flutuante que reage ao seu Spotify via ID: 402555995462565891 */}
         <SpotifyWidget />
       </div>
     </LanguageProvider>

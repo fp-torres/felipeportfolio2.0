@@ -1,39 +1,42 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { content } from '../data/content';
-
-const LanguageContext = createContext();
+import { LanguageContext } from './languageContext';
 
 export const LanguageProvider = ({ children }) => {
-  // Inicialização inteligente: Verifica o localStorage PRIMEIRO, 
-  // depois verifica o navegador, e o fallback final é 'pt' (Português Brasileiro).
   const [lang, setLang] = useState(() => {
-    const savedLang = localStorage.getItem('portfolioLanguage');
-    if (savedLang) return savedLang;
-
-    // Se não tem salvo, verifica o idioma do sistema do usuário
-    const userLang = navigator.language || navigator.userLanguage;
-    if (userLang.toLowerCase().includes('pt')) {
-      return 'pt';
+    try {
+      const savedLang = localStorage.getItem('portfolioLanguage');
+      if (savedLang === 'pt' || savedLang === 'en') return savedLang;
+    } catch {
+      // Storage can be unavailable in private/restricted browsing contexts.
     }
-    
-    // Fallback de segurança para o mercado internacional
-    return 'en'; 
+
+    const userLang = navigator.language || navigator.userLanguage || 'pt-BR';
+    return userLang.toLowerCase().startsWith('pt') ? 'pt' : 'en';
   });
 
-  // Sempre que o idioma mudar, salva no localStorage
   useEffect(() => {
-    localStorage.setItem('portfolioLanguage', lang);
+    document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
+
+    try {
+      localStorage.setItem('portfolioLanguage', lang);
+    } catch {
+      // The language still works for the current session without persistence.
+    }
   }, [lang]);
 
-  const toggleLanguage = () => {
+  const toggleLanguage = useCallback(() => {
     setLang((prev) => (prev === 'pt' ? 'en' : 'pt'));
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ lang, toggleLanguage, t: content[lang] }),
+    [lang, toggleLanguage],
+  );
 
   return (
-    <LanguageContext.Provider value={{ lang, toggleLanguage, t: content[lang] }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );
 };
-
-export const useLanguage = () => useContext(LanguageContext);

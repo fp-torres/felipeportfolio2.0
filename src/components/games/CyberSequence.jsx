@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/useLanguage';
 import { Icon } from '@iconify/react';
 
 const COLORS = [
@@ -8,6 +8,14 @@ const COLORS = [
   { id: 'yellow', color: 'bg-yellow-500', highlight: 'bg-yellow-300 shadow-[0_0_30px_#facc15]', sound: 392.00 },
   { id: 'blue',   color: 'bg-blue-500',   highlight: 'bg-blue-300 shadow-[0_0_30px_#60a5fa]',   sound: 523.25 },
 ];
+
+function getSavedSequenceScore() {
+  try {
+    return Number.parseInt(localStorage.getItem('sequenceHighScore') || '0', 10) || 0;
+  } catch {
+    return 0;
+  }
+}
 
 export default function CyberSequence({ onBack }) {
   const { t } = useLanguage();
@@ -21,12 +29,27 @@ export default function CyberSequence({ onBack }) {
   const [gameOver,    setGameOver]    = useState(false);
   const [score,       setScore]       = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
-  const [highScore,   setHighScore]   = useState(0);
+  const [highScore,   setHighScore]   = useState(getSavedSequenceScore);
   const [lives,       setLives]       = useState(3);
   const [statusMsg,   setStatusMsg]   = useState('');
 
   // ── AudioContext – single instance, warmed-up on first interaction ──────────
   const audioCtxRef = useRef(null);
+  const timeoutsRef = useRef(new Set());
+
+  const clearScheduled = () => {
+    timeoutsRef.current.forEach((id) => window.clearTimeout(id));
+    timeoutsRef.current.clear();
+  };
+
+  const schedule = (callback, delay) => {
+    const id = window.setTimeout(() => {
+      timeoutsRef.current.delete(id);
+      callback();
+    }, delay);
+    timeoutsRef.current.add(id);
+    return id;
+  };
 
   const getAudioCtx = () => {
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -51,9 +74,10 @@ export default function CyberSequence({ onBack }) {
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem('sequenceHighScore');
-    if (saved) setHighScore(parseInt(saved));
-    return () => { audioCtxRef.current?.close(); };
+    return () => {
+      clearScheduled();
+      audioCtxRef.current?.close();
+    };
   }, []);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -83,13 +107,14 @@ export default function CyberSequence({ onBack }) {
   const flashColor = (colorObj, duration = 350) => {
     setActiveColor(colorObj.id);
     playSound(colorObj.sound);
-    setTimeout(() => setActiveColor(null), duration);
+    schedule(() => setActiveColor(null), duration);
   };
 
   const getSpeed = (len) => Math.max(380, 820 - len * 35);
 
   // ── Game logic ───────────────────────────────────────────────────────────────
   const startGame = () => {
+    clearScheduled();
     warmAudio(); // unlock on the user gesture that starts the game
     setSequence([]);
     setUserStep(0);
@@ -98,7 +123,7 @@ export default function CyberSequence({ onBack }) {
     setGameStarted(true);
     setLives(3);
     setStatusMsg('');
-    setTimeout(() => nextRound([]), 500);
+    schedule(() => nextRound([]), 500);
   };
 
   const nextRound = (current) => {
@@ -115,9 +140,9 @@ export default function CyberSequence({ onBack }) {
       if (i >= newSeq.length) { setIsPlaying(false); setActiveColor(null); return; }
       flashColor(newSeq[i]);
       i++;
-      setTimeout(tick, speed);
+      schedule(tick, speed);
     };
-    setTimeout(tick, speed * 0.5);
+    schedule(tick, speed * 0.5);
   };
 
   const replaySequence = (seq) => {
@@ -129,9 +154,9 @@ export default function CyberSequence({ onBack }) {
       if (i >= seq.length) { setIsPlaying(false); setActiveColor(null); return; }
       flashColor(seq[i]);
       i++;
-      setTimeout(tick, speed);
+      schedule(tick, speed);
     };
-    setTimeout(tick, speed * 0.5);
+    schedule(tick, speed * 0.5);
   };
 
   const handleUserClick = (colorObj) => {
@@ -148,7 +173,7 @@ export default function CyberSequence({ onBack }) {
           localStorage.setItem('sequenceHighScore', newScore.toString());
         }
         setStatusMsg('correct');
-        setTimeout(() => nextRound(sequence), 1100);
+        schedule(() => nextRound(sequence), 1100);
       } else {
         setUserStep(next);
       }
@@ -160,7 +185,7 @@ export default function CyberSequence({ onBack }) {
         setGameStarted(false);
       } else {
         setStatusMsg('wrong');
-        setTimeout(() => {
+        schedule(() => {
           setStatusMsg('');
           replaySequence(sequence);
         }, 1000);

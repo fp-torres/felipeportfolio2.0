@@ -1,11 +1,33 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/useLanguage';
 import { Icon } from '@iconify/react';
 
 const GRID_SIZE    = 20;
 const BASE_SPEED   = 150;
 const MIN_SPEED    = 65;
 const GOLDEN_CHANCE = 0.18;
+const OPPOSITES = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' };
+const KEY_DIRECTIONS = {
+  ArrowUp: 'UP',
+  ArrowDown: 'DOWN',
+  ArrowLeft: 'LEFT',
+  ArrowRight: 'RIGHT',
+  w: 'UP',
+  s: 'DOWN',
+  a: 'LEFT',
+  d: 'RIGHT',
+};
+
+const calcSpeed = (score) => Math.max(MIN_SPEED, BASE_SPEED - Math.floor(score / 50) * 10);
+const calcLevel = (score) => Math.floor(score / 50) + 1;
+
+function getSavedHighScore() {
+  try {
+    return Number.parseInt(localStorage.getItem('snakeHighScore') || '0', 10) || 0;
+  } catch {
+    return 0;
+  }
+}
 
 export default function SnakeGame({ onBack }) {
   const { t } = useLanguage();
@@ -16,32 +38,25 @@ export default function SnakeGame({ onBack }) {
   const [food,        setFood]        = useState({ x: 15, y: 15, golden: false });
   const [gameOver,    setGameOver]    = useState(false);
   const [score,       setScore]       = useState(0);
-  const [highScore,   setHighScore]   = useState(0);
+  const [highScore,   setHighScore]   = useState(getSavedHighScore);
   const [isPaused,    setIsPaused]    = useState(false);
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [started,     setStarted]     = useState(false);
   const [level,       setLevel]       = useState(1);
-  const [isMobile,    setIsMobile]    = useState(false);
+  const [isMobile] = useState(
+    () => window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0,
+  );
 
   const dirRef        = useRef('RIGHT');
   const nextDirRef    = useRef('RIGHT');
   const snakeRef      = useRef([{ x: 10, y: 10 }]);
   const foodRef       = useRef({ x: 15, y: 15, golden: false });
   const scoreRef      = useRef(0);
-  const highScoreRef  = useRef(0);
+  const highScoreRef  = useRef(highScore);
   const gameOverRef   = useRef(false);
   const isPausedRef   = useRef(false);
   const loopRef       = useRef(null);
-
-  useEffect(() => {
-    setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    const saved = localStorage.getItem('snakeHighScore');
-    if (saved) {
-      const n = parseInt(saved);
-      setHighScore(n);
-      highScoreRef.current = n;
-    }
-  }, []);
+  const tickRef       = useRef(null);
 
   const generateFood = useCallback((currentSnake) => {
     let pos;
@@ -55,8 +70,16 @@ export default function SnakeGame({ onBack }) {
     return pos;
   }, []);
 
-  const calcSpeed = (sc) => Math.max(MIN_SPEED, BASE_SPEED - Math.floor(sc / 50) * 10);
-  const calcLevel = (sc) => Math.floor(sc / 50) + 1;
+  const scheduleNextTick = useCallback((speed) => {
+    window.clearTimeout(loopRef.current);
+    loopRef.current = window.setTimeout(() => tickRef.current?.(), speed);
+  }, []);
+
+  const endGame = useCallback(() => {
+    gameOverRef.current = true;
+    window.clearTimeout(loopRef.current);
+    setGameOver(true);
+  }, []);
 
   const tick = useCallback(() => {
     if (gameOverRef.current || isPausedRef.current) return;
@@ -72,14 +95,24 @@ export default function SnakeGame({ onBack }) {
       case 'RIGHT': head.x += 1; break;
     }
 
-    if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) { endGame(); return; }
-    if (prev.some(s => s.x === head.x && s.y === head.y))                         { endGame(); return; }
+    if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+      endGame();
+      return;
+    }
 
-    const next     = [head, ...prev];
-    const curFood  = foodRef.current;
+    const currentFood = foodRef.current;
+    const ateFood = head.x === currentFood.x && head.y === currentFood.y;
+    const collisionBody = ateFood ? prev : prev.slice(0, -1);
 
-    if (head.x === curFood.x && head.y === curFood.y) {
-      const pts      = curFood.golden ? 30 : 10;
+    if (collisionBody.some((segment) => segment.x === head.x && segment.y === head.y)) {
+      endGame();
+      return;
+    }
+
+    const next = [head, ...prev];
+
+    if (ateFood) {
+      const pts      = currentFood.golden ? 30 : 10;
       const newScore = scoreRef.current + pts;
       scoreRef.current = newScore;
 
@@ -87,6 +120,7 @@ export default function SnakeGame({ onBack }) {
       foodRef.current  = newFood;
       snakeRef.current = next;
 
+      setSnake([...next]);
       setScore(newScore);
       setFood({ ...newFood });
       setLevel(calcLevel(newScore));
@@ -97,27 +131,21 @@ export default function SnakeGame({ onBack }) {
         setHighScore(newScore);
         setIsNewRecord(true);
       }
-      restartLoop(calcSpeed(newScore));
+      scheduleNextTick(calcSpeed(newScore));
     } else {
       next.pop();
       snakeRef.current = next;
       setSnake([...next]);
+      scheduleNextTick(calcSpeed(scoreRef.current));
     }
-  }, [generateFood]);
+  }, [endGame, generateFood, scheduleNextTick]);
 
-  const restartLoop = useCallback((speed) => {
-    clearInterval(loopRef.current);
-    loopRef.current = setInterval(tick, speed);
+  useEffect(() => {
+    tickRef.current = tick;
   }, [tick]);
 
-  const endGame = () => {
-    gameOverRef.current = true;
-    clearInterval(loopRef.current);
-    setGameOver(true);
-  };
-
   const startGame = useCallback(() => {
-    clearInterval(loopRef.current);
+    window.clearTimeout(loopRef.current);
     const initSnake = [{ x: 10, y: 10 }];
     const initFood  = generateFood(initSnake);
 
@@ -138,39 +166,55 @@ export default function SnakeGame({ onBack }) {
     setIsNewRecord(false);
     setStarted(true);
 
-    loopRef.current = setInterval(tick, BASE_SPEED);
-  }, [generateFood, tick]);
+    scheduleNextTick(BASE_SPEED);
+  }, [generateFood, scheduleNextTick]);
 
-  useEffect(() => () => clearInterval(loopRef.current), []);
+  const togglePause = useCallback(() => {
+    if (gameOverRef.current || !started) return;
+    const nextPaused = !isPausedRef.current;
+    isPausedRef.current = nextPaused;
+    setIsPaused(nextPaused);
+
+    if (nextPaused) {
+      window.clearTimeout(loopRef.current);
+    } else {
+      scheduleNextTick(calcSpeed(scoreRef.current));
+    }
+  }, [scheduleNextTick, started]);
+
+  useEffect(() => () => window.clearTimeout(loopRef.current), []);
 
   useEffect(() => {
-    const OPPOSITES = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' };
-    const MAP = {
-      ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
-      w: 'UP', s: 'DOWN', a: 'LEFT', d: 'RIGHT',
-    };
-    const onKey = (e) => {
-      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-      if (e.key === ' ' || e.key === 'Escape') { togglePause(); return; }
-      const newDir = MAP[e.key];
+    const onKey = (event) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        event.preventDefault();
+      }
+      if (event.key === ' ' || event.key === 'Escape') {
+        event.preventDefault();
+        togglePause();
+        return;
+      }
+
+      const newDir = KEY_DIRECTIONS[event.key] ?? KEY_DIRECTIONS[event.key.toLowerCase()];
       if (!newDir) return;
       if (newDir !== OPPOSITES[dirRef.current]) nextDirRef.current = newDir;
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [togglePause]);
 
-  const togglePause = () => {
-    if (gameOverRef.current || !started) return;
-    const next = !isPausedRef.current;
-    isPausedRef.current = next;
-    setIsPaused(next);
-    if (!next) restartLoop(calcSpeed(scoreRef.current));
-    else clearInterval(loopRef.current);
-  };
+  useEffect(() => {
+    const pauseWhenHidden = () => {
+      if (document.hidden && started && !gameOverRef.current && !isPausedRef.current) {
+        togglePause();
+      }
+    };
+
+    document.addEventListener('visibilitychange', pauseWhenHidden);
+    return () => document.removeEventListener('visibilitychange', pauseWhenHidden);
+  }, [started, togglePause]);
 
   const mobileDir = (dir) => {
-    const OPPOSITES = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' };
     if (dir !== OPPOSITES[dirRef.current]) nextDirRef.current = dir;
   };
 
@@ -221,7 +265,7 @@ export default function SnakeGame({ onBack }) {
       {/* ── Board ── */}
       <div className="relative aspect-square bg-black/40 rounded-xl border border-white/20 overflow-hidden mx-auto w-full max-w-[320px] sm:max-w-[380px] shadow-inner">
         <div className="relative w-full h-full">
-          {snakeRef.current.map((seg, i) => {
+          {snake.map((seg, i) => {
             const isHead = i === 0;
             return (
               <div
@@ -309,7 +353,7 @@ export default function SnakeGame({ onBack }) {
       </div>
 
       {/* ── Mobile D-pad ── */}
-      <div className="mt-5 grid grid-cols-3 gap-2 w-[156px] mx-auto md:hidden">
+      {isMobile && <div className="mt-5 grid w-[156px] grid-cols-3 gap-2 mx-auto">
         <div />
         <button
           onPointerDown={(e) => { e.preventDefault(); mobileDir('UP'); }}
@@ -346,7 +390,7 @@ export default function SnakeGame({ onBack }) {
           <Icon icon="solar:arrow-down-bold" className="text-white text-xl" />
         </button>
         <div />
-      </div>
+      </div>}
 
       {/* ── Legend ── */}
       <p className="text-center text-xs text-gray-600 mt-3 font-mono flex items-center justify-center gap-2 flex-wrap">
@@ -355,8 +399,10 @@ export default function SnakeGame({ onBack }) {
           {txt?.goldenFood ?? 'Golden = 30 pts'}
         </span>
         <span className="text-gray-700">|</span>
-        <span className="hidden md:inline">{txt?.controls ?? 'WASD / Arrows · Space = pause'}</span>
-        <span className="md:hidden">{txt?.controlsMobile ?? 'D-pad to move'}</span>
+        <span>{isMobile
+          ? (txt?.controlsMobile ?? 'D-pad to move')
+          : (txt?.controls ?? 'WASD / Arrows · Space = pause')}
+        </span>
       </p>
     </div>
   );

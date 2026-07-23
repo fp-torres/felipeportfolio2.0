@@ -1,67 +1,155 @@
 <?php
-// public/spotify.php
-header("Access-Control-Allow-Origin: *"); 
-header("Access-Control-Allow-Methods: GET");
-header("Content-Type: application/json");
+declare(strict_types=1);
 
-// Tenta carregar as senhas com segurança
-if (!file_exists('config.php')) {
-    echo json_encode(["isPlaying" => false, "error" => "Arquivo config.php ausente no servidor."]);
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, max-age=0');
+header('X-Content-Type-Options: nosniff');
+
+function send_spotify_json(array $payload, int $status = 200): void
+{
+    http_response_code($status);
+    echo json_encode(
+        $payload,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+    );
     exit;
 }
-require_once 'config.php';
 
-// 1. Pede o Access Token usando as variáveis seguras
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'https://accounts.spotify.com/api/token');
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_POST, 1);
-curl_setopt($ch, CURLOPT_POSTFIELDS, "grant_type=refresh_token&refresh_token=" . $SPOTIFY_REFRESH_TOKEN);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Authorization: Basic ' . base64_encode($SPOTIFY_CLIENT_ID . ':' . $SPOTIFY_CLIENT_SECRET),
-    'Content-Type: application/x-www-form-urlencoded'
+function spotify_token_cache_path(): string
+{
+    return rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+        . DIRECTORY_SEPARATOR
+        . 'felipe-portfolio-spotify-token.json';
+}
+
+function read_spotify_token(): ?string
+{
+    $path = spotify_token_cache_path();
+    if (!is_readable($path)) {
+        return null;
+    }
+
+    $cache = json_decode((string) file_get_contents($path), true);
+    if (
+        !is_array($cache)
+        || empty($cache['accessToken'])
+        || (int) ($cache['expiresAt'] ?? 0) <= time() + 60
+    ) {
+        return null;
+    }
+
+    return (string) $cache['accessToken'];
+}
+
+function write_spotify_token(string $token, int $expiresIn): void
+{
+    $path = spotify_token_cache_path();
+    $encoded = json_encode([
+        'accessToken' => $token,
+        'expiresAt' => time() + max($expiresIn, 300),
+    ]);
+
+    if ($encoded !== false) {
+        @file_put_contents($path, $encoded, LOCK_EX);
+        @chmod($path, 0600);
+    }
+}
+
+function request_spotify_token(
+    string $clientId,
+    string $clientSecret,
+    string $refreshToken
+): ?string {
+    $curl = curl_init('https://accounts.spotify.com/api/token');
+    curl_setopt_array($curl, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 8,
+        CURLOPT_POSTFIELDS => http_build_query([
+            'grant_type' => 'refresh_token',
+            'refresh_token' => $refreshToken,
+        ]),
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/json',
+            'Authorization: Basic ' . base64_encode($clientId . ':' . $clientSecret),
+            'Content-Type: application/x-www-form-urlencoded',
+        ],
+    ]);
+
+    $response = curl_exec($curl);
+    $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+
+    $data = is_string($response) ? json_decode($response, true) : null;
+    if ($status !== 200 || !is_array($data) || empty($data['access_token'])) {
+        return null;
+    }
+
+    $token = (string) $data['access_token'];
+    write_spotify_token($token, (int) ($data['expires_in'] ?? 3600));
+    return $token;
+}
+
+$configPath = __DIR__ . DIRECTORY_SEPARATOR . 'config.php';
+if (!is_readable($configPath)) {
+    send_spotify_json(['isPlaying' => false, 'error' => 'Spotify não configurado.'], 503);
+}
+
+require $configPath;
+
+$clientId = trim((string) ($SPOTIFY_CLIENT_ID ?? ''));
+$clientSecret = trim((string) ($SPOTIFY_CLIENT_SECRET ?? ''));
+$refreshToken = trim((string) ($SPOTIFY_REFRESH_TOKEN ?? ''));
+
+if ($clientId === '' || $clientSecret === '' || $refreshToken === '') {
+    send_spotify_json(['isPlaying' => false, 'error' => 'Spotify não configurado.'], 503);
+}
+
+$accessToken = read_spotify_token()
+    ?? request_spotify_token($clientId, $clientSecret, $refreshToken);
+
+if ($accessToken === null) {
+    send_spotify_json(['isPlaying' => false, 'error' => 'Falha na autenticação do Spotify.'], 503);
+}
+
+$curl = curl_init('https://api.spotify.com/v1/me/player/currently-playing');
+curl_setopt_array($curl, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_CONNECTTIMEOUT => 3,
+    CURLOPT_TIMEOUT => 8,
+    CURLOPT_HTTPHEADER => [
+        'Accept: application/json',
+        'Authorization: Bearer ' . $accessToken,
+    ],
 ]);
 
-$response = curl_exec($ch);
-$token_data = json_decode($response);
+$response = curl_exec($curl);
+$status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+curl_close($curl);
 
-// Proteção caso o token expire ou dê erro
-if (!isset($token_data->access_token)) {
-    echo json_encode(["isPlaying" => false, "error" => "Falha ao gerar access token"]);
-    exit;
+if ($status === 204) {
+    send_spotify_json(['isPlaying' => false]);
 }
 
-$access_token = $token_data->access_token;
-curl_close($ch);
-
-// 2. Busca a música atual
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'https://api.spotify.com/v1/me/player/currently-playing');
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $access_token"]);
-
-$result = curl_exec($ch);
-$status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-
-if ($status == 204 || !$result) {
-    echo json_encode(["isPlaying" => false]);
-    exit;
+$song = is_string($response) ? json_decode($response, true) : null;
+if (
+    $status !== 200
+    || !is_array($song)
+    || empty($song['is_playing'])
+    || empty($song['item'])
+) {
+    send_spotify_json(['isPlaying' => false]);
 }
 
-$song = json_decode($result);
+$item = $song['item'];
+$artists = $item['artists'] ?? [];
+$images = $item['album']['images'] ?? [];
 
-// Verifica se realmente tem uma música tocando
-if (!isset($song->is_playing) || !$song->is_playing || !isset($song->item)) {
-    echo json_encode(["isPlaying" => false]);
-    exit;
-}
-
-// 3. Retorno padronizado para o React
-echo json_encode([
-    "isPlaying" => true,
-    "title" => $song->item->name,
-    "artist" => $song->item->artists[0]->name,
-    "albumImageUrl" => $song->item->album->images[0]->url,
-    "songUrl" => $song->item->external_urls->spotify
+send_spotify_json([
+    'isPlaying' => true,
+    'title' => (string) ($item['name'] ?? ''),
+    'artist' => (string) ($artists[0]['name'] ?? ''),
+    'albumImageUrl' => (string) ($images[0]['url'] ?? ''),
+    'songUrl' => (string) ($item['external_urls']['spotify'] ?? ''),
 ]);

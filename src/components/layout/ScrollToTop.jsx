@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 
 export default function ScrollToTop() {
   const [isVisible, setIsVisible] = useState(false);
@@ -28,16 +28,17 @@ export default function ScrollToTop() {
   return (
     <AnimatePresence>
       {isVisible && (
-        <motion.button
+        <Motion.button
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.5 }}
           onClick={scrollToTop}
           className="fixed bottom-6 right-6 z-40 p-3 bg-primary text-bg rounded-full shadow-lg hover:bg-primary-600 transition-colors border-2 border-bg"
           title="Voltar ao topo"
+          aria-label="Voltar ao topo"
         >
           <Icon icon="solar:alt-arrow-up-bold" width="24" />
-        </motion.button>
+        </Motion.button>
       )}
     </AnimatePresence>
   );

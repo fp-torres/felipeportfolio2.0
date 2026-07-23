@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://felipeportfolio.forgedevapps.com/sitemap.xml

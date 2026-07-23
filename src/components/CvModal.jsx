@@ -1,13 +1,10 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
-import { useLanguage } from '../context/LanguageContext';
+import { useLanguage } from '../context/useLanguage';
 
-export default function CvModal({ isOpen, onClose }) {
-  const { t } = useLanguage();
-
-  if (!isOpen) return null;
-
-  const ModalCard = ({ title, desc, link, image }) => (
+function ModalCard({ title, description, link, image, cta }) {
+  return (
     <a 
       href={link} 
       target="_blank" 
@@ -21,9 +18,10 @@ export default function CvModal({ isOpen, onClose }) {
          
          <img 
             src={image} 
-            alt={`Preview ${title}`} 
+            alt={`Preview ${title}`}
             className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
             loading="lazy"
+            decoding="async"
          />
          
          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 pointer-events-none">
@@ -34,29 +32,53 @@ export default function CvModal({ isOpen, onClose }) {
       </div>
 
       <h4 className="text-white font-bold text-base md:text-lg mb-1 md:mb-2">{title}</h4>
-      <p className="text-gray-400 text-xs md:text-sm leading-relaxed mb-3 md:mb-4 flex-grow">{desc}</p>
+      <p className="text-gray-400 text-xs md:text-sm leading-relaxed mb-3 md:mb-4 flex-grow">{description}</p>
       
       <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mt-auto">
-        {t.hero.ctaResume}
+        {cta}
       </div>
     </a>
   );
+}
+
+export default function CvModal({ isOpen, onClose }) {
+  const { t } = useLanguage();
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isOpen, onClose]);
 
   return (
     <AnimatePresence>
-      <motion.div 
+      {isOpen && (
+      <Motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cv-modal-title"
       >
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           onClick={(e) => e.stopPropagation()}
-          // Aqui está o segredo do mobile: max-h-[90vh] e overflow-y-auto
           className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden bg-[#0a0f1d] border border-white/10 rounded-2xl md:rounded-3xl p-5 md:p-10 shadow-2xl custom-scrollbar"
         >
           {/* Efeito de luz de fundo */}
@@ -64,14 +86,16 @@ export default function CvModal({ isOpen, onClose }) {
 
           {/* Botão Fechar ajustado para não colar muito no topo no mobile */}
           <button 
+            type="button"
             onClick={onClose}
             className="absolute top-3 right-3 md:top-4 md:right-4 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-full transition-colors z-30"
+            aria-label={t.nav.home === 'Início' ? 'Fechar' : 'Close'}
           >
             <Icon icon="solar:close-circle-bold" className="text-xl md:text-2xl" />
           </button>
 
           <div className="text-center mb-6 md:mb-8 relative z-20 mt-2 md:mt-0">
-            <h3 className="text-xl md:text-3xl font-bold text-white mb-2 pr-6 md:pr-0">
+            <h3 id="cv-modal-title" className="text-xl md:text-3xl font-bold text-white mb-2 pr-6 md:pr-0">
               {t.cvModal.title}
             </h3>
             <p className="text-gray-400 text-xs md:text-base max-w-lg mx-auto">
@@ -82,19 +106,22 @@ export default function CvModal({ isOpen, onClose }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative z-20">
             <ModalCard 
               title={t.cvModal.modern.title}
-              desc={t.cvModal.modern.desc}
+              description={t.cvModal.modern.desc}
               link={t.cvModal.modern.link}
               image={t.cvModal.modern.image}
+              cta={t.hero.ctaResume}
             />
             <ModalCard 
               title={t.cvModal.corporate.title}
-              desc={t.cvModal.corporate.desc}
+              description={t.cvModal.corporate.desc}
               link={t.cvModal.corporate.link}
               image={t.cvModal.corporate.image}
+              cta={t.hero.ctaResume}
             />
           </div>
-        </motion.div>
-      </motion.div>
+        </Motion.div>
+      </Motion.div>
+      )}
     </AnimatePresence>
   );
 }

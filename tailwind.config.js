@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        xs: '420px',
+      },
       colors: {
         bg: '#0b0f1a',
         surface: '#0f172a',
@@ -17,7 +20,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       animation: {
         'blob': 'blob 7s infinite',

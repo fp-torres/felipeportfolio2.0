@@ -1,53 +1,70 @@
 import { useState, useEffect } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/useLanguage';
 import { Icon } from '@iconify/react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 
-import CvModal from '../CvModal'; // Importando o Modal
+import CvModal from '../CvModal';
+
+function BentoCard({ children, className = '' }) {
+  return (
+    <Motion.div
+      whileHover={{ y: -5 }}
+      className={`bg-surface/40 backdrop-blur-md border border-white/10 rounded-3xl p-5 sm:p-6 hover:border-primary/30 transition-all duration-300 shadow-xl ${className}`}
+    >
+      {children}
+    </Motion.div>
+  );
+}
 
 export default function Hero() {
   const { t } = useLanguage();
   const [githubData, setGithubData] = useState(null);
   const [activitySquares, setActivitySquares] = useState(Array(7).fill(false));
   
-  // Estado para controlar o modal de currículo
   const [isCvModalOpen, setIsCvModalOpen] = useState(false);
 
   useEffect(() => {
-    fetch('https://api.github.com/users/fp-torres')
-      .then((res) => res.json())
-      .then((data) => setGithubData(data))
-      .catch((err) => console.error("Erro ao buscar perfil GitHub:", err));
+    const controller = new AbortController();
 
-    fetch('https://api.github.com/users/fp-torres/events/public')
-      .then((res) => res.json())
-      .then((events) => {
-        if (!Array.isArray(events)) return;
-        const last7Days = Array.from({ length: 7 }).map((_, i) => {
-          const d = new Date();
-          d.setDate(d.getDate() - (6 - i)); 
-          return d.toISOString().split('T')[0];
-        });
-        const activeDays = new Set(events.map(event => event.created_at.split('T')[0]));
-        const realActivity = last7Days.map(day => activeDays.has(day));
-        setActivitySquares(realActivity);
-      })
-      .catch((err) => console.error("Erro ao buscar eventos GitHub:", err));
+    const fetchGithub = async () => {
+      try {
+        const [profileResponse, eventsResponse] = await Promise.all([
+          fetch('https://api.github.com/users/fp-torres', { signal: controller.signal }),
+          fetch('https://api.github.com/users/fp-torres/events/public', { signal: controller.signal }),
+        ]);
+
+        if (profileResponse.ok) {
+          const profile = await profileResponse.json();
+          setGithubData(profile);
+        }
+
+        if (eventsResponse.ok) {
+          const events = await eventsResponse.json();
+          if (!Array.isArray(events)) return;
+
+          const last7Days = Array.from({ length: 7 }, (_, index) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - index));
+            return date.toISOString().split('T')[0];
+          });
+          const activeDays = new Set(events.map((event) => event.created_at?.split('T')[0]));
+          setActivitySquares(last7Days.map((day) => activeDays.has(day)));
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          // Static fallback values keep the hero usable during API outages.
+        }
+      }
+    };
+
+    fetchGithub();
+    return () => controller.abort();
   }, []);
 
   const stats = githubData || { public_repos: 0, followers: 0, following: 0 };
 
-  const BentoCard = ({ children, className = "" }) => (
-    <motion.div 
-      whileHover={{ y: -5 }}
-      className={`bg-surface/40 backdrop-blur-md border border-white/10 rounded-3xl p-6 hover:border-primary/30 transition-all duration-300 shadow-xl ${className}`}
-    >
-      {children}
-    </motion.div>
-  );
-
   return (
-    <section id="hero" className="pt-32 pb-20 px-4">
+    <section id="hero" className="pt-28 sm:pt-32 pb-12 sm:pb-20 px-1 sm:px-4">
       <div className="max-w-6xl mx-auto">
         
         <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-6">
@@ -61,6 +78,7 @@ export default function Hero() {
                     <img 
                         src={githubData?.avatar_url || t.hero.image} 
                         alt={t.hero.name} 
+                        fetchPriority="high"
                         className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-surface object-cover shadow-2xl relative z-10"
                     />
                     <div className="absolute bottom-2 right-2 z-20">
@@ -90,8 +108,7 @@ export default function Hero() {
                     </span>
                 </div>
 
-                <div className="flex gap-3 justify-center md:justify-start">
-                     {/* BOTAO ATUALIZADO PARA ABRIR O MODAL */}
+                <div className="flex flex-col xs:flex-row gap-3 justify-center md:justify-start">
                      <button 
                         onClick={() => setIsCvModalOpen(true)}
                         className="flex items-center gap-2 bg-primary text-bg font-bold px-5 py-2 rounded-full hover:bg-white transition-colors"
@@ -123,14 +140,14 @@ export default function Hero() {
                         <span className="text-5xl font-bold text-white block">{stats.public_repos}</span>
                         <span className="text-sm text-gray-400 uppercase tracking-wider">{t.hero.githubStats.repos}</span>
                         <div className="w-full h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
-                            <motion.div initial={{ width: 0 }} whileInView={{ width: '70%' }} className="h-full bg-primary" />
+                            <Motion.div initial={{ width: 0 }} whileInView={{ width: '70%' }} className="h-full bg-primary" />
                         </div>
                     </div>
                     <div>
                         <span className="text-5xl font-bold text-white block">{stats.followers}</span>
                         <span className="text-sm text-gray-400 uppercase tracking-wider">{t.hero.githubStats.followers}</span>
                         <div className="w-full h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
-                             <motion.div initial={{ width: 0 }} whileInView={{ width: '40%' }} className="h-full bg-purple-500" />
+                             <Motion.div initial={{ width: 0 }} whileInView={{ width: '40%' }} className="h-full bg-purple-500" />
                         </div>
                     </div>
                 </div>
@@ -171,20 +188,20 @@ export default function Hero() {
              
              <div className="grid grid-cols-2 gap-3 relative z-10">
                 <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 p-2 rounded-lg hover:bg-blue-500/20 transition-colors">
-                    <Icon icon="devicon:react" width="20" />
-                    <span className="text-blue-200 text-xs font-bold">React</span>
+                    <Icon icon="devicon:python" width="20" />
+                    <span className="text-blue-200 text-xs font-bold">Python</span>
                 </div>
                 <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 p-2 rounded-lg hover:bg-yellow-500/20 transition-colors">
-                    <Icon icon="devicon:nodejs" width="20" />
-                    <span className="text-yellow-200 text-xs font-bold">Node.js</span>
+                    <Icon icon="simple-icons:flask" className="text-white" width="20" />
+                    <span className="text-yellow-200 text-xs font-bold">Flask</span>
                 </div>
                 <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 p-2 rounded-lg hover:bg-green-500/20 transition-colors">
                     <Icon icon="solar:server-square-bold" className="text-green-400" width="20" />
                     <span className="text-green-200 text-xs font-bold">API Rest</span>
                 </div>
                 <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 p-2 rounded-lg hover:bg-purple-500/20 transition-colors">
-                    <Icon icon="solar:magic-stick-3-bold" className="text-purple-400" width="20" />
-                    <span className="text-purple-200 text-xs font-bold">Clean Code</span>
+                    <Icon icon="devicon:react" width="20" />
+                    <span className="text-purple-200 text-xs font-bold">React</span>
                 </div>
              </div>
           </BentoCard>
@@ -192,7 +209,6 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* RENDERIZANDO O MODAL AQUI */}
       <CvModal isOpen={isCvModalOpen} onClose={() => setIsCvModalOpen(false)} />
     </section>
   );

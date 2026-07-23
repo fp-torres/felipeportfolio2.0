@@ -29,6 +29,10 @@ dist-ssr
 # ---------------------------------------------------
 # Impede que as chaves do Spotify e WakaTime vazem no GitHub
 public/config.php
+config.php
+
+# Cache local dos bridges PHP
+public/.cache/
 
 # Prevenção padrão para arquivos de ambiente
 .env

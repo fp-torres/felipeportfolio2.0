@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/useLanguage';
 import { Icon } from '@iconify/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 
 export default function Navbar() {
   const { lang, toggleLanguage, t } = useLanguage();
@@ -9,31 +9,35 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleMobileScroll = (e, targetId) => {
-    e.preventDefault(); 
-    setIsOpen(false);   
-    
-    setTimeout(() => {
-      const id = targetId.replace('#', ''); 
-      const element = document.getElementById(id);
-      
-      if (element) {
-        const navbarHeight = 80; 
-        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-        
-        window.scrollTo({
-          top: elementPosition - navbarHeight,
-          behavior: 'smooth'
-        });
-      }
-    }, 100); 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isOpen]);
+
+  const handleMobileScroll = (event, targetId) => {
+    event.preventDefault();
+    setIsOpen(false);
+
+    const element = document.querySelector(targetId.startsWith('#') ? targetId : `#${targetId}`);
+    element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const navLinks = [
@@ -53,15 +57,15 @@ export default function Navbar() {
           : 'bg-transparent border-transparent py-6'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 flex justify-between items-center relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center relative">
         
         {/* LOGO */}
-        <a href="#hero" onClick={(e) => handleMobileScroll(e, 'hero')} className="text-2xl font-bold border-2 border-primary px-2 py-1 text-primary tracking-widest hover:bg-primary hover:text-bg transition-colors cursor-pointer">
+        <a href="#hero" onClick={(event) => handleMobileScroll(event, '#hero')} className="text-2xl font-bold border-2 border-primary px-2 py-1 text-primary tracking-widest hover:bg-primary hover:text-bg transition-colors cursor-pointer" aria-label="Felipe Torres — início">
           FT
         </a>
 
         {/* DESKTOP MENU */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-4 lg:gap-7">
           {navLinks.map((item) => (
             <a 
               key={item.name} 
@@ -72,8 +76,13 @@ export default function Navbar() {
             </a>
           ))}
           
-          {/* INVERSÃO DA BANDEIRA APLICADA AQUI */}
-          <button onClick={toggleLanguage} className="text-2xl hover:scale-110 transition-transform" title={lang === 'pt' ? "Mudar para Inglês" : "Change to Portuguese"}>
+          <button
+            type="button"
+            onClick={toggleLanguage}
+            className="text-2xl hover:scale-110 transition-transform"
+            title={lang === 'pt' ? 'Mudar para inglês' : 'Change to Portuguese'}
+            aria-label={lang === 'pt' ? 'Mudar idioma para inglês' : 'Change language to Portuguese'}
+          >
              {lang === 'pt' ? '🇺🇸' : '🇧🇷'}
           </button>
 
@@ -87,15 +96,23 @@ export default function Navbar() {
 
         {/* MOBILE CONTROLS */}
         <div className="md:hidden flex items-center gap-4">
-           {/* INVERSÃO DA BANDEIRA APLICADA AQUI TAMBÉM */}
-           <button onClick={toggleLanguage} className="text-2xl" title={lang === 'pt' ? "Mudar para Inglês" : "Change to Portuguese"}>
+           <button
+             type="button"
+             onClick={toggleLanguage}
+             className="text-2xl"
+             title={lang === 'pt' ? 'Mudar para inglês' : 'Change to Portuguese'}
+             aria-label={lang === 'pt' ? 'Mudar idioma para inglês' : 'Change language to Portuguese'}
+           >
              {lang === 'pt' ? '🇺🇸' : '🇧🇷'}
            </button>
 
            <button 
-             onClick={() => setIsOpen(!isOpen)} 
+             type="button"
+             onClick={() => setIsOpen((value) => !value)}
              className="text-3xl focus:outline-none transition-transform active:scale-90 p-1 text-primary" 
              aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
+             aria-expanded={isOpen}
+             aria-controls="mobile-navigation"
            >
              <Icon 
                icon={isOpen ? "solar:close-square-bold" : "solar:hamburger-menu-bold"} 
@@ -106,12 +123,13 @@ export default function Navbar() {
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
+          <Motion.div
+            id="mobile-navigation"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="md:hidden bg-[#0F172A] border-t border-b border-white/10 overflow-hidden shadow-2xl absolute w-full left-0 top-full"
+            className="md:hidden bg-[#0F172A] border-t border-b border-white/10 overflow-y-auto shadow-2xl absolute w-full left-0 top-full max-h-[calc(100dvh-72px)]"
           >
             <div className="flex flex-col items-center gap-2 p-6">
               
@@ -119,7 +137,7 @@ export default function Navbar() {
                 <a 
                   key={item.name}
                   href={item.href}
-                  onClick={(e) => handleMobileScroll(e, item.href)} 
+                  onClick={(event) => handleMobileScroll(event, item.href)} 
                   className="w-full text-center py-4 rounded-xl text-gray-300 font-medium text-lg border border-transparent hover:bg-white/5 hover:border-white/10 hover:text-primary transition-all duration-300 active:scale-95 active:text-primary cursor-pointer"
                 >
                   {item.name}
@@ -128,14 +146,14 @@ export default function Navbar() {
 
               <a 
                 href="#contact" 
-                onClick={(e) => handleMobileScroll(e, '#contact')} 
+                onClick={(event) => handleMobileScroll(event, '#contact')} 
                 className="w-full text-center mt-4 bg-primary text-bg py-4 rounded-xl font-bold text-lg hover:bg-yellow-400 transition-colors shadow-lg active:scale-95 cursor-pointer"
               >
                 {t.nav.contact}
               </a>
 
             </div>
-          </motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
     </nav>

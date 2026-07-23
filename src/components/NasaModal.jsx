@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useLanguage } from '../context/LanguageContext';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
+import { useLanguage } from '../context/useLanguage';
 
 export default function NasaModal({ isOpen, onClose }) {
   const { t } = useLanguage();
@@ -12,7 +12,7 @@ export default function NasaModal({ isOpen, onClose }) {
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedData, setTranslatedData] = useState({ title: "", explanation: "" });
 
-  const NASA_KEY = "cAush8xjdh5wW0Vos2wTwCMoGFZdUbRbVocSenOu";
+  const NASA_KEY = 'DEMO_KEY';
 
   // Função para traduzir textos usando um endpoint público do Google
   const translateText = async (text) => {
@@ -29,35 +29,42 @@ export default function NasaModal({ isOpen, onClose }) {
   };
 
   useEffect(() => {
-    if (isOpen) {
-      setErrorMsg("");
-      setData(null);
-      setTranslatedData({ title: "", explanation: "" });
-      
-      fetch(`https://api.nasa.gov/planetary/apod?api_key=${NASA_KEY}`)
+    if (!isOpen) return undefined;
+
+    const controller = new AbortController();
+
+    fetch(`https://api.nasa.gov/planetary/apod?api_key=${NASA_KEY}`, {
+      signal: controller.signal,
+    })
         .then(res => res.json())
         .then(async json => {
+            if (controller.signal.aborted) return;
             if (json.code) {
                 setErrorMsg(json.msg || "Erro ao conectar com a NASA.");
             } else {
+                setErrorMsg("");
                 setData(json);
                 
-                // Lógica de Tradução Dinâmica
                 if (isPt) {
                   setIsTranslating(true);
                   const titlePt = await translateText(json.title);
                   const explanationPt = await translateText(json.explanation);
+                  if (controller.signal.aborted) return;
                   setTranslatedData({ title: titlePt, explanation: explanationPt });
                   setIsTranslating(false);
+                } else {
+                  setTranslatedData({ title: "", explanation: "" });
                 }
             }
         })
         .catch(err => {
+            if (err.name === 'AbortError') return;
             console.error("NASA Error:", err);
             setErrorMsg("Falha na interceptação do sinal.");
         });
-    }
-  }, [isOpen, isPt]); // Adicionamos isPt na dependência para re-traduzir se ele mudar o idioma com o modal aberto
+
+    return () => controller.abort();
+  }, [isOpen, isPt]);
 
   // Define qual texto exibir com base no idioma
   const displayTitle = isPt && translatedData.title ? translatedData.title : data?.title;
@@ -66,13 +73,13 @@ export default function NasaModal({ isOpen, onClose }) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-bg/95 backdrop-blur-xl"
         >
-          <motion.div 
+          <Motion.div 
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             className="relative w-full max-w-2xl bg-surface border border-primary/30 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(var(--primary-rgb),0.2)] flex flex-col max-h-[90vh]"
@@ -155,8 +162,8 @@ export default function NasaModal({ isOpen, onClose }) {
 
               </div>
             )}
-          </motion.div>
-        </motion.div>
+          </Motion.div>
+        </Motion.div>
       )}
     </AnimatePresence>
   );
