@@ -2,14 +2,15 @@
 import profileImg from '../assets/imgs/img2.jpg';
 
 // Imagens de Projetos
-import torresBurgerImg from '../assets/imgs/web-home-dark.webp';
-import forgeImg from '../assets/imgs/forgedevapps.webp';
-import costsImg from '../assets/imgs/costs.webp';
-import steakImg from '../assets/imgs/img4.webp';
+import logoNfse from '../assets/imgs/logo-nfs-e-horizontal.png'; // NOVO PROJETO (Emissor NFS-e)
+import torresBurgerImg from '../assets/imgs/web-home-dark.png'; 
+import forgeImg from '../assets/imgs/forgedevapps.png'; 
+import costsImg from '../assets/imgs/costs.jpeg';
+import steakImg from '../assets/imgs/img4.png'; 
 
 // --- PREVIEWS DOS CURRÍCULOS (PORTUGUÊS) ---
-import imgCvModernPt from '../assets/imgs/preview-cv-moderno-pt.webp';
-import imgCvCorporatePt from '../assets/imgs/preview-cv-corporativo-pt.webp';
+import imgCvModernPt from '../assets/imgs/preview-cv-moderno-pt.png';
+import imgCvCorporatePt from '../assets/imgs/preview-cv-corporativo-pt.png';
 
 // Currículos PDFs (Português)
 import cvCompletePt from '../assets/curriculo/cv_Felipe_Torres_ptbr.pdf';
@@ -17,19 +18,19 @@ import cvFocusedPt from '../assets/curriculo/Felipe_Torres_cv_ptbr.pdf';
 import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática.pdf';
 
 // Certificados
-import certIotIaPucrs from '../assets/imgs/certs/CURSO DE EXTENSÃO EM INTERNET DAS COISAS, IA E A REVOLUÇÃO CONECTADA PUCRS.webp';
-import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.webp';
-import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.webp';
-import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.webp';
-import certCyber from '../assets/imgs/certs/Introduction to Cybersecurity.webp';
-import certIot from '../assets/imgs/certs/Introduction to LOT.webp';
-import certGit from '../assets/imgs/certs/Introdução ao Git e GitHub.webp';
-import certGestao from '../assets/imgs/certs/Introdução à Gestão de Projetos.webp';
-import certPoo from '../assets/imgs/certs/Introdução à Programação Orientada a Objetos (POO).webp';
-import certModeling from '../assets/imgs/certs/Modelagem de Dados.webp';
-import certRiw from '../assets/imgs/certs/Rio Innovation Week 2023.webp';
-import certSecurity from '../assets/imgs/certs/Segurança em Tecnologia da Informação.webp';
-import certScrum from '../assets/imgs/certs/scrumcertificado.webp';
+import certIotIaPucrs from '../assets/imgs/certs/CURSO DE EXTENSÃO EM INTERNET DAS COISAS, IA E A REVOLUÇÃO CONECTADA PUCRS.png';
+import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png'; 
+import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.png';
+import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.png';
+import certCyber from '../assets/imgs/certs/Introduction to Cybersecurity.png';
+import certIot from '../assets/imgs/certs/Introduction to LOT.png';
+import certGit from '../assets/imgs/certs/Introdução ao Git e GitHub.png';
+import certGestao from '../assets/imgs/certs/Introdução à Gestão de Projetos.png';
+import certPoo from '../assets/imgs/certs/Introdução à Programação Orientada a Objetos (POO).png';
+import certModeling from '../assets/imgs/certs/Modelagem de Dados.png';
+import certRiw from '../assets/imgs/certs/Rio Innovation Week 2023.png';
+import certSecurity from '../assets/imgs/certs/Segurança em Tecnologia da Informação.png';
+import certScrum from '../assets/imgs/certs/scrumcertificado.png'; 
 
 export const pt = {
   nav: {
@@ -47,7 +48,7 @@ export const pt = {
     image:         profileImg,
     ctaResume:     "Baixar CV",
     aboutTitle:    "Sobre Mim",
-    aboutText:     "Desenvolvedor Full Stack com atuação em React, Python/Flask e integrações de APIs. Transformo regras de negócio complexas em sistemas confiáveis, intuitivos e escaláveis.",
+    aboutText:     "Desenvolvedor Full Stack com foco em React, Node.js e arquitetura moderna. Transformo ideias complexas em software robusto e escalável.",
     recentActivity:"Atividade Recente:",
     location:      "Rio de Janeiro, BR",
     available:     "Disponível",
@@ -82,10 +83,10 @@ export const pt = {
     items: [
       {
         id: 1,
-        role:       "Desenvolvedor Full Stack Jr",
+        role:       "Desenvolvedor Trainee",
         company:    "Crase Sigma",
         period:     "2026 - Atual",
-        description:"Desenvolvimento de sistemas internos com React, Angular, Laravel, Python e Flask. Atuação em automações, integrações de APIs, regras de negócio, tratamento de falhas e otimização de performance.",
+        description:"Desenvolvimento de sistemas web completos. Atuação direta na regra de negócio, integração de APIs e otimização de performance.",
         current:    true,
         icon:       "solar:code-square-bold",
       },
@@ -120,8 +121,20 @@ export const pt = {
   projects: {
     title: "Projetos",
     items: [
+    {
+        id: 5,
+        title:      "Emissor Nacional de NFS-e",
+        description:"[Sistema Privado] Arquitetura de altíssima complexidade para emissão de notas fiscais. Núcleo Python gerencia certificados PFX, assinatura de XML e comunicação mTLS com a SEFIN.",
+        image:      logoNfse,
+        containImage: true, 
+        details:    "O Emissor Nacional de NFS-e é um ecossistema corporativo privado projetado para preparar, validar, assinar e transmitir notas fiscais eletrônicas de forma autônoma e segura.\n\nDiferente de aplicações web tradicionais, este projeto exige alta confiabilidade fiscal e segurança rigorosa. O núcleo do sistema foi construído em Python, sendo totalmente responsável por lidar com a complexidade da criptografia mTLS, assinatura digital de arquivos XML no padrão exigido pela Receita Federal, e manipulação segura de certificados digitais PFX.\n\nA arquitetura segue princípios de Clean Architecture, garantindo que as regras fiscais fiquem isoladas. O sistema conta com uma API robusta em Flask e um frontend componentizado em React (com Vite e Tailwind CSS), unificando os fluxos de emissões unitárias e em lote (processando milhares de notas simultâneas).\n\nPara garantir a estabilidade em produção, foram implementadas travas de segurança: bloqueio de concorrência no backend, revalidação em tempo real do Documento de Prestação de Serviços (DPS) antes da transmissão à SEFIN, testes automatizados e preservação integral de logs para garantir rastreabilidade total caso haja indisponibilidade nos servidores do governo.",
+        techs:      ["Python", "Flask", "React", "XML/mTLS", "Tailwind CSS"],
+        link:       null,
+        github:     null,
+        video:      null,
+      },
       {
-        id: 4, // ID 4 para não conflitar com os outros
+        id: 4, 
         title:      "TorresBurgers Full Stack",
         description:"Sistema completo para hamburgueria com painel administrativo, pedidos em tempo real e controle de estoque.",
         image:      torresBurgerImg,
