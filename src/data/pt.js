@@ -85,7 +85,7 @@ export const pt = {
         id: 1,
         role:       "Desenvolvedor Full Stack",
         company:    "Crase Sigma",
-        period:     "2026 - Atual",
+        period:     "01/2026 - Atual",
         description:"Desenvolvimento de sistemas web completos. Atuação direta na regra de negócio, integração de APIs e otimização de performance.",
         current:    true,
         icon:       "solar:code-square-bold",
