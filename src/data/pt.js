@@ -83,7 +83,7 @@ export const pt = {
     items: [
       {
         id: 1,
-        role:       "Desenvolvedor Trainee",
+        role:       "Desenvolvedor Full Stack",
         company:    "Crase Sigma",
         period:     "2026 - Atual",
         description:"Desenvolvimento de sistemas web completos. Atuação direta na regra de negócio, integração de APIs e otimização de performance.",
