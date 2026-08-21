@@ -3,11 +3,12 @@ import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useLanguage } from '../context/useLanguage';
 
-function ModalCard({ title, description, link, image, cta }) {
+function ModalCard({ title, description, link, fileName, image, cta }) {
   return (
-    <a 
-      href={link} 
-      target="_blank" 
+    <a
+      href={link}
+      download={fileName}
+      target="_blank"
       rel="noreferrer"
       className="group relative flex flex-col items-center text-center p-4 md:p-5 rounded-2xl border transition-all duration-300 hover:-translate-y-1 md:hover:-translate-y-2 bg-surface/40 border-white/10 hover:border-primary/50 hover:bg-surface/80 shadow-xl"
     >
@@ -108,13 +109,15 @@ export default function CvModal({ isOpen, onClose }) {
               title={t.cvModal.modern.title}
               description={t.cvModal.modern.desc}
               link={t.cvModal.modern.link}
+              fileName={t.cvModal.modern.fileName}
               image={t.cvModal.modern.image}
               cta={t.hero.ctaResume}
             />
-            <ModalCard 
+            <ModalCard
               title={t.cvModal.corporate.title}
               description={t.cvModal.corporate.desc}
               link={t.cvModal.corporate.link}
+              fileName={t.cvModal.corporate.fileName}
               image={t.cvModal.corporate.image}
               cta={t.hero.ctaResume}
             />

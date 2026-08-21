@@ -67,12 +67,14 @@ export const en = {
       title: "Modern Design",
       desc: "Styled design with photo. Great for human reading, direct email applications, and networking.",
       link: cvCompleteEn,
+      fileName: "cv_Felipe_Torres_en.pdf",
       image: imgCvModernEn
     },
     corporate: {
       title: "Corporate Format (ATS)",
       desc: "Clean and traditional. 100% readable for automated Applicant Tracking Systems (ATS).",
       link: cvFocusedEn,
+      fileName: "Felipe_Torres_cv_en.pdf",
       image: imgCvCorporateEn
     }
   },
