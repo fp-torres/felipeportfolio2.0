@@ -131,9 +131,9 @@ export default function Hero() {
                     <Icon icon="devicon:python" width="20" />
                     <span className="text-blue-200 text-xs font-bold">Python</span>
                 </div>
-                <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 p-2 rounded-lg hover:bg-yellow-500/20 transition-colors">
-                    <Icon icon="simple-icons:flask" className="text-white" width="20" />
-                    <span className="text-yellow-200 text-xs font-bold">Flask</span>
+                <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 p-2 rounded-lg hover:bg-orange-500/20 transition-colors">
+                    <Icon icon="devicon:java" width="20" />
+                    <span className="text-orange-200 text-xs font-bold">Java</span>
                 </div>
                 <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 p-2 rounded-lg hover:bg-green-500/20 transition-colors">
                     <Icon icon="solar:server-square-bold" className="text-green-400" width="20" />

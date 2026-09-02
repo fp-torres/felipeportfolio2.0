@@ -48,7 +48,7 @@ export const en = {
     image: profileImg,
     ctaResume: "Download CV",
     aboutTitle: "About Me",
-    aboutText: "Full Stack Developer focused on React, Node.js, and modern architecture. I transform complex ideas into robust and scalable software.",
+    aboutText: "Full Stack Developer focused on React, Node.js, Java, and modern architecture. I transform complex ideas into robust and scalable software.",
     recentActivity: "Recent Activity:",
     location: "Rio de Janeiro, BR",
     available: "Available",

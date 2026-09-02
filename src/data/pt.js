@@ -48,7 +48,7 @@ export const pt = {
     image:         profileImg,
     ctaResume:     "Baixar CV",
     aboutTitle:    "Sobre Mim",
-    aboutText:     "Desenvolvedor Full Stack com foco em React, Node.js e arquitetura moderna. Transformo ideias complexas em software robusto e escalável.",
+    aboutText:     "Desenvolvedor Full Stack com foco em React, Node.js, Java e arquitetura moderna. Transformo ideias complexas em software robusto e escalável.",
     recentActivity:"Atividade Recente:",
     location:      "Rio de Janeiro, BR",
     available:     "Disponível",
