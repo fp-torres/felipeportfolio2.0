@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import { motion as Motion } from 'framer-motion';
 
 import CvModal from '../CvModal';
+import GithubContributions from './GithubContributions';
 
 function BentoCard({ children, className = '' }) {
   return (
@@ -19,8 +20,7 @@ function BentoCard({ children, className = '' }) {
 export default function Hero() {
   const { t } = useLanguage();
   const [githubData, setGithubData] = useState(null);
-  const [activitySquares, setActivitySquares] = useState(Array(7).fill(false));
-  
+
   const [isCvModalOpen, setIsCvModalOpen] = useState(false);
 
   useEffect(() => {
@@ -28,27 +28,10 @@ export default function Hero() {
 
     const fetchGithub = async () => {
       try {
-        const [profileResponse, eventsResponse] = await Promise.all([
-          fetch('https://api.github.com/users/fp-torres', { signal: controller.signal }),
-          fetch('https://api.github.com/users/fp-torres/events/public', { signal: controller.signal }),
-        ]);
-
+        const profileResponse = await fetch('https://api.github.com/users/fp-torres', { signal: controller.signal });
         if (profileResponse.ok) {
           const profile = await profileResponse.json();
           setGithubData(profile);
-        }
-
-        if (eventsResponse.ok) {
-          const events = await eventsResponse.json();
-          if (!Array.isArray(events)) return;
-
-          const last7Days = Array.from({ length: 7 }, (_, index) => {
-            const date = new Date();
-            date.setDate(date.getDate() - (6 - index));
-            return date.toISOString().split('T')[0];
-          });
-          const activeDays = new Set(events.map((event) => event.created_at?.split('T')[0]));
-          setActivitySquares(last7Days.map((day) => activeDays.has(day)));
         }
       } catch (error) {
         if (error.name !== 'AbortError') {
@@ -61,13 +44,11 @@ export default function Hero() {
     return () => controller.abort();
   }, []);
 
-  const stats = githubData || { public_repos: 0, followers: 0, following: 0 };
-
   return (
     <section id="hero" className="pt-28 sm:pt-32 pb-12 sm:pb-20 px-1 sm:px-4">
       <div className="max-w-6xl mx-auto">
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-6">
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* 1. SUPER CARD DE PERFIL */}
           <BentoCard className="md:col-span-2 md:row-span-1 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group bg-gradient-to-br from-surface/60 to-black/40">
@@ -126,49 +107,8 @@ export default function Hero() {
             </div>
           </BentoCard>
 
-          {/* 2. CARD GITHUB */}
-          <BentoCard className="md:col-span-1 md:row-span-2 flex flex-col justify-between bg-gradient-to-b from-surface/40 to-black/40">
-            <div>
-                <div className="flex items-center justify-between mb-6">
-                    <Icon icon="mdi:github" width="44" className="text-white" />
-                    <a href={githubData?.html_url || "https://github.com/fp-torres"} target="_blank" rel="noreferrer" className="text-xs border border-white/20 px-3 py-1 rounded-full hover:bg-white hover:text-bg transition-colors text-white">
-                        {t.hero.githubStats.profileBtn}
-                    </a>
-                </div>
-                <div className="space-y-8">
-                    <div>
-                        <span className="text-5xl font-bold text-white block">{stats.public_repos}</span>
-                        <span className="text-sm text-gray-400 uppercase tracking-wider">{t.hero.githubStats.repos}</span>
-                        <div className="w-full h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
-                            <Motion.div initial={{ width: 0 }} whileInView={{ width: '70%' }} className="h-full bg-primary" />
-                        </div>
-                    </div>
-                    <div>
-                        <span className="text-5xl font-bold text-white block">{stats.followers}</span>
-                        <span className="text-sm text-gray-400 uppercase tracking-wider">{t.hero.githubStats.followers}</span>
-                        <div className="w-full h-1 bg-white/10 rounded-full mt-3 overflow-hidden">
-                             <Motion.div initial={{ width: 0 }} whileInView={{ width: '40%' }} className="h-full bg-purple-500" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="mt-8 pt-6 border-t border-white/10">
-                 <p className="text-xs text-gray-500 mb-2">{t.hero.recentActivity}</p>
-                 <div className="flex gap-1">
-                    {activitySquares.map((isActive, index) => (
-                        <div 
-                            key={index} 
-                            title={isActive ? "Atividade Registrada" : "Sem Atividade"}
-                            className={`w-full h-3 rounded-sm transition-colors duration-500 ${isActive ? 'bg-primary' : 'bg-white/10'}`}
-                        ></div>
-                    ))}
-                 </div>
-            </div>
-          </BentoCard>
-
-          {/* 3. CARD SOBRE */}
-          <BentoCard className="md:col-span-1 md:row-span-1 flex flex-col justify-center">
+          {/* 2. CARD SOBRE */}
+          <BentoCard className="md:col-span-1 flex flex-col justify-center">
              <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
                 <Icon icon="solar:user-id-bold" className="text-primary" /> {t.hero.aboutTitle}
              </h3>
@@ -177,16 +117,16 @@ export default function Hero() {
              </p>
           </BentoCard>
 
-          {/* 4. CARD ESPECIALIDADE */}
-          <BentoCard className="md:col-span-1 md:row-span-1 relative overflow-hidden flex flex-col justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+          {/* 3. CARD ESPECIALIDADE */}
+          <BentoCard className="md:col-span-3 relative overflow-hidden flex flex-col justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
-             
+
              <h4 className="text-white font-bold mb-4 relative z-10 flex items-center gap-2">
-                <Icon icon="solar:target-bold" className="text-blue-400 animate-pulse" /> 
+                <Icon icon="solar:target-bold" className="text-blue-400 animate-pulse" />
                 {t.hero.currentFocus}
              </h4>
-             
-             <div className="grid grid-cols-2 gap-3 relative z-10">
+
+             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 relative z-10">
                 <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 p-2 rounded-lg hover:bg-blue-500/20 transition-colors">
                     <Icon icon="devicon:python" width="20" />
                     <span className="text-blue-200 text-xs font-bold">Python</span>
@@ -206,6 +146,10 @@ export default function Hero() {
              </div>
           </BentoCard>
 
+        </div>
+
+        <div className="mt-6">
+          <GithubContributions />
         </div>
       </div>
 

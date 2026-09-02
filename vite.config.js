@@ -6,8 +6,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/spotify.php': 'http://127.0.0.1:8000',
-      '/wakatime.php': 'http://127.0.0.1:8000',
+      '/spotify.php': 'http://127.0.0.1:8010',
+      '/wakatime.php': 'http://127.0.0.1:8010',
+      '/github.php': 'http://127.0.0.1:8010',
     },
   },
   build: {
