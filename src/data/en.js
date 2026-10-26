@@ -31,6 +31,7 @@ import certModeling from '../assets/imgs/certs/Modelagem de Dados.png';
 import certRiw from '../assets/imgs/certs/Rio Innovation Week 2023.png';
 import certSecurity from '../assets/imgs/certs/Segurança em Tecnologia da Informação.png';
 import certScrum from '../assets/imgs/certs/scrumcertificado.png'; 
+import certJavaUdemy from '../assets/imgs/certs/java-primeiros-passos-udemy.jpg';
 
 export const en = {
   nav: {
@@ -181,7 +182,27 @@ export const en = {
     title: "Certifications",
     seeMore: "See All",
     seeLess: "See Less",
+    credentialLabels: {
+      instructor: "Instructor",
+      issued: "Completed on",
+      duration: "Duration",
+      credentialId: "Credential ID",
+      reference: "Reference number",
+      verify: "Verify certificate",
+    },
     items: [
+      {
+        id: 14,
+        name: "Java First Steps: Programming Logic and Algorithms",
+        issuer: "Udemy",
+        image: certJavaUdemy,
+        instructor: "Nelio Alves",
+        issued: "October 23, 2026",
+        duration: "8 hours total",
+        credentialId: "UC-ff31142f-911c-46f6-a734-4b1edec603db",
+        credentialUrl: "https://ude.my/UC-ff31142f-911c-46f6-a734-4b1edec603db",
+        reference: "0004",
+      },
       { id: 13, name: "IoT, AI & Connected Revolution", issuer: "PUCRS",             image: certIotIaPucrs }, 
       { id: 12, name: "Scrum Fundamentals Certified", issuer: "SCRUMstudy",          image: certScrum }, 
       { id: 1,  name: "OOP - Java",                   issuer: "Online Course",       image: certPoo },

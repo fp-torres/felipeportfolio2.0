@@ -31,6 +31,7 @@ import certModeling from '../assets/imgs/certs/Modelagem de Dados.png';
 import certRiw from '../assets/imgs/certs/Rio Innovation Week 2023.png';
 import certSecurity from '../assets/imgs/certs/Segurança em Tecnologia da Informação.png';
 import certScrum from '../assets/imgs/certs/scrumcertificado.png'; 
+import certJavaUdemy from '../assets/imgs/certs/java-primeiros-passos-udemy.jpg';
 
 export const pt = {
   nav: {
@@ -181,7 +182,27 @@ export const pt = {
     title:   "Certificações",
     seeMore: "Ver Todos",
     seeLess: "Ver Menos",
+    credentialLabels: {
+      instructor: "Instrutor",
+      issued: "Concluído em",
+      duration: "Duração",
+      credentialId: "ID da credencial",
+      reference: "Número de referência",
+      verify: "Verificar certificado",
+    },
     items: [
+      {
+        id: 14,
+        name: "Java primeiros passos: Lógica de Programação e Algoritmos",
+        issuer: "Udemy",
+        image: certJavaUdemy,
+        instructor: "Nelio Alves",
+        issued: "23 de outubro de 2026",
+        duration: "8 horas no total",
+        credentialId: "UC-ff31142f-911c-46f6-a734-4b1edec603db",
+        credentialUrl: "https://ude.my/UC-ff31142f-911c-46f6-a734-4b1edec603db",
+        reference: "0004",
+      },
       { id: 13, name: "IoT, IA e a Revolução Conectada", issuer: "PUCRS",                 image: certIotIaPucrs },
       { id: 12, name: "Scrum Fundamentals Certified", issuer: "SCRUMstudy",         image: certScrum    },
       { id: 1,  name: "POO - Java",                   issuer: "Curso em Vídeo",      image: certPoo      },

@@ -104,12 +104,39 @@ export default function Certificates() {
                 >
                     <Icon icon="solar:close-circle-bold" width="30" />
                 </button>
-                <div className="flex-1 overflow-auto bg-black flex items-center justify-center">
-                    <img src={selectedCert.image} alt={selectedCert.name} decoding="async" className="max-w-full max-h-[80vh] object-contain" />
+                <div className="flex-1 min-h-0 overflow-auto bg-black flex items-center justify-center">
+                    <img src={selectedCert.image} alt={selectedCert.name} decoding="async" className="max-w-full max-h-[52vh] object-contain" />
                 </div>
-                <div className="p-4 bg-surface border-t border-white/10 text-center shrink-0">
+                <div className="p-4 bg-surface border-t border-white/10 text-center shrink-0 max-h-[36vh] overflow-y-auto">
                     <h3 className="text-xl font-bold text-white">{selectedCert.name}</h3>
                     <p className="text-muted">{selectedCert.issuer}</p>
+                    {selectedCert.credentialId && (
+                      <>
+                        <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-left text-sm">
+                          {[
+                            ['instructor', selectedCert.instructor],
+                            ['issued', selectedCert.issued],
+                            ['duration', selectedCert.duration],
+                            ['credentialId', selectedCert.credentialId],
+                            ['reference', selectedCert.reference],
+                          ].filter(([, value]) => value).map(([label, value]) => (
+                            <div key={label} className="min-w-0">
+                              <dt className="text-muted">{t.certificates.credentialLabels[label]}</dt>
+                              <dd className={`mt-0.5 text-white ${label === 'credentialId' ? 'break-all' : ''}`}>{value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                        <a
+                          href={selectedCert.credentialUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 mt-4 px-4 py-2 rounded-full bg-primary text-bg font-bold hover:brightness-110 transition"
+                        >
+                          <Icon icon="solar:link-circle-bold" />
+                          {t.certificates.credentialLabels.verify}
+                        </a>
+                      </>
+                    )}
                 </div>
             </Motion.div>
           </Motion.div>
