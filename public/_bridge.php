@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /*
- * Shared helpers for the PHP bridges (github.php, wakatime.php, spotify.php, nasa.php).
+ * Shared helpers for the PHP bridges (github.php, wakatime.php, spotify.php, nasa.php, news.php).
  * Not an endpoint: .htaccess denies _*.php over HTTP, and a direct request answers 404 anyway.
  *
  * - Secrets come from config.php (written by the deploy workflow) and never leave the server.
@@ -128,7 +128,8 @@ function bridge_prepare_dir(string $dir): bool
 function bridge_cache_path(string $key, string $extension = 'json'): ?string
 {
     $dir = bridge_cache_dir();
-    if ($dir === null || !preg_match('/^[a-z0-9][a-z0-9_-]{0,80}$/', $key)) {
+    // D: "$" must be the very end — without it a key ending in "\n" would pass and name a file.
+    if ($dir === null || !preg_match('/^[a-z0-9][a-z0-9_-]{0,80}$/D', $key)) {
         return null;
     }
 

@@ -500,7 +500,7 @@ export const pt = {
       apod: {
         subtitle:    "Foto astronômica do dia",
         eyebrow:     "APOD · {date}",
-        credit:      "© {name}",
+        credit:      "Crédito: {name}",
         viewHd:      "Ver em alta resolução",
         openVideo:   "Abrir vídeo",
         playVideo:   "Reproduzir vídeo",
@@ -515,6 +515,9 @@ export const pt = {
         rateLimitedLater: "A NASA limitou as consultas por agora. Tente de novo mais tarde.",
         unavailable: "Não foi possível falar com a NASA agora. Tente de novo em instantes.",
         invalidDate: "Essa data não está disponível no arquivo da NASA.",
+        notFoundTitle: "Sem foto nesta data",
+        notFound:    "A NASA não publicou uma foto astronômica nesse dia. Escolha outra data.",
+        openArchive: "Ver o arquivo da NASA",
       },
       travel: {
         subtitle:     "Arquivo da NASA desde 1995",
@@ -533,6 +536,9 @@ export const pt = {
         readingShort:"{n} min",
         justNow:     "agora",
         more:        "Ver mais na DEV Community",
+        translated:  "Títulos traduzidos automaticamente.",
+        original:    "Títulos no idioma original, como publicados na DEV Community.",
+        partial:     "Títulos traduzidos automaticamente; alguns seguem no idioma original.",
         errorTitle:  "Sem sinal no momento",
         errorText:   "Não foi possível carregar os artigos agora. Tente de novo em instantes.",
         emptyTitle:  "Nada em alta agora",

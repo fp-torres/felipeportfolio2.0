@@ -20,7 +20,7 @@ Options -Indexes
   Header always set Strict-Transport-Security "max-age=31536000"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
   # Report-only: logs what an enforced policy would block (browser console), blocks nothing.
-  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' https:; font-src 'self' data:; connect-src 'self' https://api.lanyard.rest https://dev.to https://api.nasa.gov https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://apod.nasa.gov; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' https:; font-src 'self' data:; connect-src 'self' https://api.lanyard.rest https://dev.to https://science.nasa.gov https://translate.googleapis.com https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://apod.nasa.gov; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
   Header unset X-Powered-By
 
   # HTML revalidates on every visit, so a deploy is picked up at once (and never points at deleted chunks).

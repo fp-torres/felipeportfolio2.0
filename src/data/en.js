@@ -500,7 +500,7 @@ export const en = {
       apod: {
         subtitle: "Astronomy Picture of the Day",
         eyebrow: "APOD · {date}",
-        credit: "© {name}",
+        credit: "Credit: {name}",
         viewHd: "View in high resolution",
         openVideo: "Open video",
         playVideo: "Play video",
@@ -515,6 +515,9 @@ export const en = {
         rateLimitedLater: "NASA is limiting requests right now. Try again later.",
         unavailable: "Couldn't reach NASA right now. Try again in a moment.",
         invalidDate: "That date isn't available in NASA's archive.",
+        notFoundTitle: "No picture for this date",
+        notFound: "NASA didn't publish an astronomy picture on that day. Pick another date.",
+        openArchive: "Browse NASA's archive",
       },
       travel: {
         subtitle: "NASA's archive since 1995",
@@ -533,6 +536,9 @@ export const en = {
         readingShort: "{n} min",
         justNow: "just now",
         more: "See more on DEV Community",
+        translated: "Titles automatically translated.",
+        original: "Titles in their original language, as published on DEV Community.",
+        partial: "Titles automatically translated; some are still in their original language.",
         errorTitle: "No signal right now",
         errorText: "Couldn't load the articles right now. Try again in a moment.",
         emptyTitle: "Nothing trending right now",

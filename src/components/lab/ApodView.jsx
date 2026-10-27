@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useLanguage } from '../../context/useLanguage';
-import { apodPageUrl } from '../../hooks/useApod';
+import { APOD_ARCHIVE_URL, apodPageUrl } from '../../hooks/useApod';
 import LabStatus from './LabStatus';
 import { ApodSkeleton } from './LabSkeletons';
 import { fill, localeOf } from './text';
@@ -12,7 +12,6 @@ import { fill, localeOf } from './text';
 const STAGE =
   'relative grid aspect-[4/3] max-h-[min(60dvh,34rem)] w-full place-items-center overflow-hidden rounded-tile bg-bg sm:aspect-[16/10] [@media(max-height:500px)]:max-h-[45dvh]';
 const MEDIA = 'absolute inset-0 size-full';
-const ARCHIVE_URL = 'https://apod.nasa.gov/apod/archivepix.html';
 
 export default function ApodView({ resource, date = '' }) {
   const { data, status, error, retry } = resource;
@@ -57,7 +56,7 @@ function ApodArticle({ apod }) {
         )}
         <div className="mt-3 flex flex-wrap gap-x-6">
           {mediaLink && <ExternalLink href={mediaLink.href}>{mediaLink.label}</ExternalLink>}
-          <ExternalLink href={apodPageUrl(apod.date)}>{copy.openOnNasa}</ExternalLink>
+          <ExternalLink href={apod.link || apodPageUrl(apod.date)}>{copy.openOnNasa}</ExternalLink>
         </div>
         {note && <p className="mt-1 text-footnote text-label-2">{note}</p>}
       </div>
@@ -68,6 +67,8 @@ function ApodArticle({ apod }) {
 function ApodMedia({ apod, copy }) {
   // 'loading' | 'loaded' | 'failed' — for the photo or the video thumbnail.
   const [imageState, setImageState] = useState('loading');
+  // The photo is NASA's lighter copy; when that one doesn't load, the original (hdUrl) is tried once before the note.
+  const [original, setOriginal] = useState(false);
   const [playing, setPlaying] = useState(false);
   const playerRef = useRef(null);
 
@@ -77,6 +78,7 @@ function ApodMedia({ apod, copy }) {
   }, [playing]);
 
   if (apod.mediaType === 'image') {
+    const canTryOriginal = !original && Boolean(apod.hdUrl) && apod.hdUrl !== apod.url;
     return (
       <div className={STAGE}>
         {imageState === 'failed' ? (
@@ -87,11 +89,11 @@ function ApodMedia({ apod, copy }) {
               <div aria-hidden="true" className="absolute inset-0 bg-white/[0.06] motion-safe:animate-pulse" />
             )}
             <img
-              src={apod.url}
+              src={original ? apod.hdUrl : apod.url}
               alt={apod.title}
               decoding="async"
               onLoad={() => setImageState('loaded')}
-              onError={() => setImageState('failed')}
+              onError={() => (canTryOriginal ? setOriginal(true) : setImageState('failed'))}
               className={`${MEDIA} object-contain transition-opacity duration-slow ease-standard ${
                 imageState === 'loaded' ? 'opacity-100' : 'opacity-0'
               }`}
@@ -106,8 +108,9 @@ function ApodMedia({ apod, copy }) {
     if (isVideoFile(apod.url)) {
       return (
         <div className={STAGE}>
+          {/* Without a poster (NASA's was its logo), the video's first frame stands in for it (#t=0.001). */}
           <video
-            src={apod.url}
+            src={apod.thumbnailUrl ? apod.url : `${apod.url}#t=0.001`}
             poster={apod.thumbnailUrl || undefined}
             controls
             playsInline
@@ -179,6 +182,18 @@ function MediaNote({ icon, text }) {
 function ApodError({ error, onRetry, date }) {
   const { t, lang } = useLanguage();
   const copy = t.footer.lab.apod;
+
+  // A valid day without a picture in NASA's archive: a calm answer, not a failure (nothing to retry; the Time
+  // Machine's date field stays right above it). Only the NOT_FOUND code says so: any other 404 (say, a deploy without
+  // nasa.php) is a failure like the others.
+  if (error?.code === 'NOT_FOUND') {
+    return (
+      <LabStatus icon="solar:calendar-search-linear" title={copy.notFoundTitle} text={copy.notFound}>
+        <ExternalLink href={APOD_ARCHIVE_URL}>{copy.openArchive}</ExternalLink>
+      </LabStatus>
+    );
+  }
+
   const invalidDate = error?.code === 'INVALID_PARAM' || error?.status === 400;
   const rateLimited = error?.code === 'RATE_LIMITED' || error?.status === 429;
   let text = copy.unavailable;
@@ -198,7 +213,7 @@ function ApodError({ error, onRetry, date }) {
           {t.ui.retry}
         </button>
       )}
-      <ExternalLink href={invalidDate ? ARCHIVE_URL : apodPageUrl(date)}>{copy.openOnNasa}</ExternalLink>
+      <ExternalLink href={invalidDate ? APOD_ARCHIVE_URL : apodPageUrl(date)}>{copy.openOnNasa}</ExternalLink>
     </LabStatus>
   );
 }

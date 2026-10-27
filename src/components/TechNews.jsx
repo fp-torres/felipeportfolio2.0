@@ -1,58 +1,27 @@
 import { Icon } from '@iconify/react';
 import { useLanguage } from '../context/useLanguage';
-import { fetchJson } from '../lib/http';
-import { useResource } from '../lib/resource';
+import { NEWS_MORE_URL, useTechNews } from '../hooks/useTechNews';
 import LabStatus from './lab/LabStatus';
 import { NewsSkeleton } from './lab/LabSkeletons';
 import { fill, localeOf } from './lab/text';
 
-// Laboratório → "Radar tech": today's top DEV Community articles. DEV's API is public (no secret), so it is
-// called directly; the shared in-memory cache keeps it to one request per half hour.
+// Laboratório → "Radar tech": today's top DEV Community articles, through our bridge (titles translated for the
+// Portuguese page) or straight from DEV when the bridge can't answer — see src/hooks/useTechNews.js.
 // Lazy-loaded by the Footer and rendered inside its <Sheet>, so it only mounts while the sheet is open.
-const FEED_URL = 'https://dev.to/api/articles?tag=programming&top=1&per_page=10';
-const MORE_URL = 'https://dev.to/t/programming/top/day';
 const MINUTE = 60 * 1000;
 
-function httpsUrl(value) {
-  if (typeof value !== 'string') return '';
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' ? url.href : '';
-  } catch {
-    return '';
-  }
+// 'pt-BR' → 'pt'
+const baseLang = (tag) => String(tag).split('-')[0].toLowerCase();
+
+// Portuguese page only: says whether the titles were machine-translated, are still in English, or a mix of both.
+function translationNote(articles, lang, copy) {
+  if (lang !== 'pt') return '';
+  const translated = articles.some((article) => article.translated);
+  const original = articles.some((article) => baseLang(article.lang) !== 'pt');
+  if (translated && original) return copy.partial;
+  if (translated) return copy.translated;
+  return original ? copy.original : '';
 }
-
-const cleanText = (value) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '');
-
-function normalizeArticles(list) {
-  if (!Array.isArray(list)) throw new Error('Unexpected DEV response');
-
-  return list.flatMap((item) => {
-    const url = httpsUrl(item?.url);
-    const title = cleanText(item?.title);
-    if (!url || !title) return [];
-    let tags = [];
-    if (Array.isArray(item.tag_list)) tags = item.tag_list;
-    else if (typeof item.tag_list === 'string') tags = item.tag_list.split(',');
-    const minutes = Number(item.reading_time_minutes);
-
-    return [
-      {
-        id: item.id ?? url,
-        url,
-        title,
-        author: cleanText(item.user?.name),
-        avatar: httpsUrl(item.user?.profile_image_90),
-        publishedAt: Date.parse(item.published_at) || 0,
-        readingTime: Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : 0,
-        tags: tags.map(cleanText).filter(Boolean).slice(0, 2),
-      },
-    ];
-  });
-}
-
-const loadArticles = () => fetchJson(FEED_URL, { timeout: 8000 }).then(normalizeArticles);
 
 // Relative to the moment the list was fetched (keeps rendering pure).
 function relativeTime(timestamp, fetchedAt, lang, justNow) {
@@ -72,7 +41,7 @@ function relativeTime(timestamp, fetchedAt, lang, justNow) {
 export default function TechNews() {
   const { t, lang } = useLanguage();
   const copy = t.footer.lab.news;
-  const { data, status, retry, savedAt } = useResource('lab:devto-top', loadArticles, { ttl: 30 * MINUTE });
+  const { data, status, error, retry, savedAt } = useTechNews(lang);
 
   const retryButton = (
     <button type="button" onClick={retry} className="btn-secondary">
@@ -80,7 +49,10 @@ export default function TechNews() {
     </button>
   );
 
-  if (!data) {
+  // 'error' never comes with this language's own data: what useResource lends meanwhile is the other language's list,
+  // which would stay on screen (in the wrong language) instead of the retry button — or, while that retry runs
+  // ('loading' with the error kept), instead of the skeleton.
+  if (!data || status === 'error' || (status === 'loading' && error)) {
     if (status !== 'error') return <NewsSkeleton />;
     return (
       <LabStatus icon="solar:radar-2-linear" title={copy.errorTitle} text={copy.errorText}>
@@ -89,7 +61,10 @@ export default function TechNews() {
     );
   }
 
-  if (data.length === 0) {
+  const { articles } = data;
+  // Lists saved before loadedAt existed fall back to the moment they were cached.
+  const fetchedAt = data.loadedAt ?? savedAt;
+  if (articles.length === 0) {
     return (
       <LabStatus icon="solar:radar-2-linear" title={copy.emptyTitle} text={copy.emptyText}>
         {retryButton}
@@ -97,14 +72,18 @@ export default function TechNews() {
     );
   }
 
+  // 'loading' with data = the other language's list, shown while this one arrives: its note would be wrong.
+  const note = status === 'loading' ? '' : translationNote(articles, lang, copy);
+
   return (
     <div>
       <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-        {data.map((article) => (
+        {articles.map((article) => (
           <li key={article.id} className="flex min-w-0 sm:[&:nth-child(odd):last-child]:col-span-2">
             <ArticleTile
               article={article}
-              when={relativeTime(article.publishedAt, savedAt, lang, copy.justNow)}
+              lang={lang}
+              when={relativeTime(article.publishedAt, fetchedAt, lang, copy.justNow)}
               copy={copy}
               newTab={t.ui.opensInNewTab}
             />
@@ -112,16 +91,20 @@ export default function TechNews() {
         ))}
       </ul>
 
-      <a href={MORE_URL} target="_blank" rel="noopener noreferrer" className="text-link mt-3">
+      <a href={NEWS_MORE_URL} target="_blank" rel="noopener noreferrer" className="text-link mt-3">
         {copy.more}
         <span aria-hidden="true">↗</span>
         <span className="sr-only">({t.ui.opensInNewTab})</span>
       </a>
+      {note && <p className="mt-1 text-footnote text-label-2">{note}</p>}
     </div>
   );
 }
 
-function ArticleTile({ article, when, copy, newTab }) {
+function ArticleTile({ article, lang, when, copy, newTab }) {
+  // A title still in another language is marked as such, so screen readers pronounce it correctly.
+  const textLang = baseLang(article.lang) === lang ? undefined : article.lang;
+
   return (
     <a
       href={article.url}
@@ -136,7 +119,9 @@ function ArticleTile({ article, when, copy, newTab }) {
         <Icon icon="solar:arrow-right-up-linear" className="size-4 shrink-0 text-label-2" aria-hidden="true" />
       </div>
 
-      <h3 className="line-clamp-3 break-words text-callout font-semibold text-label-1">{article.title}</h3>
+      <h3 lang={textLang} className="line-clamp-3 break-words text-callout font-semibold text-label-1">
+        {article.title}
+      </h3>
 
       <div className="mt-auto flex min-w-0 items-center gap-2 pt-1 text-footnote text-label-2">
         {article.avatar && (

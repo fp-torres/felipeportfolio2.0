@@ -40,10 +40,9 @@ jobs:
 
     - name: Gerar configuração privada
       env:
-        # Opcionais: cada um só entra no config.php se o secret existir. Sem eles o arquivo gerado é idêntico
+        # Opcional: só entra no config.php se o secret existir. Sem ele o arquivo gerado é idêntico
         # ao de antes (o FTP não o reenvia e o config.php que já está no servidor continua valendo).
         GH_CONTRIB_TOKEN: ${{ secrets.GH_CONTRIB_TOKEN }}
-        NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
       run: |
         cat << 'EOF' > ./dist/config.php
         <?php
@@ -62,7 +61,6 @@ jobs:
           fi
         }
         add_optional GITHUB_TOKEN "$GH_CONTRIB_TOKEN"
-        add_optional NASA_API_KEY "$NASA_API_KEY"
         chmod 600 ./dist/config.php
 
     - name: Publicar na Hostinger

@@ -18,7 +18,7 @@ Além de funcionar como vitrine profissional, o projeto inclui integrações em 
 * 📊 Estatísticas do **WakaTime** nos últimos **7 dias**, **30 dias** ou **histórico completo**.
 * 💾 **Cache em duas camadas** (servidor + navegador) com *stale-while-revalidate*: a última leitura válida continua visível mesmo durante indisponibilidades das APIs. Nenhum valor fictício é exibido.
 * 🎵 Integração com **Spotify** via bridge PHP, com fallback automático via Discord/Lanyard.
-* 🚀 Easter eggs no **Laboratório**: NASA Astronomy Picture of the Day, Máquina do Tempo e Radar de Notícias.
+* 🚀 Easter eggs no **Laboratório**: NASA Astronomy Picture of the Day, Máquina do Tempo e Radar de Notícias, com tradução automática para português.
 * 🎮 Arcade com **6 minigames** em tela cheia no celular, com controles de toque, teclado e recordes locais.
 * ♿ Acessível: navegação por teclado, foco visível, modais com foco preso e devolvido, suporte a *Reduzir movimento* e rótulos em PT/EN.
 * 🔄 Deploy automatizado para a Hostinger com **GitHub Actions**.
@@ -91,8 +91,9 @@ SPOTIFY_CLIENT_SECRET
 SPOTIFY_REFRESH_TOKEN
 WAKATIME_TOKEN
 GITHUB_TOKEN    # token de leitura pública (calendário de contribuições)
-NASA_API_KEY    # opcional — grátis em https://api.nasa.gov (sem ela usa a DEMO_KEY)
 ```
+
+A NASA (science.nasa.gov) e o Radar (DEV Community) usam APIs públicas e não precisam de chave.
 
 ### 3. Inicie a API PHP
 
@@ -106,7 +107,7 @@ npm run dev:api
 npm run dev
 ```
 
-O Vite encaminha todos os bridges (`/github.php`, `/wakatime.php`, `/spotify.php`, `/nasa.php`) para o PHP em `127.0.0.1:8000`. O `config.php` nunca é servido pelo Vite nem copiado para o `dist/`.
+O Vite encaminha todos os bridges (`/github.php`, `/wakatime.php`, `/spotify.php`, `/nasa.php`, `/news.php`) para o PHP em `127.0.0.1:8000`. O `config.php` nunca é servido pelo Vite nem copiado para o `dist/`.
 
 ---
 
@@ -150,10 +151,9 @@ SPOTIFY_REFRESH_TOKEN
 WAKATIME_TOKEN
 
 GH_CONTRIB_TOKEN   # opcional — vira $GITHUB_TOKEN (o GitHub não aceita secrets começando com GITHUB_)
-NASA_API_KEY       # opcional
 ```
 
-> **Importante — ordem dos secrets:** o `config.php` só é reenviado pelo FTP quando o conteúdo gerado muda. Hoje o `$GITHUB_TOKEN` existe apenas no `config.php` editado à mão no servidor; por isso **crie o `GH_CONTRIB_TOKEN` antes (ou junto) de qualquer mudança de secret** — inclusive ao trocar as credenciais do Spotify ou adicionar a `NASA_API_KEY` — senão o card do GitHub perde o token.
+> **Importante:** o `config.php` só é reenviado pelo FTP quando o conteúdo gerado muda, e ele é gerado só a partir dos secrets acima. Mantenha o `GH_CONTRIB_TOKEN` cadastrado; sem ele, o próximo `config.php` enviado sai sem `$GITHUB_TOKEN` e o card do GitHub perde o token.
 
 > **Segurança:** `public/config.php` permanece no `.gitignore` e nunca deve ser enviado ao repositório. Caso qualquer credencial seja exposta, revogue-a imediatamente e gere uma nova.
 
@@ -173,7 +173,8 @@ public/
 ├── github.php
 ├── wakatime.php
 ├── spotify.php
-├── nasa.php
+├── nasa.php              # foto astronômica do dia (science.nasa.gov), traduzida para PT
+├── news.php              # Radar tech (DEV Community), títulos traduzidos para PT
 ├── config.example.php
 └── .htaccess
 

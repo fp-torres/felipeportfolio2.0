@@ -23,7 +23,4 @@ $WAKATIME_TOKEN = getenv('WAKATIME_TOKEN') ?: '';
 // give it an expiry date and a reminder to renew it.
 $GITHUB_TOKEN = getenv('GITHUB_TOKEN') ?: '';
 
-// NASA Astronomy Picture of the Day (nasa.php) — optional secret NASA_API_KEY: free key from https://api.nasa.gov
-// (1,000 requests/hour). Without it the bridge uses NASA's DEMO_KEY, whose small limit is shared per IP address;
-// every date is cached on the server either way.
-$NASA_API_KEY = getenv('NASA_API_KEY') ?: '';
+// NASA's picture of the day (nasa.php) and the DEV Community radar (news.php) need no key: both read public APIs.
