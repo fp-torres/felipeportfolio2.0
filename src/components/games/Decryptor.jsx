@@ -1,441 +1,395 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../../context/useLanguage';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
-import { AnimatePresence, motion as Motion } from 'framer-motion';
+import { useLanguage } from '../../context/useLanguage';
+import { NewRecord, ResultOverlay, Stat } from './GameUI';
+import { RECORD_KEYS, parseCount, saveRecord, useStoredRecord } from './records';
+import { fill, plural } from './text';
+import { useElementSize } from './useElementSize';
+import { useGameKeys } from './useGameKeys';
+import { useGameViewport } from './viewport';
 
-const ALL_SYMBOLS = [
-  { id: 'A', icon: 'solar:code-circle-bold',        color: 'text-green-400'   },
-  { id: 'B', icon: 'solar:shield-warning-bold',      color: 'text-red-400'    },
-  { id: 'C', icon: 'solar:cpu-bolt-bold',            color: 'text-blue-400'   },
-  { id: 'D', icon: 'solar:wi-fi-router-bold',        color: 'text-yellow-400' },
-  { id: 'E', icon: 'solar:database-bold',            color: 'text-purple-400' },
-  { id: 'F', icon: 'solar:lock-password-bold',       color: 'text-orange-400' },
-  { id: 'G', icon: 'solar:bug-bold',                 color: 'text-pink-400'   },
-  { id: 'H', icon: 'solar:server-bold',              color: 'text-cyan-400'   },
-  { id: 'I', icon: 'solar:key-bold',                 color: 'text-lime-400'   },
-  { id: 'J', icon: 'solar:fire-bold',                color: 'text-rose-400'   },
+// Game pieces: ten glyphs, each with its own colour token (the shape alone also tells them apart).
+const SYMBOLS = [
+  { id: 'A', icon: 'solar:code-circle-linear', color: 'text-success' },
+  { id: 'B', icon: 'solar:shield-warning-linear', color: 'text-danger' },
+  { id: 'C', icon: 'solar:cpu-bolt-linear', color: 'text-data-1' },
+  { id: 'D', icon: 'solar:wi-fi-router-linear', color: 'text-primary' },
+  { id: 'E', icon: 'solar:database-linear', color: 'text-data-4' },
+  { id: 'F', icon: 'solar:lock-password-linear', color: 'text-label-1' },
+  { id: 'G', icon: 'solar:bug-linear', color: 'text-data-6' },
+  { id: 'H', icon: 'solar:server-linear', color: 'text-info' },
+  { id: 'I', icon: 'solar:key-linear', color: 'text-label-2' },
+  { id: 'J', icon: 'solar:fire-linear', color: 'text-warning' },
 ];
+const SYMBOL_BY_ID = Object.fromEntries(SYMBOLS.map((symbol) => [symbol.id, symbol]));
 
-const getLevelConfig = (level) => {
-  if (level === 1)  return { slots: 3, options: 4,  tries: 8  };
-  if (level === 2)  return { slots: 4, options: 5,  tries: 10 };
-  if (level === 3)  return { slots: 4, options: 6,  tries: 10 };
-  if (level === 4)  return { slots: 5, options: 6,  tries: 12 };
-  if (level === 5)  return { slots: 5, options: 7,  tries: 11 };
-  if (level === 6)  return { slots: 5, options: 8,  tries: 10 };
-  if (level === 7)  return { slots: 6, options: 8,  tries: 12 };
-  if (level === 8)  return { slots: 6, options: 9,  tries: 11 };
-  if (level === 9)  return { slots: 6, options: 9,  tries: 10 };
-  return {
-    slots:   6,
-    options: 10,
-    tries:   Math.max(7, 10 - Math.floor((level - 10) / 2)),
+const MIN_KEY = 44; // every key stays a full touch target
+const KEY_GAP = 8;
+const MAX_KEYS_PER_ROW = 6;
+
+function configFor(level) {
+  const table = [
+    null,
+    { slots: 3, options: 4, tries: 8 },
+    { slots: 4, options: 5, tries: 10 },
+    { slots: 4, options: 6, tries: 10 },
+    { slots: 5, options: 6, tries: 12 },
+    { slots: 5, options: 7, tries: 11 },
+    { slots: 5, options: 8, tries: 10 },
+    { slots: 6, options: 8, tries: 12 },
+    { slots: 6, options: 9, tries: 11 },
+    { slots: 6, options: 9, tries: 10 },
+  ];
+  return table[level] ?? { slots: 6, options: 10, tries: Math.max(7, 10 - Math.floor((level - 10) / 2)) };
+}
+
+function createCode(level) {
+  const { slots, options } = configFor(level);
+  return Array.from({ length: slots }, () => SYMBOLS[Math.floor(Math.random() * options)].id);
+}
+
+function score(guess, code) {
+  let exact = 0;
+  const restCode = [];
+  const restGuess = [];
+  guess.forEach((id, index) => {
+    if (id === code[index]) exact += 1;
+    else {
+      restCode.push(code[index]);
+      restGuess.push(id);
+    }
+  });
+  let partial = 0;
+  restGuess.forEach((id) => {
+    const found = restCode.indexOf(id);
+    if (found !== -1) {
+      partial += 1;
+      restCode.splice(found, 1);
+    }
+  });
+  return { exact, partial };
+}
+
+// Balanced rows of keys that are never narrower than MIN_KEY in the measured keyboard width.
+function keyColumns(options, width) {
+  const fit = width > 0 ? Math.floor((width + KEY_GAP) / (MIN_KEY + KEY_GAP)) : 5;
+  const perRow = Math.max(1, Math.min(MAX_KEYS_PER_ROW, fit, options));
+  return Math.ceil(options / Math.ceil(options / perRow));
+}
+
+function SymbolChip({ id, className = 'size-7' }) {
+  const symbol = SYMBOL_BY_ID[id];
+  return (
+    <span className={`grid place-items-center rounded-[8px] bg-white/[0.06] ${className}`}>
+      <Icon icon={symbol.icon} aria-hidden="true" className={`size-[64%] ${symbol.color}`} />
+    </span>
+  );
+}
+
+export default function Decryptor() {
+  const { t } = useLanguage();
+  const text = t.minigames.decryptor;
+  const common = t.minigames.common;
+  const { wide, short } = useGameViewport();
+  const landscape = wide && short; // landscape phones: history on the left, keyboard on the right
+  const stored = parseCount(useStoredRecord(RECORD_KEYS.decryptor)) ?? 1; // next level to unlock
+
+  const [level, setLevel] = useState(1);
+  const [code, setCode] = useState(() => createCode(1));
+  const [rows, setRows] = useState([]); // { kind: 'guess', symbols, exact, partial } | { kind: 'hint', index, symbol }
+  const [current, setCurrent] = useState([]);
+  const [status, setStatus] = useState('playing'); // playing | won | lost
+  const [newRecord, setNewRecord] = useState(false);
+  const historyRef = useRef(null);
+  const [keysRef, keysBox] = useElementSize();
+
+  const config = configFor(level);
+  const options = SYMBOLS.slice(0, config.options);
+  const used = rows.length; // a hint costs one attempt, like a guess
+  const left = config.tries - used;
+  const full = current.length === config.slots;
+  const playing = status === 'playing';
+  const columns = keyColumns(config.options, keysBox.width);
+  const keyRows = Math.ceil(config.options / columns);
+
+  // Positions not confirmed yet (never exact in a guess and not revealed by a hint).
+  const unknown = code
+    .map((id, index) => index)
+    .filter(
+      (index) =>
+        !rows.some((row) =>
+          row.kind === 'hint' ? row.index === index : row.symbols[index] === code[index],
+        ),
+    );
+  const hintUsed = rows.some((row) => row.kind === 'hint');
+  const canHint = playing && !hintUsed && left > 1 && unknown.length > 0;
+
+  useEffect(() => {
+    const history = historyRef.current;
+    if (history) history.scrollTop = history.scrollHeight;
+  }, [rows.length]);
+
+  const startLevel = (next) => {
+    setLevel(next);
+    setCode(createCode(next));
+    setRows([]);
+    setCurrent([]);
+    setNewRecord(false);
+    setStatus('playing');
   };
-};
 
-const keyboardCols = (optCount) => {
-  if (optCount <= 4) return 4;
-  if (optCount <= 6) return 6;
-  return 5;
-};
+  const add = (id) => {
+    if (playing && !full) setCurrent((previous) => [...previous, id]);
+  };
 
-// ── Defined OUTSIDE Decryptor so its reference is stable across renders ──
-const GuessRow = ({ turn, slotCount, compact = false, txt }) => {
-  if (turn.isHint) {
+  const erase = () => {
+    if (playing) setCurrent((previous) => previous.slice(0, -1));
+  };
+
+  const hint = () => {
+    if (!canHint) return;
+    const index = unknown[0];
+    setRows((previous) => [...previous, { kind: 'hint', index, symbol: code[index] }]);
+  };
+
+  const submit = () => {
+    if (!playing || !full) return;
+    const result = score(current, code);
+    const nextRows = [...rows, { kind: 'guess', symbols: current, ...result }];
+    setRows(nextRows);
+    setCurrent([]);
+    if (result.exact === config.slots) {
+      setStatus('won');
+      if (level + 1 > stored) {
+        saveRecord(RECORD_KEYS.decryptor, level + 1);
+        setNewRecord(true);
+      }
+    } else if (nextRows.length >= config.tries) {
+      setStatus('lost');
+    }
+  };
+
+  // Physical keyboard, only while this game is open: 1–9/0 pick symbols, Backspace deletes, Enter submits.
+  useGameKeys((event) => {
+    if (!playing) return false;
+    if (/^[0-9]$/.test(event.key)) {
+      const index = event.key === '0' ? 9 : Number(event.key) - 1;
+      if (index >= options.length) return false;
+      add(options[index].id);
+      return true;
+    }
+    if (event.key === 'Backspace') {
+      erase();
+      return true;
+    }
+    if (event.key === 'Enter') {
+      submit();
+      return true;
+    }
+    return false;
+  });
+
+  const stats = (
+    <div className="flex shrink-0 items-center gap-5">
+      <Stat label={common.level} value={level} />
+      <Stat label={text.attempts} value={`${used}/${config.tries}`} />
+      <button
+        type="button"
+        onClick={hint}
+        disabled={!canHint}
+        aria-label={hintUsed ? text.hintUsed : undefined}
+        className="btn-secondary ml-auto shrink-0 px-4"
+      >
+        <Icon icon="solar:eye-linear" aria-hidden="true" className="size-5" />
+        {text.hint}
+      </button>
+    </div>
+  );
+
+  const legend = (
+    <p className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 text-footnote text-label-2">
+      <span className="inline-flex items-center gap-1.5">
+        <span aria-hidden="true" className="size-2.5 rounded-full bg-success" />
+        {text.exactMatch}
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span aria-hidden="true" className="size-2.5 rounded-full bg-warning" />
+        {text.partialMatch}
+      </span>
+    </p>
+  );
+
+  // Chips shrink (never overflow) when six of them meet a narrow column.
+  const chipColumns = { gridTemplateColumns: `repeat(${config.slots}, minmax(0, 1.75rem))` };
+
+  const history = (
+    <ol
+      ref={historyRef}
+      className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain rounded-tile bg-bg p-2 ring-1 ring-white/10"
+    >
+      {rows.length === 0 && (
+        <li className="grid h-full place-items-center px-4 text-center text-footnote text-label-2">{text.placeholder}</li>
+      )}
+      {rows.map((row, index) =>
+        row.kind === 'hint' ? (
+          <li key={index} className="flex items-center gap-2 rounded-[10px] bg-white/[0.04] px-2 py-1.5 text-footnote text-label-2">
+            <Icon icon="solar:eye-linear" aria-hidden="true" className="size-4 shrink-0" />
+            <span className="min-w-0">{fill(text.hintRow, { n: row.index + 1 })}</span>
+            <SymbolChip id={row.symbol} className="size-7 shrink-0" />
+            <span className="ml-auto shrink-0">{text.hintCost}</span>
+          </li>
+        ) : (
+          <li
+            key={index}
+            aria-label={fill(text.guessLabel, { n: index + 1, exact: row.exact, partial: row.partial })}
+            className="flex items-center justify-between gap-2 rounded-[10px] bg-white/[0.04] px-2 py-1.5"
+          >
+            <span aria-hidden="true" className="grid min-w-0 flex-1 gap-1" style={chipColumns}>
+              {row.symbols.map((id, slot) => (
+                <SymbolChip key={slot} id={id} className="aspect-square w-full" />
+              ))}
+            </span>
+            <span aria-hidden="true" className="grid shrink-0 grid-cols-3 gap-1">
+              {Array.from({ length: config.slots }, (_, peg) => (
+                <span
+                  key={peg}
+                  className={`size-2.5 rounded-full ${
+                    peg < row.exact ? 'bg-success' : peg < row.exact + row.partial ? 'bg-warning' : 'bg-white/15'
+                  }`}
+                />
+              ))}
+            </span>
+          </li>
+        ),
+      )}
+    </ol>
+  );
+
+  const currentRow = (
+    <div
+      className="grid shrink-0 justify-center gap-1.5"
+      style={{ gridTemplateColumns: `repeat(${config.slots}, minmax(0, 2.5rem))` }}
+    >
+      {Array.from({ length: config.slots }, (_, slot) => (
+        <span
+          key={slot}
+          role="img"
+          aria-label={
+            current[slot]
+              ? `${fill(text.slot, { n: slot + 1 })}: ${text.symbols[current[slot]]}`
+              : fill(text.slot, { n: slot + 1 })
+          }
+          className={`grid aspect-square w-full place-items-center rounded-[10px] bg-bg ring-1 ${
+            slot === current.length && playing ? 'ring-white/50' : 'ring-white/10'
+          }`}
+        >
+          {current[slot] ? (
+            <Icon
+              icon={SYMBOL_BY_ID[current[slot]].icon}
+              aria-hidden="true"
+              className={`size-[60%] ${SYMBOL_BY_ID[current[slot]].color}`}
+            />
+          ) : (
+            <span aria-hidden="true" className="size-1 rounded-full bg-white/25" />
+          )}
+        </span>
+      ))}
+    </div>
+  );
+
+  const keyboard = (
+    <div ref={keysRef} className="flex shrink-0 flex-col gap-2">
+      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+        {options.map((symbol, index) => (
+          <button
+            key={symbol.id}
+            type="button"
+            onClick={() => add(symbol.id)}
+            disabled={!playing || full}
+            aria-label={text.symbols[symbol.id]}
+            aria-keyshortcuts={index < 9 ? String(index + 1) : '0'}
+            className="grid min-h-12 place-items-center rounded-control bg-white/[0.08] transition-[background-color,transform] duration-fast hover:bg-white/15 active:scale-95 active:bg-white/20 disabled:opacity-40"
+          >
+            <Icon icon={symbol.icon} aria-hidden="true" className={`size-6 ${symbol.color}`} />
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" onClick={erase} disabled={!playing || current.length === 0} className="btn-secondary px-3">
+          <Icon icon="solar:backspace-linear" aria-hidden="true" className="size-5" />
+          {text.backspace}
+        </button>
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!playing || !full}
+          className={`${full && playing ? 'btn-primary' : 'btn-secondary'} px-3 font-mono font-semibold tracking-wide`}
+        >
+          {text.enter}
+        </button>
+      </div>
+      <p className="hidden text-center text-caption text-label-2 can-hover:block">
+        {fill(text.keysHelp, { n: Math.min(config.options, 9) })}
+      </p>
+    </div>
+  );
+
+  const ending = status !== 'playing' && (
+    <ResultOverlay>
+      {short ? null : status === 'won' ? (
+        <Icon icon="solar:lock-unlocked-linear" aria-hidden="true" className="size-10 text-success" />
+      ) : (
+        <Icon icon="solar:shield-cross-linear" aria-hidden="true" className="size-10 text-danger" />
+      )}
+      <p className="text-title-2 text-label-1">{status === 'won' ? text.accessGranted : text.accessDenied}</p>
+      <p className="text-callout text-label-2">
+        {status === 'won' ? plural(text.cracked, rows.filter((row) => row.kind === 'guess').length) : text.codeWas}
+      </p>
+      <div role="img" aria-label={code.map((id) => text.symbols[id]).join(', ')} className="flex gap-1.5">
+        {code.map((id, index) => (
+          <SymbolChip key={index} id={id} className="size-9" />
+        ))}
+      </div>
+      {newRecord && <NewRecord label={common.newRecord} />}
+      <button
+        type="button"
+        onClick={() => startLevel(status === 'won' ? level + 1 : level)}
+        className="btn-primary mt-1"
+      >
+        {status === 'won' ? common.nextLevel : common.tryAgain}
+      </button>
+    </ResultOverlay>
+  );
+
+  // Landscape phones: history on the left, input on the right. The legend goes beside the keyboard while
+  // it is a single row of keys (there is room), otherwise under the history.
+  if (landscape) {
+    const legendBeside = keyRows === 1;
     return (
-      <div className="flex items-center gap-2 text-yellow-400 text-xs w-full flex-wrap bg-yellow-500/10 border border-yellow-500/20 p-2 rounded-lg">
-        <Icon icon="solar:eye-bold" />
-        <span>{txt?.hintRow ?? 'Hint: position'} {turn.hintReveal.index + 1} =</span>
-        <div className={`${compact ? 'w-6 h-6' : 'w-7 h-7'} rounded bg-black/40 flex items-center justify-center`}>
-          <Icon icon={turn.hintReveal.symbol.icon} className={turn.hintReveal.symbol.color} />
+      <div className="relative flex h-full gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          {stats}
+          {history}
+          {!legendBeside && legend}
         </div>
-        <span className="ml-auto text-yellow-600 text-[10px]">−1 attempt</span>
+        <div className="flex w-[clamp(16rem,46%,22rem)] shrink-0 flex-col justify-end gap-2">
+          {legendBeside && <div className="mb-auto pt-1">{legend}</div>}
+          {currentRow}
+          {keyboard}
+        </div>
+        {ending}
       </div>
     );
   }
-  const iconSz = compact ? 'w-6 h-6' : 'w-8 h-8 sm:w-9 sm:h-9';
-  return (
-    <div className={`flex items-center justify-between ${compact ? 'p-1.5' : 'p-2'} bg-white/5 rounded-lg border border-white/5`}>
-      <div className={`flex ${compact ? 'gap-1' : 'gap-1 sm:gap-2'}`}>
-        {turn.guess.map((s, i) => (
-          <div key={i} className={`${iconSz} rounded bg-black/40 flex items-center justify-center shrink-0`}>
-            <Icon icon={s.icon} className={`${s.color} ${compact ? 'text-xs' : 'text-sm sm:text-base'}`} />
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-0.5 ml-2 flex-wrap justify-end max-w-[52px] shrink-0">
-        {[...Array(turn.exact)].map((_, i) =>
-          <div key={`e${i}`} className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_4px_#22c55e]" />
-        )}
-        {[...Array(turn.partial)].map((_, i) =>
-          <div key={`p${i}`} className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_4px_#eab308]" />
-        )}
-        {[...Array(slotCount - turn.exact - turn.partial)].map((_, i) =>
-          <div key={`w${i}`} className="w-2.5 h-2.5 rounded-full bg-gray-700" />
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default function Decryptor({ onBack }) {
-  const { t } = useLanguage();
-  const common = t?.minigames?.common;
-  const txt    = t?.minigames?.decryptor;
-
-  const [level,        setLevel]        = useState(1);
-  const [secretCode,   setSecretCode]   = useState([]);
-  const [guesses,      setGuesses]      = useState([]);
-  const [currentGuess, setCurrentGuess] = useState([]);
-  const [gameStatus,   setGameStatus]   = useState('playing');
-  const [highScore,    setHighScore]    = useState(1);
-  const [hintUsed,     setHintUsed]     = useState(false);
-
-  const scrollRef  = useRef(null);
-  const historyRef = useRef(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('decryptorRecord');
-    if (saved) setHighScore(parseInt(saved));
-    startLevel(1);
-  }, []);
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [guesses, currentGuess]);
-
-  const startLevel = (lvl) => {
-    const config  = getLevelConfig(lvl);
-    const pool    = ALL_SYMBOLS.slice(0, config.options);
-    const newCode = Array.from({ length: config.slots }, () =>
-      pool[Math.floor(Math.random() * pool.length)]
-    );
-    setSecretCode(newCode);
-    setGuesses([]);
-    setCurrentGuess([]);
-    setGameStatus('playing');
-    setLevel(lvl);
-    setHintUsed(false);
-  };
-
-  const handleSelectSymbol = (symbol) => {
-    if (gameStatus !== 'playing') return;
-    const config = getLevelConfig(level);
-    if (currentGuess.length < config.slots)
-      setCurrentGuess(prev => [...prev, symbol]);
-  };
-
-  const handleBackspace = () => {
-    if (gameStatus !== 'playing') return;
-    setCurrentGuess(prev => prev.slice(0, -1));
-  };
-
-  const handleHint = () => {
-    if (gameStatus !== 'playing' || hintUsed) return;
-    const config = getLevelConfig(level);
-    if (guesses.length + 1 >= config.tries) return;
-    setHintUsed(true);
-    let revealIdx = 0;
-    for (let i = 0; i < config.slots; i++) {
-      const alreadyExact = guesses.some(g => !g.isHint && g.guess[i]?.id === secretCode[i]?.id);
-      if (!alreadyExact) { revealIdx = i; break; }
-    }
-    const revealed = { index: revealIdx, symbol: secretCode[revealIdx] };
-    setGuesses(prev => [
-      ...prev,
-      { isHint: true, hintReveal: revealed, guess: [], exact: 0, partial: 0 },
-    ]);
-  };
-
-  const handleSubmit = () => {
-    if (gameStatus !== 'playing') return;
-    const config = getLevelConfig(level);
-    if (currentGuess.length !== config.slots) return;
-    let exact = 0, partial = 0;
-    const tempSecret = [...secretCode];
-    const tempGuess  = [...currentGuess];
-    for (let i = 0; i < config.slots; i++) {
-      if (tempGuess[i].id === tempSecret[i].id) {
-        exact++;
-        tempSecret[i] = null;
-        tempGuess[i]  = 'MATCHED';
-      }
-    }
-    for (let i = 0; i < config.slots; i++) {
-      if (tempGuess[i] === 'MATCHED') continue;
-      const fi = tempSecret.findIndex(s => s && s.id === tempGuess[i].id);
-      if (fi !== -1) { partial++; tempSecret[fi] = null; }
-    }
-    const newHistory = [...guesses, { guess: currentGuess, exact, partial }];
-    setGuesses(newHistory);
-    setCurrentGuess([]);
-    if (exact === config.slots) {
-      setGameStatus('won');
-      if (level >= highScore) {
-        const next = level + 1;
-        setHighScore(next);
-        localStorage.setItem('decryptorRecord', next.toString());
-      }
-    } else if (newHistory.filter(g => !g.isHint).length >= config.tries) {
-      setGameStatus('lost');
-    }
-  };
-
-  const config      = getLevelConfig(level);
-  const currentOpts = ALL_SYMBOLS.slice(0, config.options);
-  const isRowFull   = currentGuess.length === config.slots;
-  const realGuesses  = guesses.filter(g => !g.isHint);
-  const attemptsUsed = realGuesses.length;
-  const progressPct  = Math.min((attemptsUsed / config.tries) * 100, 100);
-  const progressColor =
-    progressPct > 75 ? 'bg-red-500' :
-    progressPct > 50 ? 'bg-yellow-500' : 'bg-green-500';
-  const cols = keyboardCols(config.options);
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-[#0F172A] rounded-3xl border border-white/10 p-3 sm:p-4 shadow-2xl relative flex flex-col h-[85vh] max-h-[720px]">
-
-      {/* ── Header ── */}
-      <div className="flex flex-wrap justify-between items-center gap-2 mb-2 shrink-0">
-        <button
-          onClick={onBack}
-          className="text-white/50 hover:text-white flex items-center gap-1.5 text-sm font-bold transition-colors"
-        >
-          <Icon icon="solar:arrow-left-bold" /> {common?.exit ?? 'Exit'}
-        </button>
-
-        <div className="flex gap-2 items-center flex-wrap justify-end">
-          <button
-            onPointerDown={(e) => { e.preventDefault(); handleHint(); }}
-            disabled={hintUsed || gameStatus !== 'playing'}
-            className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold border transition-all touch-none ${
-              hintUsed || gameStatus !== 'playing'
-                ? 'bg-white/5 text-gray-600 border-white/5 cursor-not-allowed'
-                : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30'
-            }`}
-          >
-            <Icon icon="solar:eye-bold" />
-            {hintUsed ? (txt?.hintUsed ?? 'Used') : (txt?.hint ?? 'Hint')}
-          </button>
-
-          <div className="font-mono text-xs text-purple-300 bg-purple-500/20 px-3 py-1 rounded-lg border border-purple-500/30 whitespace-nowrap">
-            {common?.level ?? 'Level'} {level}
-          </div>
-
-          <div className="font-mono text-xs text-gray-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10 whitespace-nowrap">
-            {common?.max ?? 'Max'}: {highScore}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Title Banner ── */}
-      <div className="text-center mb-2 shrink-0">
-        <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-1">
-          <Icon icon="solar:lock-password-bold" className="text-primary text-xs" />
-          <span className="text-xs font-bold text-white tracking-wider">{txt?.title ?? 'Decryptor'}</span>
-          <span className="text-[10px] text-gray-500 font-mono">
-            {config.slots}×{config.options} · {config.tries} {txt?.tries ?? 'tries'}
-          </span>
-        </div>
-      </div>
-
-      {/* ── Legend ── */}
-      <div className="flex justify-center gap-4 mb-2 text-[10px] text-gray-400 bg-black/20 py-1.5 rounded-lg shrink-0">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e]" />
-          <span>{txt?.exactMatch ?? 'Correct Position'}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_5px_#eab308]" />
-          <span>{txt?.partialMatch ?? 'Right Symbol, Wrong Spot'}</span>
-        </div>
-      </div>
-
-      {/* ── Progress bar ── */}
-      <div className="w-full bg-white/5 rounded-full h-1.5 mb-1 shrink-0 overflow-hidden">
-        <div
-          className={`h-1.5 rounded-full transition-all duration-500 ${progressColor}`}
-          style={{ width: `${progressPct}%` }}
-        />
-      </div>
-      <div className="flex justify-between text-[10px] text-gray-600 font-mono mb-1 shrink-0 px-0.5">
-        <span>{attemptsUsed} / {config.tries} {txt?.tries ?? 'tries'}</span>
-        <span>{config.tries - attemptsUsed} {txt?.remaining ?? 'left'}</span>
-      </div>
-
-      {/* ── History ── */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-1.5 mb-2 pr-0.5 bg-black/20 rounded-xl p-2 border border-white/5 min-h-0"
-      >
-        {guesses.length === 0 && gameStatus === 'playing' && (
-          <div className="text-center text-gray-500 text-xs mt-10 opacity-50 px-4">
-            {txt?.placeholder ?? 'Select icons below to guess the password.'}
-          </div>
-        )}
-
-        {guesses.map((turn, idx) => (
-          <GuessRow key={idx} turn={turn} slotCount={config.slots} txt={txt} />
-        ))}
-
-        {gameStatus === 'playing' && (
-          <div className="flex items-center justify-between bg-primary/10 p-2 rounded-lg border border-primary/30">
-            <div className="flex gap-1 sm:gap-2">
-              {[...Array(config.slots)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded bg-black/40 flex items-center justify-center border transition-colors ${
-                    currentGuess[i] ? 'border-white/20' : 'border-primary/30'
-                  }`}
-                >
-                  {currentGuess[i] ? (
-                    <Icon icon={currentGuess[i].icon} className={currentGuess[i].color} />
-                  ) : i === currentGuess.length ? (
-                    <span className="w-0.5 h-4 bg-primary animate-pulse rounded-full" />
-                  ) : (
-                    <span className="w-1 h-1 bg-gray-700 rounded-full" />
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="text-xs text-primary font-bold font-mono whitespace-nowrap ml-2">
-              {attemptsUsed + 1}/{config.tries}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── End-game overlay ── */}
-      <AnimatePresence>
-        {gameStatus !== 'playing' && (
-          <Motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          >
-            <Motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 16 }}
-              animate={{ opacity: 1, scale: 1,    y: 0  }}
-              exit={{ opacity: 0, scale: 0.92, y: 16 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-              className="w-full max-w-sm bg-[#1e293b] border border-white/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
-            >
-              {gameStatus === 'won' ? (
-                <div className="p-6 text-center">
-                  <Icon icon="solar:lock-unlocked-bold" className="text-green-400 text-5xl mx-auto mb-2" />
-                  <h3 className="text-2xl font-bold text-white mb-1">
-                    {txt?.accessGranted ?? 'ACCESS GRANTED!'}
-                  </h3>
-                  <p className="text-gray-400 text-sm mb-2">
-                    {txt?.cracked ?? 'You cracked the encryption.'}
-                  </p>
-                  <div className="flex justify-center gap-2 mb-3 bg-black/30 p-2 rounded-lg">
-                    {secretCode.map((s, i) => (
-                      <Icon key={i} icon={s.icon} className={s.color} />
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-500 mb-4 font-mono">
-                    {attemptsUsed} {txt?.attemptsUsed ?? 'attempts used'} · {txt?.nextChallenge ?? 'Next challenge unlocked'}
-                  </p>
-                  <button
-                    onClick={() => startLevel(level + 1)}
-                    className="w-full bg-green-500 text-black font-bold py-3 rounded-xl hover:bg-green-400 transition-colors"
-                  >
-                    {common?.nextLevel ?? 'Next Level'} →
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="p-4 pb-2 text-center shrink-0">
-                    <Icon icon="solar:shield-warning-bold" className="text-red-500 text-4xl mx-auto mb-1" />
-                    <h3 className="text-xl font-bold text-white mb-1">
-                      {txt?.accessDenied ?? 'ACCESS DENIED'}
-                    </h3>
-                    <p className="text-gray-500 text-xs mb-2">
-                      {txt?.codeWas ?? 'The code was:'}
-                    </p>
-                    <div className="flex justify-center gap-1.5 mb-1 bg-black/30 p-2 rounded-lg">
-                      {secretCode.map((s, i) => (
-                        <div key={i} className="w-8 h-8 rounded bg-black/50 flex items-center justify-center border border-white/10">
-                          <Icon icon={s.icon} className={s.color} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mx-4 mb-1.5 shrink-0">
-                    <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">
-                      {txt?.allAttempts ?? 'All attempts'}
-                      <span className="ml-2 text-gray-600">({realGuesses.length})</span>
-                    </p>
-                  </div>
-
-                  <div
-                    ref={historyRef}
-                    className="overflow-y-auto flex-1 px-4 pb-2 space-y-1 min-h-0"
-                    style={{ maxHeight: '260px' }}
-                  >
-                    {guesses.map((turn, idx) => (
-                      <GuessRow key={idx} turn={turn} slotCount={config.slots} compact txt={txt} />
-                    ))}
-                  </div>
-
-                  <div className="p-4 pt-2 shrink-0">
-                    <button
-                      onClick={() => startLevel(level)}
-                      className="w-full bg-white/10 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-colors"
-                    >
-                      {common?.tryAgain ?? 'Try Again'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </Motion.div>
-          </Motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Keyboard ── */}
-      <div className="shrink-0 pt-2 border-t border-white/5 space-y-2">
-        <div
-          className="grid gap-1.5 sm:gap-2"
-          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-        >
-          {currentOpts.map((symbol) => (
-            <button
-              key={symbol.id}
-              onPointerDown={(e) => { e.preventDefault(); handleSelectSymbol(symbol); }}
-              disabled={gameStatus !== 'playing'}
-              className="bg-black/30 hover:bg-white/10 p-2.5 sm:p-3 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 touch-none"
-            >
-              <Icon icon={symbol.icon} className={`${symbol.color} text-xl sm:text-2xl`} />
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-          <button
-            onPointerDown={(e) => { e.preventDefault(); handleBackspace(); }}
-            disabled={gameStatus !== 'playing'}
-            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl py-3 flex items-center justify-center active:scale-95 touch-none gap-1.5 text-sm font-medium disabled:opacity-40"
-          >
-            <Icon icon="solar:backspace-bold" className="text-xl" />
-          </button>
-
-          <button
-            onPointerDown={(e) => { e.preventDefault(); handleSubmit(); }}
-            disabled={gameStatus !== 'playing' || !isRowFull}
-            className={`rounded-xl py-3 flex items-center justify-center active:scale-95 font-bold transition-all touch-none ${
-              isRowFull && gameStatus === 'playing'
-                ? 'bg-primary text-bg hover:bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.4)]'
-                : 'bg-gray-800 text-gray-600 cursor-not-allowed'
-            }`}
-          >
-            {txt?.enter ?? 'ENTER'}
-          </button>
-        </div>
-      </div>
+    <div className="relative mx-auto flex h-full w-full max-w-md flex-col gap-2">
+      {stats}
+      {legend}
+      {history}
+      {currentRow}
+      {keyboard}
+      {ending}
     </div>
   );
 }

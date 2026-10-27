@@ -1,409 +1,369 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLanguage } from '../../context/useLanguage';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
+import { useLanguage } from '../../context/useLanguage';
+import { BoardOverlay, NewRecord, Stat } from './GameUI';
+import { RECORD_KEYS, parseCount, saveRecord, useStoredRecord } from './records';
+import { fill } from './text';
+import { useElementSize } from './useElementSize';
+import { useGameKeys } from './useGameKeys';
+import { useGameViewport } from './viewport';
 
-const GRID_SIZE    = 20;
-const BASE_SPEED   = 150;
-const MIN_SPEED    = 65;
+const GRID = 20;
+const BASE_SPEED = 150;
+const MIN_SPEED = 65;
 const GOLDEN_CHANCE = 0.18;
-const OPPOSITES = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' };
+const SWIPE_DISTANCE = 24; // px of finger travel before a swipe turns the snake — taps and jitter never do
+const MAX_BOARD = 560;
+const ROW_SIDES = 96 + 152 + 2 * 24; // side panels + gaps in the row layout
+const START_SNAKE = [
+  { x: 10, y: 10 },
+  { x: 9, y: 10 },
+  { x: 8, y: 10 },
+];
+const START_FOOD = { x: 15, y: 10, golden: false };
+const OPPOSITE = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' };
+const STEP = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] };
 const KEY_DIRECTIONS = {
-  ArrowUp: 'UP',
-  ArrowDown: 'DOWN',
-  ArrowLeft: 'LEFT',
-  ArrowRight: 'RIGHT',
+  arrowup: 'UP',
   w: 'UP',
+  arrowdown: 'DOWN',
   s: 'DOWN',
+  arrowleft: 'LEFT',
   a: 'LEFT',
+  arrowright: 'RIGHT',
   d: 'RIGHT',
 };
 
-const calcSpeed = (score) => Math.max(MIN_SPEED, BASE_SPEED - Math.floor(score / 50) * 10);
-const calcLevel = (score) => Math.floor(score / 50) + 1;
+const DPAD = [
+  { dir: 'UP', label: 'up', icon: 'solar:alt-arrow-up-linear', cell: 'col-start-2 row-start-1' },
+  { dir: 'LEFT', label: 'left', icon: 'solar:alt-arrow-left-linear', cell: 'col-start-1 row-start-2' },
+  { dir: 'RIGHT', label: 'right', icon: 'solar:alt-arrow-right-linear', cell: 'col-start-3 row-start-2' },
+  { dir: 'DOWN', label: 'down', icon: 'solar:alt-arrow-down-linear', cell: 'col-start-2 row-start-3' },
+];
 
-function getSavedHighScore() {
-  try {
-    return Number.parseInt(localStorage.getItem('snakeHighScore') || '0', 10) || 0;
-  } catch {
-    return 0;
-  }
+const levelFor = (score) => Math.floor(score / 50) + 1;
+const speedFor = (score) => Math.max(MIN_SPEED, BASE_SPEED - (levelFor(score) - 1) * 10);
+
+// A random free cell, or null when the snake fills the whole board.
+function randomFood(snake) {
+  const taken = new Set(snake.map(({ x, y }) => y * GRID + x));
+  const free = [];
+  for (let cell = 0; cell < GRID * GRID; cell += 1) if (!taken.has(cell)) free.push(cell);
+  if (free.length === 0) return null;
+  const cell = free[Math.floor(Math.random() * free.length)];
+  return { x: cell % GRID, y: Math.floor(cell / GRID), golden: Math.random() < GOLDEN_CHANCE };
 }
 
-export default function SnakeGame({ onBack }) {
+// Cells are positioned in % of the board with a 1px inset so segments read as separate blocks.
+const cellStyle = ({ x, y }) => ({
+  left: `calc(${(x * 100) / GRID}% + 1px)`,
+  top: `calc(${(y * 100) / GRID}% + 1px)`,
+  width: `calc(${100 / GRID}% - 2px)`,
+  height: `calc(${100 / GRID}% - 2px)`,
+});
+
+export default function SnakeGame() {
   const { t } = useLanguage();
-  const txt    = t?.minigames?.snake;
-  const common = t?.minigames?.common;
+  const text = t.minigames.snake;
+  const common = t.minigames.common;
+  const viewport = useGameViewport();
+  const { wide } = viewport;
+  const best = parseCount(useStoredRecord(RECORD_KEYS.snake)) ?? 0;
 
-  const [snake,       setSnake]       = useState([{ x: 10, y: 10 }]);
-  const [food,        setFood]        = useState({ x: 15, y: 15, golden: false });
-  const [gameOver,    setGameOver]    = useState(false);
-  const [score,       setScore]       = useState(0);
-  const [highScore,   setHighScore]   = useState(getSavedHighScore);
-  const [isPaused,    setIsPaused]    = useState(false);
-  const [isNewRecord, setIsNewRecord] = useState(false);
-  const [started,     setStarted]     = useState(false);
-  const [level,       setLevel]       = useState(1);
-  const [isMobile] = useState(
-    () => window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0,
+  const [snake, setSnake] = useState(START_SNAKE);
+  const [food, setFood] = useState(START_FOOD);
+  const [score, setScore] = useState(0);
+  const [status, setStatus] = useState('idle'); // idle | playing | paused | over
+  const [newRecord, setNewRecord] = useState(false);
+
+  const game = useRef({ snake: START_SNAKE, food: START_FOOD, dir: 'RIGHT', queue: [], score: 0, best: 0 });
+  const swipe = useRef(null);
+  const [areaRef, area] = useElementSize();
+  const [controlsRef, controls] = useElementSize();
+  // Row: the board takes what the side panels leave. Column: board and controls share the measured area
+  // as one centred group.
+  const boardSize = Math.floor(
+    wide
+      ? Math.min(viewport.height, viewport.width - ROW_SIDES, MAX_BOARD)
+      : Math.min(area.width, area.height - (controls.height > 0 ? controls.height + 16 : 0), MAX_BOARD),
   );
+  const level = levelFor(score);
 
-  const dirRef        = useRef('RIGHT');
-  const nextDirRef    = useRef('RIGHT');
-  const snakeRef      = useRef([{ x: 10, y: 10 }]);
-  const foodRef       = useRef({ x: 15, y: 15, golden: false });
-  const scoreRef      = useRef(0);
-  const highScoreRef  = useRef(highScore);
-  const gameOverRef   = useRef(false);
-  const isPausedRef   = useRef(false);
-  const loopRef       = useRef(null);
-  const tickRef       = useRef(null);
-
-  const generateFood = useCallback((currentSnake) => {
-    let pos;
-    do {
-      pos = {
-        x: Math.floor(Math.random() * GRID_SIZE),
-        y: Math.floor(Math.random() * GRID_SIZE),
-        golden: Math.random() < GOLDEN_CHANCE,
-      };
-    } while (currentSnake.some(s => s.x === pos.x && s.y === pos.y));
-    return pos;
-  }, []);
-
-  const scheduleNextTick = useCallback((speed) => {
-    window.clearTimeout(loopRef.current);
-    loopRef.current = window.setTimeout(() => tickRef.current?.(), speed);
-  }, []);
-
-  const endGame = useCallback(() => {
-    gameOverRef.current = true;
-    window.clearTimeout(loopRef.current);
-    setGameOver(true);
-  }, []);
-
-  const tick = useCallback(() => {
-    if (gameOverRef.current || isPausedRef.current) return;
-
-    dirRef.current = nextDirRef.current;
-    const prev = snakeRef.current;
-    const head = { ...prev[0] };
-
-    switch (dirRef.current) {
-      case 'UP':    head.y -= 1; break;
-      case 'DOWN':  head.y += 1; break;
-      case 'LEFT':  head.x -= 1; break;
-      case 'RIGHT': head.x += 1; break;
-    }
-
-    if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
-      endGame();
-      return;
-    }
-
-    const currentFood = foodRef.current;
-    const ateFood = head.x === currentFood.x && head.y === currentFood.y;
-    const collisionBody = ateFood ? prev : prev.slice(0, -1);
-
-    if (collisionBody.some((segment) => segment.x === head.x && segment.y === head.y)) {
-      endGame();
-      return;
-    }
-
-    const next = [head, ...prev];
-
-    if (ateFood) {
-      const pts      = currentFood.golden ? 30 : 10;
-      const newScore = scoreRef.current + pts;
-      scoreRef.current = newScore;
-
-      const newFood = generateFood(next);
-      foodRef.current  = newFood;
-      snakeRef.current = next;
-
-      setSnake([...next]);
-      setScore(newScore);
-      setFood({ ...newFood });
-      setLevel(calcLevel(newScore));
-
-      if (newScore > highScoreRef.current) {
-        highScoreRef.current = newScore;
-        localStorage.setItem('snakeHighScore', newScore.toString());
-        setHighScore(newScore);
-        setIsNewRecord(true);
-      }
-      scheduleNextTick(calcSpeed(newScore));
-    } else {
-      next.pop();
-      snakeRef.current = next;
-      setSnake([...next]);
-      scheduleNextTick(calcSpeed(scoreRef.current));
-    }
-  }, [endGame, generateFood, scheduleNextTick]);
-
+  // The loop only runs while playing: pausing, game over and closing the sheet (unmount) all stop it.
   useEffect(() => {
-    tickRef.current = tick;
-  }, [tick]);
+    if (status !== 'playing') return undefined;
+    let timer = 0;
 
-  const startGame = useCallback(() => {
-    window.clearTimeout(loopRef.current);
-    const initSnake = [{ x: 10, y: 10 }];
-    const initFood  = generateFood(initSnake);
+    const tick = () => {
+      const current = game.current;
+      if (current.queue.length > 0) current.dir = current.queue.shift();
+      const [dx, dy] = STEP[current.dir];
+      const head = { x: current.snake[0].x + dx, y: current.snake[0].y + dy };
+      const ate = head.x === current.food.x && head.y === current.food.y;
+      const body = ate ? current.snake : current.snake.slice(0, -1);
+      const hitWall = head.x < 0 || head.y < 0 || head.x >= GRID || head.y >= GRID;
 
-    snakeRef.current    = initSnake;
-    foodRef.current     = initFood;
-    scoreRef.current    = 0;
-    dirRef.current      = 'RIGHT';
-    nextDirRef.current  = 'RIGHT';
-    gameOverRef.current = false;
-    isPausedRef.current = false;
-
-    setSnake(initSnake);
-    setFood(initFood);
-    setScore(0);
-    setLevel(1);
-    setGameOver(false);
-    setIsPaused(false);
-    setIsNewRecord(false);
-    setStarted(true);
-
-    scheduleNextTick(BASE_SPEED);
-  }, [generateFood, scheduleNextTick]);
-
-  const togglePause = useCallback(() => {
-    if (gameOverRef.current || !started) return;
-    const nextPaused = !isPausedRef.current;
-    isPausedRef.current = nextPaused;
-    setIsPaused(nextPaused);
-
-    if (nextPaused) {
-      window.clearTimeout(loopRef.current);
-    } else {
-      scheduleNextTick(calcSpeed(scoreRef.current));
-    }
-  }, [scheduleNextTick, started]);
-
-  useEffect(() => () => window.clearTimeout(loopRef.current), []);
-
-  useEffect(() => {
-    const onKey = (event) => {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
-        event.preventDefault();
-      }
-      if (event.key === ' ' || event.key === 'Escape') {
-        event.preventDefault();
-        togglePause();
+      if (hitWall || body.some((part) => part.x === head.x && part.y === head.y)) {
+        setStatus('over');
         return;
       }
 
-      const newDir = KEY_DIRECTIONS[event.key] ?? KEY_DIRECTIONS[event.key.toLowerCase()];
-      if (!newDir) return;
-      if (newDir !== OPPOSITES[dirRef.current]) nextDirRef.current = newDir;
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [togglePause]);
-
-  useEffect(() => {
-    const pauseWhenHidden = () => {
-      if (document.hidden && started && !gameOverRef.current && !isPausedRef.current) {
-        togglePause();
+      current.snake = [head, ...body];
+      if (ate) {
+        current.score += current.food.golden ? 30 : 10;
+        setScore(current.score);
+        if (current.score > current.best) {
+          saveRecord(RECORD_KEYS.snake, current.score);
+          setNewRecord(true);
+        }
+        const next = randomFood(current.snake);
+        if (!next) {
+          // The snake fills the board: nothing left to eat.
+          setSnake(current.snake);
+          setStatus('over');
+          return;
+        }
+        current.food = next;
+        setFood(next);
       }
+      setSnake(current.snake);
+      timer = window.setTimeout(tick, speedFor(current.score));
     };
 
+    timer = window.setTimeout(tick, speedFor(game.current.score));
+    return () => window.clearTimeout(timer);
+  }, [status]);
+
+  // Switching tabs or apps pauses the game.
+  useEffect(() => {
+    if (status !== 'playing') return undefined;
+    const pauseWhenHidden = () => {
+      if (document.hidden) setStatus('paused');
+    };
     document.addEventListener('visibilitychange', pauseWhenHidden);
     return () => document.removeEventListener('visibilitychange', pauseWhenHidden);
-  }, [started, togglePause]);
+  }, [status]);
 
-  const mobileDir = (dir) => {
-    if (dir !== OPPOSITES[dirRef.current]) nextDirRef.current = dir;
+  const start = () => {
+    const firstFood = randomFood(START_SNAKE);
+    game.current = { snake: START_SNAKE, food: firstFood, dir: 'RIGHT', queue: [], score: 0, best };
+    setSnake(START_SNAKE);
+    setFood(firstFood);
+    setScore(0);
+    setNewRecord(false);
+    setStatus('playing');
   };
 
-  return (
-    <div className="w-full max-w-lg mx-auto bg-surface/30 backdrop-blur-md rounded-3xl border border-white/10 p-4 sm:p-6 shadow-2xl relative">
+  const togglePause = () => {
+    if (status === 'playing') setStatus('paused');
+    else if (status === 'paused') setStatus('playing');
+  };
 
-      {/* ── Title Banner ── */}
-      <div className="text-center mb-3">
-        <div className="inline-flex items-center gap-2 bg-black/30 border border-white/10 rounded-full px-4 py-1.5">
-          <Icon icon="solar:gamepad-bold" className="text-primary text-sm" />
-          <span className="text-sm font-bold text-white tracking-wider">{txt?.title ?? 'Dev Snake'}</span>
-        </div>
-      </div>
+  // Up to two queued turns, so quick swipes/keys between ticks are not lost (and never reverse the snake).
+  const turn = (dir) => {
+    if (status !== 'playing') return;
+    const current = game.current;
+    const last = current.queue[current.queue.length - 1] ?? current.dir;
+    if (dir === last || dir === OPPOSITE[last] || current.queue.length >= 2) return;
+    current.queue.push(dir);
+  };
 
-      {/* ── Header ── */}
-      <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
+  useGameKeys((event) => {
+    const dir = KEY_DIRECTIONS[event.key?.toLowerCase()];
+    if (dir) {
+      if (status !== 'playing') return false;
+      turn(dir);
+      return true;
+    }
+    if (event.key === ' ' || event.key === 'Enter') {
+      if (status === 'idle' || status === 'over') start();
+      else togglePause();
+      return true;
+    }
+    return false;
+  });
+
+  const onPointerDown = (event) => {
+    if (status !== 'playing' || !event.isPrimary) return;
+    swipe.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const onPointerMove = (event) => {
+    const from = swipe.current;
+    if (!from || !event.isPrimary) return;
+    const dx = event.clientX - from.x;
+    const dy = event.clientY - from.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_DISTANCE) return;
+    turn(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'RIGHT' : 'LEFT') : dy > 0 ? 'DOWN' : 'UP');
+    // Keep tracking from here: one continuous gesture can steer several times.
+    swipe.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const endSwipe = () => {
+    swipe.current = null;
+  };
+
+  const playing = status === 'playing';
+  // The board stays empty until the first start, so nothing shows through the start card. Paused and game-over
+  // boards keep the (dimmed) snake in view.
+  const started = status !== 'idle';
+
+  const pauseButton = (
+    <button
+      type="button"
+      onClick={togglePause}
+      disabled={status === 'idle' || status === 'over'}
+      aria-label={status === 'paused' ? common.resume : common.pause}
+      className="icon-btn disabled:opacity-40"
+    >
+      {status === 'paused' ? (
+        <Icon icon="solar:play-linear" aria-hidden="true" className="size-5" />
+      ) : (
+        <Icon icon="solar:pause-linear" aria-hidden="true" className="size-5" />
+      )}
+    </button>
+  );
+
+  // Touch screens: a D-pad as an alternative to swiping. pointerdown reacts instantly; keyboard clicks
+  // (detail 0) also work. The pad never scrolls anything (touch-none).
+  const dpad = (
+    <div className="hidden touch-none select-none grid-cols-3 grid-rows-3 gap-1 touch:grid">
+      {DPAD.map(({ dir, label, icon, cell }) => (
         <button
-          onClick={onBack}
-          className="text-white/50 hover:text-white flex items-center gap-1.5 transition-colors text-sm font-bold"
+          key={dir}
+          type="button"
+          aria-label={text.directions[label]}
+          disabled={!playing}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            turn(dir);
+          }}
+          onClick={(event) => {
+            if (event.detail === 0) turn(dir);
+          }}
+          className={`${cell} grid size-12 place-items-center rounded-control bg-white/10 text-label-1 transition-colors duration-fast active:bg-white/25 disabled:opacity-40`}
         >
-          <Icon icon="solar:arrow-left-bold" /> {common?.exit ?? 'Exit'}
+          <Icon icon={icon} aria-hidden="true" className="size-6" />
         </button>
+      ))}
+    </div>
+  );
 
-        <div className="flex gap-1.5 items-center flex-wrap justify-end">
-          <div className="text-xs font-mono bg-purple-500/20 text-purple-300 px-2 py-1 rounded-lg border border-purple-500/30 whitespace-nowrap">
-            {common?.level ?? 'Lv'} {level}
-          </div>
-          <div className="text-white font-mono text-xs bg-black/30 px-2 py-1 rounded-lg border border-white/5 whitespace-nowrap">
-            {common?.score ?? 'Score'}: <span className="text-primary font-bold">{score}</span>
-          </div>
-          <div className={`font-mono text-xs px-2 py-1 rounded-lg border transition-all whitespace-nowrap ${
-            isNewRecord
-              ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300 animate-pulse'
-              : 'bg-black/30 border-white/5 text-white'
-          }`}>
-            {common?.record ?? 'Rec'}: <span className="font-bold">{highScore}</span>
-          </div>
-          <button
-            onPointerDown={() => togglePause()}
-            className="text-white hover:text-primary transition-colors p-1.5 rounded-lg bg-black/20 border border-white/10"
-            disabled={!started || gameOver}
-          >
-            <Icon icon={isPaused ? 'solar:play-bold' : 'solar:pause-bold'} width="18" />
-          </button>
-        </div>
-      </div>
-
-      {/* ── Board ── */}
-      <div className="relative aspect-square bg-black/40 rounded-xl border border-white/20 overflow-hidden mx-auto w-full max-w-[320px] sm:max-w-[380px] shadow-inner">
-        <div className="relative w-full h-full">
-          {snake.map((seg, i) => {
-            const isHead = i === 0;
-            return (
-              <div
-                key={`s${seg.x}-${seg.y}-${i}`}
-                className={`absolute transition-none ${
-                  isHead ? 'bg-primary rounded-sm z-10' : 'bg-green-500/60 rounded-sm'
-                }`}
-                style={{
-                  left:   `${(seg.x / GRID_SIZE) * 100}%`,
-                  top:    `${(seg.y / GRID_SIZE) * 100}%`,
-                  width:  `${(1 / GRID_SIZE) * 100}%`,
-                  height: `${(1 / GRID_SIZE) * 100}%`,
-                  transform: isHead ? 'scale(1.12)' : undefined,
-                }}
-              />
-            );
-          })}
-
-          {/* Food */}
-          <div
-            className={`absolute rounded-full z-5 transition-none ${
-              food.golden
-                ? 'bg-yellow-300 shadow-[0_0_12px_#fde047] animate-pulse'
-                : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse'
-            }`}
-            style={{
-              left:   `${(food.x / GRID_SIZE) * 100}%`,
-              top:    `${(food.y / GRID_SIZE) * 100}%`,
-              width:  `${(1 / GRID_SIZE) * 100}%`,
-              height: `${(1 / GRID_SIZE) * 100}%`,
-            }}
-          />
-        </div>
-
-        {/* Start screen */}
-        {!started && !gameOver && (
-          <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center z-20 gap-3 p-4">
-            <Icon icon="solar:gamepad-bold" className="text-primary text-5xl" />
-            <h3 className="text-xl font-bold text-white">{txt?.title ?? 'Dev Snake'}</h3>
-            <button
-              onPointerDown={startGame}
-              className="bg-primary text-bg px-8 py-3 rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg"
-            >
-              <Icon icon="solar:play-bold" /> {txt?.start ?? 'Start'}
-            </button>
-            <p className="text-gray-400 text-xs text-center">
-              {isMobile ? (txt?.helpMobile ?? 'Use D-pad to move') : (txt?.help ?? 'Use arrows to move')}
-            </p>
-          </div>
-        )}
-
-        {/* Paused */}
-        {isPaused && !gameOver && (
-          <div className="absolute inset-0 bg-black/65 backdrop-blur-sm flex flex-col items-center justify-center z-20 gap-3">
-            <Icon icon="solar:pause-circle-bold" className="text-white text-6xl opacity-80" />
-            <p className="text-gray-300 text-sm font-medium">
-              {isMobile ? (txt?.pauseHintMobile ?? 'Tap ⏸ to continue') : (txt?.pauseHint ?? 'Press Space to continue')}
-            </p>
-          </div>
-        )}
-
-        {/* Game Over */}
-        {gameOver && (
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center z-20 animate-in fade-in duration-300 gap-2 p-4">
-            <h3 className="text-3xl font-bold text-red-500">{common?.gameOver ?? 'Game Over'}</h3>
-            {isNewRecord && (
-              <span className="text-yellow-400 text-xs font-bold uppercase tracking-widest animate-bounce">
-                {txt?.newRecord ?? '🏆 New Record!'}
-              </span>
-            )}
-            <p className="text-gray-300 font-mono">
-              {common?.score ?? 'Score'}: <span className="text-white font-bold text-xl">{score}</span>
-            </p>
-            <p className="text-gray-500 text-xs font-mono">
-              {common?.level ?? 'Level'} {level} {txt?.levelReached ?? 'reached'}
-            </p>
-            <button
-              onPointerDown={startGame}
-              className="mt-2 bg-primary text-bg px-8 py-3 rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-[0_0_20px_rgba(255,209,0,0.3)]"
-            >
-              <Icon icon="solar:restart-bold" /> {common?.tryAgain ?? 'Try Again'}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ── Mobile D-pad ── */}
-      {isMobile && <div className="mt-5 grid w-[156px] grid-cols-3 gap-2 mx-auto">
-        <div />
-        <button
-          onPointerDown={(e) => { e.preventDefault(); mobileDir('UP'); }}
-          className="bg-white/10 p-3 rounded-2xl active:bg-primary active:text-bg transition-colors flex items-center justify-center border border-white/10"
-        >
-          <Icon icon="solar:arrow-up-bold" className="text-white text-xl" />
-        </button>
-        <div />
-
-        <button
-          onPointerDown={(e) => { e.preventDefault(); mobileDir('LEFT'); }}
-          className="bg-white/10 p-3 rounded-2xl active:bg-primary active:text-bg transition-colors flex items-center justify-center border border-white/10"
-        >
-          <Icon icon="solar:arrow-left-bold" className="text-white text-xl" />
-        </button>
-        <button
-          onPointerDown={(e) => { e.preventDefault(); togglePause(); }}
-          className="bg-white/5 p-3 rounded-2xl active:bg-white/20 transition-colors flex items-center justify-center border border-white/10"
-        >
-          <Icon icon={isPaused ? 'solar:play-bold' : 'solar:pause-bold'} className="text-white/60 text-lg" />
-        </button>
-        <button
-          onPointerDown={(e) => { e.preventDefault(); mobileDir('RIGHT'); }}
-          className="bg-white/10 p-3 rounded-2xl active:bg-primary active:text-bg transition-colors flex items-center justify-center border border-white/10"
-        >
-          <Icon icon="solar:arrow-right-bold" className="text-white text-xl" />
-        </button>
-
-        <div />
-        <button
-          onPointerDown={(e) => { e.preventDefault(); mobileDir('DOWN'); }}
-          className="bg-white/10 p-3 rounded-2xl active:bg-primary active:text-bg transition-colors flex items-center justify-center border border-white/10"
-        >
-          <Icon icon="solar:arrow-down-bold" className="text-white text-xl" />
-        </button>
-        <div />
-      </div>}
-
-      {/* ── Legend ── */}
-      <p className="text-center text-xs text-gray-600 mt-3 font-mono flex items-center justify-center gap-2 flex-wrap">
-        <span className="inline-flex items-center gap-1">
-          <span className="inline-block w-2 h-2 rounded-full bg-yellow-300 shadow-[0_0_6px_#fde047]" />
-          {txt?.goldenFood ?? 'Golden = 30 pts'}
-        </span>
-        <span className="text-gray-700">|</span>
-        <span>{isMobile
-          ? (txt?.controlsMobile ?? 'D-pad to move')
-          : (txt?.controls ?? 'WASD / Arrows · Space = pause')}
-        </span>
+  const legend = (
+    <div className="space-y-1 text-footnote text-label-2 touch:hidden">
+      {/* mt-1 centres the dot on the first line (18px) when the text wraps in the narrow side column. */}
+      <p className="flex items-start gap-2">
+        <span aria-hidden="true" className="mt-1 size-2.5 shrink-0 rounded-full bg-primary" />
+        {text.golden}
       </p>
+      <p>{text.helpKeys}</p>
+    </div>
+  );
+
+  const board = boardSize > 0 && (
+    <div
+      role="group"
+      aria-label={text.board}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endSwipe}
+      onPointerCancel={endSwipe}
+      className="relative touch-none select-none overflow-hidden rounded-tile bg-bg ring-1 ring-white/10 [-webkit-touch-callout:none]"
+      style={{ width: boardSize, height: boardSize }}
+    >
+      {started &&
+        snake.map((part, index) => (
+          <div
+            key={index === 0 ? 'head' : `${part.x}-${part.y}`}
+            aria-hidden="true"
+            className={`absolute rounded-[3px] ${index === 0 ? 'bg-label-1' : 'bg-success/80'}`}
+            style={cellStyle(part)}
+          />
+        ))}
+      {started && (
+        <div
+          aria-hidden="true"
+          className={`absolute rounded-full ${food.golden ? 'bg-primary' : 'bg-danger'}`}
+          style={cellStyle(food)}
+        />
+      )}
+
+      {status === 'idle' && (
+        <BoardOverlay>
+          <p className="max-w-[16rem] text-callout text-label-2">
+            <span className="touch:hidden">{text.helpKeys}</span>
+            <span className="hidden touch:inline">{text.helpTouch}</span>
+          </p>
+          {/* The dot sits in the text flow: when the hint wraps it stays on the first line, and the lines stay
+              centred like the help above. */}
+          <p className="max-w-[16rem] text-balance text-footnote text-label-2">
+            <span aria-hidden="true" className="mr-1.5 inline-block size-2.5 rounded-full bg-primary align-middle" />
+            {text.golden}
+          </p>
+          <button type="button" onClick={start} className="btn-primary">
+            <Icon icon="solar:play-linear" aria-hidden="true" className="size-5" />
+            {common.start}
+          </button>
+        </BoardOverlay>
+      )}
+
+      {status === 'paused' && (
+        <BoardOverlay>
+          <p className="text-title-3 text-label-1">{common.paused}</p>
+          <button type="button" onClick={togglePause} className="btn-primary">
+            <Icon icon="solar:play-linear" aria-hidden="true" className="size-5" />
+            {common.resume}
+          </button>
+        </BoardOverlay>
+      )}
+
+      {status === 'over' && (
+        <BoardOverlay>
+          <p className="text-title-2 text-label-1">{common.gameOver}</p>
+          <p className="text-callout tabular-nums text-label-2">
+            {common.score}: {score} · {fill(text.levelReached, { n: level })}
+          </p>
+          {newRecord && <NewRecord label={common.newRecord} />}
+          <button type="button" onClick={start} className="btn-primary mt-1">
+            <Icon icon="solar:restart-linear" aria-hidden="true" className="size-5" />
+            {common.playAgain}
+          </button>
+        </BoardOverlay>
+      )}
+    </div>
+  );
+
+  if (wide) {
+    return (
+      <div className="flex h-full items-center justify-center gap-6">
+        <div className="flex w-24 shrink-0 flex-col gap-4">
+          <Stat label={common.score} value={score} />
+          <Stat label={common.level} value={level} />
+          {pauseButton}
+        </div>
+        {board}
+        <div className="flex w-[9.5rem] shrink-0 flex-col items-center">
+          {dpad}
+          {legend}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto flex h-full w-full max-w-xl flex-col gap-3">
+      <div className="flex shrink-0 items-center gap-6">
+        <Stat label={common.score} value={score} />
+        <Stat label={common.level} value={level} />
+        <div className="ml-auto">{pauseButton}</div>
+      </div>
+      <div ref={areaRef} className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-4">
+        {board}
+        <div ref={controlsRef} className="flex shrink-0 justify-center">
+          {dpad}
+          {legend}
+        </div>
+      </div>
     </div>
   );
 }

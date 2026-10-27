@@ -1,79 +1,252 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-  --primary-rgb: 255, 209, 0;
-}
+@layer base {
+  :root {
+    color-scheme: dark;
 
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 6rem;
-}
+    /* Neutral "Apple dark" palette as RGB channels (see tailwind.config.js tokens). */
+    --c-bg: 0 0 0; /* #000000 */
+    --c-surface-1: 28 28 30; /* #1c1c1e */
+    --c-surface-1-hover: 36 36 38; /* #242426 */
+    --c-surface-2: 44 44 46; /* #2c2c2e */
+    --c-surface-3: 58 58 60; /* #3a3a3c */
+    --c-label-1: 245 245 247; /* #f5f5f7 */
+    --c-label-2: 161 161 166; /* #a1a1a6 */
+    --c-label-3: 134 134 139; /* #86868b */
+    --c-separator: 255 255 255;
+    --c-accent: 255 209 0; /* #ffd100 — actions only */
+    --c-accent-hover: 255 219 51;
+    --c-accent-pressed: 230 188 0;
+    --c-on-accent: 0 0 0;
+    --c-success: 48 209 88;
+    --c-warning: 255 159 10;
+    --c-danger: 255 69 58;
+    --c-info: 100 210 255;
+    --primary-rgb: 255, 209, 0; /* legacy: rgba(var(--primary-rgb), x) */
 
-body {
-  @apply bg-bg text-text font-sans antialiased overflow-x-hidden;
-  min-width: 320px;
-  min-height: 100vh;
-  margin: 0;
-  text-rendering: optimizeLegibility;
-}
-
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible {
-  outline: 2px solid rgb(var(--primary-rgb));
-  outline-offset: 3px;
-}
-
-img {
-  max-width: 100%;
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  @apply bg-bg;
-}
-::-webkit-scrollbar-thumb {
-  @apply bg-surface rounded-full border border-gray-700;
-}
-
-.spotify-widget {
-  bottom: max(1rem, env(safe-area-inset-bottom));
-}
-
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-
-@layer utilities {
-  .preserve-3d {
-    transform-style: preserve-3d;
+    /* Fluid layout, mobile first. */
+    --nav-h: 48px;
+    --gutter: clamp(1.25rem, 6vw, 2.5rem); /* 20px@320 · 24px@393 · 40px from 667px */
+    --section-y: clamp(4.5rem, 3rem + 5vw, 8rem); /* 72px phones → ~120px@1440 */
+    --section-head-gap: clamp(2rem, 1.5rem + 2vw, 3.5rem);
+    --card-pad: clamp(1.25rem, 1rem + 1.25vw, 2rem);
+    --radius-card: clamp(1.125rem, 0.95rem + 0.75vw, 1.75rem); /* 18px phones → 28px */
+    --grid-gap: clamp(0.75rem, 0.5rem + 1vw, 1.5rem);
   }
-  .backface-hidden {
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden; /* Para Safari/Chrome */
+
+  @media (min-width: 1024px) {
+    :root {
+      --nav-h: 52px;
+    }
   }
-  .perspective-1000 {
-    perspective: 1000px;
+
+  /* Phones held sideways: the fluid rhythm grows with the width, but the screen is only ~320–430px tall.
+     A fixed, tighter rhythm keeps the gap between two sections at about a quarter of the screen. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    :root {
+      --section-y: 3rem;
+      --section-head-gap: 1.5rem;
+    }
   }
-  .rotate-y-180 {
-    transform: rotateY(180deg);
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    /* Anchored sections start exactly under the bar (their own top padding provides the breathing room). */
+    scroll-padding-top: var(--nav-h);
+    background-color: rgb(var(--c-bg));
   }
+
+  body {
+    @apply bg-bg font-sans text-body text-label-1 antialiased;
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-x: clip;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'kern' 1, 'calt' 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  p,
+  li,
+  dd,
+  figcaption {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: rgb(var(--c-accent) / 0.35);
+    color: rgb(var(--c-label-1));
+  }
+
+  a,
+  button,
+  [role='button'],
+  summary,
+  label {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid rgb(var(--c-accent));
+    outline-offset: 3px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--c-bg));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--c-surface-2));
+    border: 3px solid rgb(var(--c-bg));
+    border-radius: 999px;
+  }
+}
+
+@layer components {
+  /* ---------- Layout ---------- */
+  .container-page {
+    width: 100%;
+    max-width: calc(75rem + 2 * var(--gutter));
+    margin-inline: auto;
+    /* Landscape iPhones: keep content clear of the notch / Dynamic Island. */
+    padding-left: max(var(--gutter), env(safe-area-inset-left));
+    padding-right: max(var(--gutter), env(safe-area-inset-right));
+  }
+  .section {
+    padding-block: var(--section-y);
+  }
+  .section-head {
+    margin-bottom: var(--section-head-gap);
+  }
+  .eyebrow {
+    @apply font-mono text-footnote text-label-2;
+  }
+  .headline {
+    @apply text-headline text-label-1;
+  }
+  .lede {
+    @apply mt-3 max-w-reading text-lead text-label-2;
+  }
+
+  /* Horizontal gallery that bleeds to the container edges with snap + peek. */
+  .scroll-row {
+    display: flex;
+    gap: var(--grid-gap);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    padding-inline: var(--gutter);
+    margin-inline: calc(var(--gutter) * -1);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-row::-webkit-scrollbar {
+    display: none;
+  }
+  .scroll-row > * {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
+  /* ---------- Surfaces / materials ---------- */
+  .card {
+    @apply rounded-card bg-surface-1 p-card;
+  }
+  .card-interactive {
+    @apply rounded-card bg-surface-1 transition-[background-color,transform] duration-base ease-standard hover:bg-surface-1-hover active:scale-[0.985];
+  }
+  .material-nav {
+    background-color: rgb(22 22 23 / 0.8);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+  .material-dock {
+    background-color: rgb(28 28 30 / 0.82);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .material-nav {
+      background-color: rgb(22 22 23 / 0.97);
+    }
+    .material-dock {
+      background-color: rgb(28 28 30 / 0.98);
+    }
+  }
+
+  /* ---------- Buttons & links (every one ≥ 44px tall except .btn-sm, desktop nav only) ---------- */
+  .btn {
+    @apply inline-flex min-h-tap select-none items-center justify-center gap-2 whitespace-nowrap rounded-pill px-5 text-callout font-medium transition-[background-color,color,transform,opacity] duration-fast ease-standard active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-pressed;
+  }
+  .btn-secondary {
+    @apply btn bg-white/10 text-label-1 hover:bg-white/15 active:bg-white/20;
+  }
+  .btn-tinted {
+    @apply btn bg-primary/15 text-primary hover:bg-primary/25;
+  }
+  .btn-sm {
+    @apply min-h-8 px-3.5 text-footnote;
+  }
+  .btn-lg {
+    @apply min-h-12 px-6 text-body;
+  }
+  .text-link {
+    @apply inline-flex min-h-tap items-center gap-1 rounded-[6px] text-body text-primary underline-offset-4 transition-opacity duration-fast ease-standard hover:underline active:opacity-70;
+  }
+  .icon-btn {
+    @apply inline-grid size-tap shrink-0 place-items-center rounded-full bg-white/10 text-label-1 transition-colors duration-fast ease-standard hover:bg-white/15 active:bg-white/20;
+  }
+
+  /* ---------- Chips, tags, metadata ---------- */
+  .chip {
+    @apply inline-flex min-h-8 items-center gap-1.5 rounded-pill bg-white/[0.08] px-3 text-footnote font-medium text-label-2;
+  }
+  .chip-toggle {
+    @apply inline-flex min-h-tap shrink-0 items-center gap-2 rounded-pill bg-white/10 px-4 text-subhead font-medium text-label-2 transition-colors duration-fast ease-standard hover:text-label-1 aria-pressed:bg-label-1 aria-pressed:text-bg can-hover:min-h-9;
+  }
+  .tag {
+    @apply inline-flex items-center rounded-[6px] bg-white/[0.08] px-2 py-0.5 text-footnote font-medium text-label-2;
+  }
+  .meta {
+    @apply text-footnote tabular-nums text-label-2;
+  }
+  .status-dot {
+    @apply inline-block h-2 w-2 shrink-0 rounded-full bg-success;
+  }
+  .skeleton {
+    @apply rounded-tile bg-white/[0.06] motion-safe:animate-pulse;
+  }
+}
+
+/* Floating chrome steps aside while a sheet or the mobile menu is open (set by useScrollLock). */
+html[data-overlay-open] .floating-dock {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* …and Android's pull-to-refresh / swipe-back gestures can't yank the visitor out of a game or sheet. */
+html[data-overlay-open] {
+  overscroll-behavior: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

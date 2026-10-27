@@ -39,6 +39,11 @@ jobs:
       run: npm run build
 
     - name: Gerar configuração privada
+      env:
+        # Opcionais: cada um só entra no config.php se o secret existir. Sem eles o arquivo gerado é idêntico
+        # ao de antes (o FTP não o reenvia e o config.php que já está no servidor continua valendo).
+        GH_CONTRIB_TOKEN: ${{ secrets.GH_CONTRIB_TOKEN }}
+        NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
       run: |
         cat << 'EOF' > ./dist/config.php
         <?php
@@ -47,6 +52,17 @@ jobs:
         $SPOTIFY_REFRESH_TOKEN = "${{ secrets.SPOTIFY_REFRESH_TOKEN }}";
         $WAKATIME_TOKEN = "${{ secrets.WAKATIME_TOKEN }}";
         EOF
+        # Acrescenta $NOME = '<valor>'; (string PHP entre aspas simples, com \ e ' escapados) só se houver valor.
+        add_optional() {
+          local value="${2//[[:space:]]/}"
+          if [ -n "$value" ]; then
+            value="${value//\\/\\\\}"
+            value="${value//\'/\\\'}"
+            printf '$%s = '\''%s'\'';\n' "$1" "$value" >> ./dist/config.php
+          fi
+        }
+        add_optional GITHUB_TOKEN "$GH_CONTRIB_TOKEN"
+        add_optional NASA_API_KEY "$NASA_API_KEY"
         chmod 600 ./dist/config.php
 
     - name: Publicar na Hostinger

@@ -1,118 +1,179 @@
-import { useState } from 'react';
-import { useLanguage } from '../../context/useLanguage';
+import { Suspense, useState } from 'react';
 import { Icon } from '@iconify/react';
+import { useLanguage } from '../../context/useLanguage';
+import { lazyWithRetry, preloadLazyIcons } from '../../lib/lazyWithRetry';
+import ErrorBoundary from '../ui/ErrorBoundary';
+import Sheet from '../ui/Sheet';
+import LabStatus from '../lab/LabStatus';
+import { ApodSkeleton, NewsSkeleton, TravelSkeleton } from '../lab/LabSkeletons';
 
-import NasaModal from '../NasaModal'; 
-import NasaTimeMachine from '../NasaTimeMachine'; 
-import TechNews from '../TechNews'; 
-import CvModal from '../CvModal';
+const EMAIL = 'felipetorresaraujo@gmail.com';
+
+const SOCIALS = [
+  { key: 'linkedin', href: 'https://linkedin.com/in/felipe-torres-id', icon: 'simple-icons:linkedin' },
+  { key: 'github', href: 'https://github.com/fp-torres', icon: 'simple-icons:github' },
+  { key: 'instagram', href: 'https://instagram.com/fp.torresz', icon: 'simple-icons:instagram' },
+  { key: 'whatsapp', href: 'https://wa.me/5521967600280', icon: 'simple-icons:whatsapp' },
+];
+
+// Laboratório: each experiment is its own chunk, requested at the first sign of intent (hover, focus, touch)
+// and mounted inside a <Sheet> (portal) only once it has been opened.
+const LAB = [
+  { key: 'nasa', icon: 'solar:planet-linear', load: () => import('../NasaModal'), Skeleton: ApodSkeleton },
+  { key: 'timeMachine', icon: 'solar:history-linear', load: () => import('../NasaTimeMachine'), Skeleton: TravelSkeleton },
+  { key: 'radar', icon: 'solar:radar-2-linear', load: () => import('../TechNews'), Skeleton: NewsSkeleton },
+].map((item) => ({ ...item, Content: lazyWithRetry(item.load, `lab-${item.key}`) }));
+
+const preload = (item) => {
+  item.load().catch(() => {
+    // The lazy component retries (and reports) on its own when it is actually rendered.
+  });
+  preloadLazyIcons();
+};
+
+function LabUnavailable() {
+  const { t } = useLanguage();
+  const lab = t.footer.lab;
+
+  return (
+    <LabStatus icon="solar:danger-circle-linear" title={lab.failedTitle} text={lab.failedText}>
+      <button type="button" onClick={() => window.location.reload()} className="btn-secondary">
+        {lab.reload}
+      </button>
+    </LabStatus>
+  );
+}
+
+const renderLabUnavailable = () => <LabUnavailable />;
 
 export default function Footer() {
   const { t } = useLanguage();
-  const isPt = t.nav.home === "Início";
-  
-  const [isNasaOpen, setIsNasaOpen] = useState(false);
-  const [isTimeMachineOpen, setIsTimeMachineOpen] = useState(false);
-  const [isCvModalOpen, setIsCvModalOpen] = useState(false);
+  const lab = t.footer.lab;
+  const [active, setActive] = useState(null);
+  const [opened, setOpened] = useState({});
+  const subtitles = { nasa: lab.apod.subtitle, timeMachine: lab.travel.subtitle, radar: lab.news.subtitle };
+
+  // "© 2026 Felipe Torres." | "Todos os direitos reservados.": on narrow phones the line breaks between the
+  // two sentences instead of in the middle of one.
+  const [owner, ...rights] = t.footer.copyright.split('. ');
+
+  const openLab = (key) => {
+    setOpened((current) => (current[key] ? current : { ...current, [key]: true }));
+    setActive(key);
+  };
+  const closeLab = () => setActive(null);
+  // The Hero owns the CV sheet; it listens for this event.
+  const openCv = () => window.dispatchEvent(new CustomEvent('open-cv'));
 
   return (
-    <footer id="contact" className="bg-surface relative pt-20 mt-20 border-t border-white/5 flex flex-col items-center">
-      <div className="max-w-4xl w-full mx-auto px-6 text-center pb-10">
-        
-        {/* ── Contact CTA ── */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold text-white mb-4">{t.footer.title}</h2>
-          <p className="text-muted mb-8">{t.footer.subtitle}</p>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href="mailto:felipetorresaraujo@gmail.com"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-primary text-bg font-bold rounded-full hover:bg-primary-600 transition-all hover:scale-105 shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]"
-            >
-              <Icon icon="solar:letter-bold" width="20" />
+    <footer
+      id="contact"
+      aria-labelledby="contact-title"
+      className="section bg-surface-1 pb-[calc(5rem+env(safe-area-inset-bottom))]"
+    >
+      <div className="container-page">
+        <div className="mx-auto max-w-4xl text-center">
+          <h2 id="contact-title" className="headline">
+            {t.footer.title}
+          </h2>
+          <p className="lede mx-auto text-balance">{t.footer.subtitle}</p>
+          <div className="mt-6 flex flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center">
+            <a href={`mailto:${EMAIL}`} className="btn-primary btn-lg w-full max-w-[20rem] sm:w-auto sm:min-w-44">
               {t.footer.emailBtn}
             </a>
-            
-            <button 
-              onClick={() => setIsCvModalOpen(true)}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 border border-white/20 text-white font-bold rounded-full hover:bg-white/10 transition-all hover:scale-105"
+            <button
+              type="button"
+              onClick={openCv}
+              className="btn-secondary btn-lg w-full max-w-[20rem] sm:w-auto sm:min-w-44"
             >
-              <Icon icon="solar:file-download-bold" width="20" />
-              {t.hero.ctaResume}
+              {t.footer.cvBtn}
             </button>
           </div>
         </div>
 
-        {/* ── Social Links ── */}
-        <div className="flex justify-center gap-6 md:gap-8 mb-16">
-          <a href="https://linkedin.com/in/felipe-torres-id" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
-            <Icon icon="mdi:linkedin" width="32" className="md:w-9" />
-          </a>
-          <a href="https://github.com/fp-torres" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
-            <Icon icon="mdi:github" width="32" className="md:w-9" />
-          </a>
-          <a href="https://instagram.com/fp.torresz" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
-            <Icon icon="mdi:instagram" width="32" className="md:w-9" />
-          </a>
-          <a href="https://wa.me/5521967600280" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-primary transition-colors hover:-translate-y-1 transform duration-300">
-            <Icon icon="mdi:whatsapp" width="32" className="md:w-9" />
-          </a>
+        <ul aria-label={t.footer.socialLabel} className="mt-10 flex justify-center gap-4 sm:mt-12 sm:gap-6">
+          {SOCIALS.map(({ key, href, icon }) => (
+            <li key={key}>
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${t.footer.social[key]} (${t.ui.opensInNewTab})`}
+                className="group flex flex-col items-center gap-2 rounded-tile sm:min-w-20"
+              >
+                <span className="grid size-tap place-items-center rounded-full bg-white/10 text-label-1 transition-colors duration-fast ease-standard group-hover:bg-white/15 group-active:bg-white/20">
+                  <Icon icon={icon} className="size-5" aria-hidden="true" />
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="hidden text-footnote text-label-2 transition-colors duration-fast ease-standard group-hover:text-label-1 sm:block"
+                >
+                  {t.footer.social[key]}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mx-auto mt-14 max-w-[36rem] sm:mt-16">
+          <h3 id="lab-title" className="text-center text-callout font-semibold text-label-2">
+            {lab.title}
+          </h3>
+          <ul aria-labelledby="lab-title" className="mt-3 grid grid-cols-3 gap-2 sm:gap-3">
+            {LAB.map((item) => (
+              <li key={item.key} className="flex">
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  onClick={() => openLab(item.key)}
+                  onPointerEnter={() => preload(item)}
+                  onPointerDown={() => preload(item)}
+                  onFocus={() => preload(item)}
+                  className="flex min-h-[88px] w-full flex-col items-center justify-center gap-2 rounded-tile bg-surface-2 p-3 text-center transition-[background-color,transform] duration-fast ease-standard hover:bg-surface-3 active:scale-[0.97] active:bg-surface-3 sm:p-4"
+                >
+                  <Icon icon={item.icon} className="size-[22px] shrink-0 text-label-1" aria-hidden="true" />
+                  {/* Two-line box on narrow screens: icons stay aligned whether the name wraps or not. */}
+                  <span className="flex min-h-[2.8em] items-center text-footnote font-semibold text-label-1 sm:text-callout md:min-h-0">
+                    {lab[item.key]}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* ── Easter Egg Panel ── */}
-        <div className="relative flex flex-col items-center justify-center mb-10 group">
-          
-          <p className="text-[10px] md:text-xs font-mono text-gray-500 mb-3 tracking-[0.2em] uppercase opacity-70 group-hover:opacity-100 transition-opacity">
-            {isPt ? "[ Acesso Restrito ]" : "[ Restricted Access ]"}
+        <div className="mt-14 border-t border-separator/10 pt-6 sm:mt-16">
+          <p className="text-center text-caption text-label-3">
+            {rights.length > 0 ? (
+              <>
+                <span className="inline-block">{owner}.</span> <span className="inline-block">{rights.join('. ')}</span>
+              </>
+            ) : (
+              t.footer.copyright
+            )}
           </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 p-1.5 md:p-2 bg-black/40 border border-white/10 rounded-2xl md:rounded-full backdrop-blur-md hover:border-primary/40 transition-all duration-500 shadow-inner group-hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.1)]">
-            
-            {/* NASA APOD */}
-            <button 
-              onClick={() => setIsNasaOpen(true)}
-              className="relative flex items-center justify-center gap-2 px-4 py-3 md:px-6 md:py-2.5 rounded-xl md:rounded-full text-gray-400 hover:text-white hover:bg-primary/20 transition-all duration-300 border border-transparent hover:border-primary/30"
-              title={isPt ? "Ver imagem de hoje da NASA" : "View today's NASA image"}
-            >
-              <Icon icon="solar:satellite-bold-duotone" className="text-xl md:text-2xl text-primary" />
-              <span className="font-mono text-[10px] md:text-xs font-bold tracking-widest hidden sm:block">LIVE_SIGNAL</span>
-              <span className="font-mono text-[10px] font-bold tracking-widest sm:hidden">LIVE</span>
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full" />
-            </button>
-
-            <div className="w-px h-8 bg-white/10 hidden sm:block" />
-
-            {/* Time Machine */}
-            <button 
-              onClick={() => setIsTimeMachineOpen(true)}
-              className="relative flex items-center justify-center gap-2 px-4 py-3 md:px-6 md:py-2.5 rounded-xl md:rounded-full text-gray-400 hover:text-white hover:bg-primary/20 transition-all duration-300 border border-transparent hover:border-primary/30"
-              title={isPt ? "Viajar no tempo com a NASA" : "Time travel with NASA"}
-            >
-              <Icon icon="solar:telescope-bold-duotone" className="text-xl md:text-2xl text-primary" />
-              <span className="font-mono text-[10px] md:text-xs font-bold tracking-widest hidden sm:block">TIME_TRAVEL</span>
-              <span className="font-mono text-[10px] font-bold tracking-widest sm:hidden">TRAVEL</span>
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse blur-[1px]" />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-300 rounded-full" />
-            </button>
-
-            <div className="w-px h-8 bg-white/10 hidden sm:block" />
-
-            {/* Tech Radar — TechNews trigger is now self-contained inside TechNews */}
-            <TechNews />
-
-          </div>
-        </div>
-
-        {/* ── Copyright ── */}
-        <div className="pt-8 border-t border-white/5">
-          <p className="text-sm text-gray-500">{t.footer.copyright}</p>
         </div>
       </div>
 
-      <NasaModal isOpen={isNasaOpen} onClose={() => setIsNasaOpen(false)} />
-      <NasaTimeMachine isOpen={isTimeMachineOpen} onClose={() => setIsTimeMachineOpen(false)} />
-      <CvModal isOpen={isCvModalOpen} onClose={() => setIsCvModalOpen(false)} />
+      {LAB.map(
+        (item) =>
+          opened[item.key] && (
+            <Sheet
+              key={item.key}
+              open={active === item.key}
+              onClose={closeLab}
+              title={lab[item.key]}
+              subtitle={subtitles[item.key]}
+              size="lg"
+            >
+              <ErrorBoundary fallback={renderLabUnavailable}>
+                <Suspense fallback={<item.Skeleton />}>
+                  <item.Content />
+                </Suspense>
+              </ErrorBoundary>
+            </Sheet>
+          ),
+      )}
     </footer>
   );
 }

@@ -1,159 +1,186 @@
-import { useState, useEffect } from 'react';
-import { useLanguage } from '../../context/useLanguage';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
-import { motion as Motion } from 'framer-motion';
+import { useLanguage } from '../../context/useLanguage';
+import Section from '../ui/Section';
+import ErrorBoundary from '../ui/ErrorBoundary';
+import { lazyWithRetry, preloadLazyIcons } from '../../lib/lazyWithRetry';
+import { scrollToTarget } from '../../lib/motion';
 
-import CvModal from '../CvModal';
-import GithubContributions from './GithubContributions';
+const loadCvModal = () => import('../CvModal');
+const CvModal = lazyWithRetry(loadCvModal, 'cv-modal');
 
-function BentoCard({ children, className = '' }) {
-  return (
-    <Motion.div
-      whileHover={{ y: -5 }}
-      className={`bg-surface/40 backdrop-blur-md border border-white/10 rounded-3xl p-5 sm:p-6 hover:border-primary/30 transition-all duration-300 shadow-xl ${className}`}
-    >
-      {children}
-    </Motion.div>
+// Warms the sheet's chunk (and the lazy icons it draws) so the first tap opens it without a network wait.
+const preloadCvModal = () => {
+  loadCvModal().catch(() => {});
+  preloadLazyIcons();
+};
+
+// The footer's "Baixar CV" dispatches this event, so the whole page shares this one CV sheet.
+const OPEN_CV_EVENT = 'open-cv';
+
+const FOCUS = [
+  { id: 'python', icon: 'simple-icons:python' },
+  { id: 'java', icon: 'devicon-plain:java' },
+  { id: 'rest', icon: 'solar:server-linear' },
+  { id: 'react', icon: 'simple-icons:react' },
+];
+
+// Apple's inline highlight: the key technologies of the intro read in label-1 inside label-2 text.
+const HIGHLIGHT = /\b(React|Node\.js|Java)\b/;
+
+function highlightTech(text) {
+  return text.split(HIGHLIGHT).map((part, index) =>
+    index % 2 === 1 ? (
+      <span key={index} className="text-label-1">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
   );
 }
 
+const PORTRAIT_SIZES = '(min-width: 1280px) 288px, (min-width: 1024px) 256px, 112px';
+
+// Phones and tablets: one centred stack. ≥1024px: text left (7 cols) + portrait right (5 cols), centred in a
+// first screen that stops short of the fold by the next section's top padding + 3.5rem, so its "~/carreira"
+// and the top of its title peek in: the page visibly goes on (capped at 680px on tall screens).
+// Landscape phones (short + < 1024px): avatar beside a left-aligned text column so "Baixar CV" stays on screen.
+// The shortest ones (≤ 380px tall: iPhone SE/mini, 360px-wide Androids) get a compact tier. The two height
+// tiers never overlap, so their values don't depend on the order Tailwind emits arbitrary media variants.
 export default function Hero() {
   const { t } = useLanguage();
-  const [githubData, setGithubData] = useState(null);
+  const hero = t.hero;
+  const [cv, setCv] = useState({ mounted: false, open: false });
 
-  const [isCvModalOpen, setIsCvModalOpen] = useState(false);
+  const openCv = useCallback(() => setCv({ mounted: true, open: true }), []);
+  const closeCv = useCallback(() => setCv((state) => ({ ...state, open: false })), []);
 
   useEffect(() => {
-    const controller = new AbortController();
+    window.addEventListener(OPEN_CV_EVENT, openCv);
+    return () => window.removeEventListener(OPEN_CV_EVENT, openCv);
+  }, [openCv]);
 
-    const fetchGithub = async () => {
-      try {
-        const profileResponse = await fetch('https://api.github.com/users/fp-torres', { signal: controller.signal });
-        if (profileResponse.ok) {
-          const profile = await profileResponse.json();
-          setGithubData(profile);
-        }
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          // Static fallback values keep the hero usable during API outages.
-        }
-      }
-    };
-
-    fetchGithub();
-    return () => controller.abort();
+  // Fetch the sheet's code once the page is idle: the primary action then opens instantly, and an
+  // already-open tab keeps working even after a deploy replaces the hashed chunks.
+  useEffect(() => {
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(preloadCvModal, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = window.setTimeout(preloadCvModal, 3000);
+    return () => window.clearTimeout(timer);
   }, []);
 
+  const goToContact = (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    scrollToTarget('#contact');
+  };
+
   return (
-    <section id="hero" className="pt-28 sm:pt-32 pb-12 sm:pb-20 px-1 sm:px-4">
-      <div className="max-w-6xl mx-auto">
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* 1. SUPER CARD DE PERFIL */}
-          <BentoCard className="md:col-span-2 md:row-span-1 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group bg-gradient-to-br from-surface/60 to-black/40">
-            
-            <div className="relative shrink-0 flex items-center justify-center">
-                <div className="absolute inset-0 m-auto w-32 h-32 bg-primary/30 rounded-full blur-2xl group-hover:bg-primary/50 transition-all duration-500"></div>
-                <div className="relative">
-                    <img 
-                        src={githubData?.avatar_url || t.hero.image} 
-                        alt={t.hero.name} 
-                        fetchPriority="high"
-                        className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-surface object-cover shadow-2xl relative z-10"
-                    />
-                    <div className="absolute bottom-2 right-2 z-20">
-                         <span 
-                            className="absolute inline-flex h-5 w-5 rounded-full bg-green-500 opacity-75 animate-ping"
-                            style={{ animationDuration: '3s' }}
-                         ></span>
-                         <span className="relative inline-flex rounded-full h-5 w-5 bg-green-500 border-4 border-surface"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div className="text-center md:text-left z-10 flex-1">
-                <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-2">
-                    {t.hero.name}
-                </h1>
-                <h2 className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400 mb-4">
-                    {t.hero.role}
-                </h2>
-                
-                <div className="flex flex-wrap justify-center md:justify-start gap-3 text-sm text-gray-400 mb-6">
-                    <span className="flex items-center gap-1">
-                        <Icon icon="solar:map-point-bold" /> {t.hero.location}
-                    </span>
-                    <span className="flex items-center gap-1 text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">
-                        <Icon icon="solar:verified-check-bold" /> {t.hero.available}
-                    </span>
-                </div>
-
-                <div className="flex flex-col xs:flex-row gap-3 justify-center md:justify-start">
-                     <button 
-                        onClick={() => setIsCvModalOpen(true)}
-                        className="flex items-center gap-2 bg-primary text-bg font-bold px-5 py-2 rounded-full hover:bg-white transition-colors"
-                     >
-                        <Icon icon="solar:file-download-bold" /> {t.hero.ctaResume}
-                    </button>
-                    <a href="#contact" className="flex items-center gap-2 border border-white/20 text-white font-bold px-5 py-2 rounded-full hover:bg-white/10 transition-colors">
-                        <Icon icon="solar:letter-bold" /> {t.nav.contact}
-                    </a>
-                </div>
-            </div>
-
-            <div className="hidden md:block absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
-               <Icon icon="solar:code-square-bold" width="200" />
-            </div>
-          </BentoCard>
-
-          {/* 2. CARD SOBRE */}
-          <BentoCard className="md:col-span-1 flex flex-col justify-center">
-             <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
-                <Icon icon="solar:user-id-bold" className="text-primary" /> {t.hero.aboutTitle}
-             </h3>
-             <p className="text-gray-300 text-sm leading-relaxed">
-                {t.hero.aboutText}
-             </p>
-          </BentoCard>
-
-          {/* 3. CARD ESPECIALIDADE */}
-          <BentoCard className="md:col-span-3 relative overflow-hidden flex flex-col justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
-             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
-
-             <h4 className="text-white font-bold mb-4 relative z-10 flex items-center gap-2">
-                <Icon icon="solar:target-bold" className="text-blue-400 animate-pulse" />
-                {t.hero.currentFocus}
-             </h4>
-
-             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 relative z-10">
-                <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 p-2 rounded-lg hover:bg-blue-500/20 transition-colors">
-                    <Icon icon="devicon:python" width="20" />
-                    <span className="text-blue-200 text-xs font-bold">Python</span>
-                </div>
-                <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 p-2 rounded-lg hover:bg-orange-500/20 transition-colors">
-                    <Icon icon="devicon:java" width="20" />
-                    <span className="text-orange-200 text-xs font-bold">Java</span>
-                </div>
-                <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 p-2 rounded-lg hover:bg-green-500/20 transition-colors">
-                    <Icon icon="solar:server-square-bold" className="text-green-400" width="20" />
-                    <span className="text-green-200 text-xs font-bold">API Rest</span>
-                </div>
-                <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 p-2 rounded-lg hover:bg-purple-500/20 transition-colors">
-                    <Icon icon="devicon:react" width="20" />
-                    <span className="text-purple-200 text-xs font-bold">React</span>
-                </div>
-             </div>
-          </BentoCard>
-
+    <Section
+      id="hero"
+      labelledBy="hero-title"
+      className="pt-[calc(var(--nav-h)+1.5rem)] min-[375px]:pt-[calc(var(--nav-h)+2.5rem)] lg:pb-0 lg:pt-nav [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:pt-[calc(var(--nav-h)+0.75rem)] [@media(orientation:landscape)_and_(min-height:380.01px)_and_(max-height:500px)_and_(max-width:1023px)]:pt-[calc(var(--nav-h)+1.25rem)]"
+    >
+      <div className="mx-auto flex max-w-[22rem] flex-col items-center text-center sm:max-w-[36rem] lg:grid lg:min-h-[min(680px,calc(100svh-var(--nav-h)-var(--section-y)-3.5rem))] lg:max-w-none lg:grid-cols-12 lg:items-center lg:gap-12 lg:py-10 lg:text-left [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:gap-6 [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:max-w-none [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:flex-row [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:items-start [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:text-left [@media(orientation:landscape)_and_(min-height:380.01px)_and_(max-height:500px)_and_(max-width:1023px)]:gap-8">
+        <div className="relative shrink-0 lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:justify-self-end">
+          <img
+            src={hero.image}
+            srcSet={hero.imageSrcSet}
+            sizes={hero.imageSrcSet ? PORTRAIT_SIZES : undefined}
+            alt={hero.imageAlt}
+            width={500}
+            height={625}
+            fetchPriority="high"
+            className="size-24 rounded-full bg-surface-1 object-cover object-[50%_22%] ring-1 ring-white/10 min-[375px]:size-28 lg:aspect-[4/5] lg:h-auto lg:w-64 lg:rounded-card lg:object-center xl:w-72 [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:size-[88px]"
+          />
+          <span
+            aria-hidden="true"
+            className="absolute bottom-1.5 right-1.5 size-3 rounded-full bg-success ring-[3px] ring-bg min-[375px]:bottom-2 min-[375px]:right-2 lg:hidden [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:bottom-1 [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:right-1"
+          />
         </div>
 
-        <div className="mt-6">
-          <GithubContributions />
+        <div className="flex w-full flex-col items-center lg:col-span-7 lg:col-start-1 lg:row-start-1 lg:items-start [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:min-w-0 [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:flex-1 [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:items-start">
+          <p className="mt-5 flex flex-wrap items-center justify-center gap-x-2 text-footnote text-label-2 lg:mt-0 lg:justify-start [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:mt-0 [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:justify-start">
+            <span>{hero.location}</span>
+            <span aria-hidden="true">·</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="status-dot" aria-hidden="true" />
+              {hero.available}
+            </span>
+          </p>
+
+          <h1
+            id="hero-title"
+            className="mt-2 text-display text-label-1 lg:mt-3 [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:text-[2.5rem] [@media(orientation:landscape)_and_(min-height:380.01px)_and_(max-height:500px)_and_(max-width:1023px)]:text-[2.75rem]"
+          >
+            {hero.name}
+          </h1>
+          <p className="mt-1.5 text-balance text-title-1 text-label-2 lg:mt-2 [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:mt-1 [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:text-title-2">
+            {hero.role}
+          </p>
+
+          <p className="mt-4 max-w-reading text-lead text-label-2 lg:mt-6 [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:mt-3 [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:text-callout">
+            {highlightTech(hero.aboutText)}
+          </p>
+
+          <div className="mt-6 flex w-full flex-col items-center gap-1 lg:mt-8 lg:w-auto lg:flex-row lg:gap-3 [@media(orientation:landscape)_and_(max-height:380px)_and_(max-width:1023px)]:mt-4 [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:w-auto [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:flex-row [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:gap-5 [@media(orientation:landscape)_and_(min-height:380.01px)_and_(max-height:500px)_and_(max-width:1023px)]:mt-5">
+            <button
+              type="button"
+              onClick={openCv}
+              onPointerEnter={preloadCvModal}
+              onTouchStart={preloadCvModal}
+              onFocus={preloadCvModal}
+              aria-haspopup="dialog"
+              className="btn-primary btn-lg w-full max-w-[20rem] lg:w-auto [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:w-auto"
+            >
+              {hero.ctaResume}
+            </button>
+            <a href="#contact" onClick={goToContact} className="text-link lg:hidden">
+              {hero.ctaContact}
+              <span aria-hidden="true" className="text-[1.1em] leading-none">
+                ›
+              </span>
+            </a>
+            <a href="#contact" onClick={goToContact} className="btn-secondary btn-lg hidden lg:inline-flex">
+              {hero.ctaContact}
+            </a>
+          </div>
+
+          {/* Label above the chips (inline only on desktop): in a landscape column the chips keep one row. */}
+          <div className="mt-6 flex flex-col items-center gap-3 lg:mt-10 lg:flex-row lg:gap-4 [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:items-start">
+            <p id="hero-focus" className="shrink-0 text-footnote text-label-2">
+              {hero.currentFocus}
+            </p>
+            {/* Inline chips + text-wrap: balance → rows of equal length (2 + 2 on phones), never one orphan. */}
+            <ul
+              role="list"
+              aria-labelledby="hero-focus"
+              className="-m-1 text-balance text-center lg:text-left [@media(orientation:landscape)_and_(max-height:500px)_and_(max-width:1023px)]:text-left"
+            >
+              {FOCUS.map(({ id, icon }) => (
+                <li key={id} className="chip m-1 align-top">
+                  {/* ssr: drawn in the pre-rendered HTML too, so the chips never reflow at hydration. */}
+                  <span className="grid size-4 shrink-0 place-items-center text-label-1/85" aria-hidden="true">
+                    <Icon icon={icon} ssr className="size-4" />
+                  </span>
+                  {hero.focusLabels[id]}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 
-      <CvModal isOpen={isCvModalOpen} onClose={() => setIsCvModalOpen(false)} />
-    </section>
+      {cv.mounted && (
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <CvModal isOpen={cv.open} onClose={closeCv} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+    </Section>
   );
 }

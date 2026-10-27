@@ -1,130 +1,114 @@
-import { useEffect } from 'react';
-import { AnimatePresence, motion as Motion } from 'framer-motion';
+import { useId } from 'react';
 import { Icon } from '@iconify/react';
 import { useLanguage } from '../context/useLanguage';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import Sheet from './ui/Sheet';
 
-function ModalCard({ title, description, link, fileName, image, cta }) {
+const FORMATS = ['modern', 'corporate'];
+
+// Large paper previews only where they fit without scrolling; phones (and phones in landscape) get compact rows.
+const ROOMY_QUERY = '(min-width: 640px) and (min-height: 501px)';
+
+// Opened from the hero's "Baixar CV" and, through the 'open-cv' window event, from the footer.
+export default function CvModal({ isOpen, onClose }) {
+  const { t } = useLanguage();
+  const roomy = useMediaQuery(ROOMY_QUERY);
+  const copy = t.cvModal;
+
   return (
-    <a
-      href={link}
-      download={fileName}
-      target="_blank"
-      rel="noreferrer"
-      className="group relative flex flex-col items-center text-center p-4 md:p-5 rounded-2xl border transition-all duration-300 hover:-translate-y-1 md:hover:-translate-y-2 bg-surface/40 border-white/10 hover:border-primary/50 hover:bg-surface/80 shadow-xl"
-    >
-      {/* Container da Imagem responsivo (menor no mobile) */}
-      <div className="w-[130px] sm:w-[160px] md:w-[220px] aspect-[1/1.4] bg-[#1a1a1a] rounded-lg mb-4 md:mb-5 overflow-hidden border border-white/10 relative shadow-md group-hover:shadow-[0_10px_30px_rgba(var(--primary-rgb),0.3)] transition-all flex items-center justify-center shrink-0">
-         
-         <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none"></div>
-         
-         <img 
-            src={image} 
-            alt={`Preview ${title}`}
-            className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-            loading="lazy"
-            decoding="async"
-         />
-         
-         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 pointer-events-none">
-            <div className="bg-primary/90 text-bg p-2 md:p-3 rounded-full backdrop-blur-sm shadow-lg">
-                <Icon icon="solar:download-minimalistic-bold" className="text-xl md:text-2xl" />
-            </div>
-         </div>
-      </div>
+    <Sheet open={isOpen} onClose={onClose} title={copy.title} size="lg">
+      <p className="max-w-reading text-callout text-label-2">{copy.subtitle}</p>
 
-      <h4 className="text-white font-bold text-base md:text-lg mb-1 md:mb-2">{title}</h4>
-      <p className="text-gray-400 text-xs md:text-sm leading-relaxed mb-3 md:mb-4 flex-grow">{description}</p>
-      
-      <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs font-bold uppercase tracking-widest text-primary mt-auto">
-        {cta}
-      </div>
-    </a>
+      <ul role="list" className={`mt-5 grid gap-3 sm:grid-cols-2 ${roomy ? 'sm:mt-6 sm:gap-grid' : ''}`}>
+        {FORMATS.map((key) => (
+          <li key={key} className="min-w-0">
+            <CvFormat format={copy[key]} cta={copy.download} roomy={roomy} />
+          </li>
+        ))}
+      </ul>
+    </Sheet>
   );
 }
 
-export default function CvModal({ isOpen, onClose }) {
-  const { t } = useLanguage();
+function CvFormat({ format, cta, roomy }) {
+  const id = useId();
+  const titleId = `${id}-title`;
+  const descId = `${id}-desc`;
+  const ctaId = `${id}-cta`;
 
-  useEffect(() => {
-    if (!isOpen) return undefined;
+  const link = {
+    href: format.link,
+    download: format.fileName,
+    target: '_blank',
+    rel: 'noreferrer',
+    'aria-labelledby': `${titleId} ${ctaId}`,
+    'aria-describedby': descId,
+  };
 
-    const previousOverflow = document.body.style.overflow;
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') onClose();
-    };
+  const pill = (
+    <>
+      <Icon icon="solar:download-minimalistic-linear" className="size-4 shrink-0" aria-hidden="true" />
+      {cta}
+    </>
+  );
 
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', closeOnEscape);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [isOpen, onClose]);
+  if (!roomy) {
+    return (
+      <a
+        {...link}
+        className="group flex h-full items-start gap-4 rounded-tile bg-surface-2 p-2 pr-4 transition-[background-color,transform] duration-fast ease-standard hover:bg-surface-3 active:scale-[0.985] active:bg-surface-3"
+      >
+        <img
+          src={format.image}
+          srcSet={format.imageSrcSet}
+          sizes={format.imageSrcSet ? '72px' : undefined}
+          alt=""
+          width={72}
+          height={100}
+          decoding="async"
+          className="h-[100px] w-[72px] shrink-0 rounded-[8px] bg-white object-cover object-top"
+        />
+        <div className="flex min-w-0 flex-1 flex-col items-start py-1.5">
+          <h3 id={titleId} className="text-callout font-semibold text-label-1">
+            {format.title}
+          </h3>
+          <p id={descId} className="mt-0.5 text-subhead text-label-2">
+            {format.desc}
+          </p>
+          <span id={ctaId} className="btn-tinted btn-sm mt-3 group-hover:bg-primary/25">
+            {pill}
+          </span>
+        </div>
+      </a>
+    );
+  }
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-      <Motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm"
-        onClick={onClose}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cv-modal-title"
-      >
-        <Motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden bg-[#0a0f1d] border border-white/10 rounded-2xl md:rounded-3xl p-5 md:p-10 shadow-2xl custom-scrollbar"
-        >
-          {/* Efeito de luz de fundo */}
-          <div className="absolute -top-10 -right-10 md:-top-20 md:-right-20 w-64 h-64 md:w-96 md:h-96 bg-primary/10 rounded-full blur-[80px] md:blur-[100px] pointer-events-none"></div>
-
-          {/* Botão Fechar ajustado para não colar muito no topo no mobile */}
-          <button 
-            type="button"
-            onClick={onClose}
-            className="absolute top-3 right-3 md:top-4 md:right-4 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-full transition-colors z-30"
-            aria-label={t.nav.home === 'Início' ? 'Fechar' : 'Close'}
-          >
-            <Icon icon="solar:close-circle-bold" className="text-xl md:text-2xl" />
-          </button>
-
-          <div className="text-center mb-6 md:mb-8 relative z-20 mt-2 md:mt-0">
-            <h3 id="cv-modal-title" className="text-xl md:text-3xl font-bold text-white mb-2 pr-6 md:pr-0">
-              {t.cvModal.title}
-            </h3>
-            <p className="text-gray-400 text-xs md:text-base max-w-lg mx-auto">
-              {t.cvModal.subtitle}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative z-20">
-            <ModalCard 
-              title={t.cvModal.modern.title}
-              description={t.cvModal.modern.desc}
-              link={t.cvModal.modern.link}
-              fileName={t.cvModal.modern.fileName}
-              image={t.cvModal.modern.image}
-              cta={t.hero.ctaResume}
-            />
-            <ModalCard
-              title={t.cvModal.corporate.title}
-              description={t.cvModal.corporate.desc}
-              link={t.cvModal.corporate.link}
-              fileName={t.cvModal.corporate.fileName}
-              image={t.cvModal.corporate.image}
-              cta={t.hero.ctaResume}
-            />
-          </div>
-        </Motion.div>
-      </Motion.div>
-      )}
-    </AnimatePresence>
+    <a
+      {...link}
+      className="group flex h-full flex-col items-center rounded-card bg-surface-2 p-5 text-center transition-[background-color,transform] duration-fast ease-standard hover:bg-surface-3 active:scale-[0.985] active:bg-surface-3 sm:p-6"
+    >
+      <img
+        src={format.image}
+        srcSet={format.imageSrcSet}
+        sizes={format.imageSrcSet ? '226px' : undefined}
+        alt=""
+        width={1414}
+        height={2000}
+        decoding="async"
+        className="aspect-[707/1000] h-[min(30vh,20rem)] w-auto max-w-full rounded-[6px] bg-white object-cover object-top shadow-paper"
+      />
+      <h3 id={titleId} className="mt-5 text-title-3 text-label-1">
+        {format.title}
+      </h3>
+      <p id={descId} className="mt-1.5 max-w-[24rem] text-callout text-label-2">
+        {format.desc}
+      </p>
+      <div className="mt-auto pt-5">
+        <span id={ctaId} className="btn-tinted group-hover:bg-primary/25">
+          {pill}
+        </span>
+      </div>
+    </a>
   );
 }

@@ -1,36 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Icon } from '@iconify/react';
-import { motion as Motion } from 'framer-motion';
+import { useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../../context/useLanguage';
+import { GITHUB_PROFILE_URL, useGithubData } from '../../hooks/useGithubData';
+import { useHydrated, useToday } from '../activity/clientValues';
+import { fill, formatStamp, freshnessNote, isKnown, localeFor, plural } from '../activity/format';
+import { ErrorBlock, StatusNote } from '../activity/parts';
 
-const GITHUB_LOGIN = 'fp-torres';
-const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
-const REQUEST_TIMEOUT_MS = 9000;
-const CACHE_KEY = 'portfolio:github-card:v1';
-
-// Same green ramp GitHub itself uses on its dark theme calendar.
-const LEVEL_COLORS = ['rgba(255,255,255,0.06)', '#0e4429', '#006d32', '#26a641', '#39d353'];
+// Neutral white ramp (level 0 = no contributions), not GitHub's green.
+const LEVELS = ['bg-white/[0.06]', 'bg-white/[0.18]', 'bg-white/[0.36]', 'bg-white/[0.60]', 'bg-white/[0.92]'];
 const LABELED_WEEKDAYS = [1, 3, 5]; // Mon, Wed, Fri
+const MIN_LABEL_GAP = 3; // columns: closer month labels would collide
 
-function getCachedData() {
-  try {
-    const value = JSON.parse(localStorage.getItem(CACHE_KEY));
-    return Array.isArray(value?.weeks) && value.weeks.length > 0 ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-function cacheData(data) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch {
-    // The live view still works when storage is disabled or full.
-  }
-}
-
-// Buckets raw counts into 5 levels (0 = none) using quartiles of the active days,
-// the same way GitHub's own calendar scales its color intensity per user.
+// Buckets raw counts into 5 levels using quartiles of the active days (like GitHub's own calendar).
 function buildLevelResolver(weeks) {
   const counts = weeks
     .flatMap((week) => week.days.map((day) => day.count))
@@ -72,277 +52,326 @@ function buildMonthLabels(columns, locale) {
     const days = column.filter(Boolean);
     if (days.length === 0) return;
 
-    // The column's dominant month (not just its first day) avoids labeling a
-    // one- or two-day sliver from the previous month at a week boundary.
+    // The column's dominant month avoids labelling a one- or two-day sliver at a week boundary.
     const counts = {};
     days.forEach((day) => {
-      const month = day.date.slice(0, 7); // YYYY-MM
+      const month = day.date.slice(0, 7);
       counts[month] = (counts[month] || 0) + 1;
     });
     const month = Object.keys(counts).reduce((a, b) => (counts[a] >= counts[b] ? a : b));
+    if (month === lastMonth) return;
+    lastMonth = month;
 
-    if (month !== lastMonth) {
-      lastMonth = month;
-      const sample = days.find((day) => day.date.startsWith(month));
-      labels.push({ index, text: formatter.format(new Date(`${sample.date}T00:00:00`)) });
+    const previous = labels[labels.length - 1];
+    if (previous && index - previous.index < MIN_LABEL_GAP) {
+      // A sliver of a month in the first columns gives way to the next label; otherwise skip this one.
+      if (previous.index !== 0) return;
+      labels.pop();
     }
+    const sample = days.find((day) => day.date.startsWith(month));
+    labels.push({ index, text: formatter.format(new Date(`${sample.date}T00:00:00`)) });
   });
 
   return labels;
 }
 
-function StatBlock({ value, label, barColor, barWidth }) {
-  return (
-    <div className="flex-1 min-w-[120px]">
-      <span className="text-3xl sm:text-4xl font-bold text-white block">{value}</span>
-      <span className="text-xs text-gray-400 uppercase tracking-wider">{label}</span>
-      <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
-        <Motion.div initial={{ width: 0 }} whileInView={{ width: barWidth }} viewport={{ once: true }} className={`h-full ${barColor}`} />
-      </div>
-    </div>
-  );
+function dayFromEvent(event) {
+  const cell = event.target instanceof Element ? event.target.closest('[data-date]') : null;
+  return cell ? { date: cell.dataset.date, count: Number(cell.dataset.count) || 0 } : null;
 }
 
-export default function GithubContributions() {
-  const { lang } = useLanguage();
-  const isPt = lang === 'pt';
-  const locale = isPt ? 'pt-BR' : 'en-US';
+export default function GithubContributions({ enabled = true }) {
+  const { t, lang } = useLanguage();
+  const copy = t.activity.github;
+  const locale = localeFor(lang);
+  const titleId = useId();
+  const hydrated = useHydrated();
+  const today = useToday();
+  const { data: cached, status, error, savedAt, retry } = useGithubData({ enabled });
+  const data = hydrated ? cached : undefined;
 
-  const [data, setData] = useState(() => getCachedData());
-  const [status, setStatus] = useState(() => (getCachedData() ? 'cached' : 'loading'));
-  const [refreshKey, setRefreshKey] = useState(0);
+  const scrollerRef = useRef(null);
+  const fadeRef = useRef(null);
+  const pinnedRef = useRef(true); // keep the latest weeks in view until the visitor scrolls back in time
+  // hidden: month labels (column indexes, space-separated) under an edge fade — see measure().
+  const [edges, setEdges] = useState({ start: false, end: false, hidden: '' });
+  const [picked, setPicked] = useState(null); // day tapped/clicked
+  const [hovered, setHovered] = useState(null); // day under the mouse
 
-  const fetchData = useCallback(async (signal) => {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-    const abortFromParent = () => controller.abort();
-    signal.addEventListener('abort', abortFromParent, { once: true });
-
-    try {
-      const [profileResponse, contributionsResponse] = await Promise.all([
-        fetch(`https://api.github.com/users/${GITHUB_LOGIN}`, { signal: controller.signal }),
-        fetch('/github.php', { signal: controller.signal, headers: { Accept: 'application/json' }, cache: 'no-store' }),
-      ]);
-
-      const contributionsPayload = await contributionsResponse.json().catch(() => null);
-      const contributions = contributionsPayload?.data;
-
-      if (!contributionsResponse.ok || !Array.isArray(contributions?.weeks) || contributions.weeks.length === 0) {
-        throw new Error(contributionsPayload?.error || `GitHub HTTP ${contributionsResponse.status}`);
-      }
-
-      const profile = profileResponse.ok ? await profileResponse.json().catch(() => null) : null;
-
-      return {
-        totalContributions: contributions.totalContributions,
-        weeks: contributions.weeks,
-        stale: contributions.stale,
-        repos: profile?.public_repos ?? 0,
-        followers: profile?.followers ?? 0,
-        htmlUrl: profile?.html_url || `https://github.com/${GITHUB_LOGIN}`,
-      };
-    } finally {
-      window.clearTimeout(timeout);
-      signal.removeEventListener('abort', abortFromParent);
-    }
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const cached = getCachedData();
-
-    if (!cached) setStatus('loading');
-
-    fetchData(controller.signal)
-      .then((next) => {
-        if (controller.signal.aborted) return;
-        setData(next);
-        setStatus(next.stale ? 'cached' : 'live');
-        cacheData(next);
-      })
-      .catch((error) => {
-        if (error.name === 'AbortError' || controller.signal.aborted) return;
-        setStatus(cached ? 'cached' : 'error');
-      });
-
-    return () => controller.abort();
-  }, [fetchData, refreshKey]);
-
-  useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState === 'visible' && navigator.onLine) {
-        setRefreshKey((value) => value + 1);
-      }
-    };
-
-    const interval = window.setInterval(refresh, REFRESH_INTERVAL_MS);
-    window.addEventListener('online', refresh);
-
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener('online', refresh);
-    };
-  }, []);
-
-  const columns = useMemo(() => (data ? buildColumns(data.weeks) : []), [data]);
+  const weeks = data?.weeks;
+  const columns = useMemo(() => (weeks ? buildColumns(weeks) : []), [weeks]);
   const monthLabels = useMemo(() => buildMonthLabels(columns, locale), [columns, locale]);
-  const resolveLevel = useMemo(() => (data ? buildLevelResolver(data.weeks) : () => 0), [data]);
-
-  const weekdayFormatter = useMemo(() => new Intl.DateTimeFormat(locale, { weekday: 'short' }), [locale]);
+  const levelOf = useMemo(() => buildLevelResolver(weeks ?? []), [weeks]);
+  const weekdayLabels = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    // 7 Jan 2024 was a Sunday (weekday 0).
+    return Array.from({ length: 7 }, (_, weekday) =>
+      LABELED_WEEKDAYS.includes(weekday) ? formatter.format(new Date(2024, 0, 7 + weekday)) : '',
+    );
+  }, [locale]);
+  // "21 de out. de 2026": short months keep the tap/hover readout on one line on most phones.
   const dateFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }),
+    () => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }),
     [locale],
   );
-
-  const tooltipFor = (day) => {
-    const date = dateFormatter.format(new Date(`${day.date}T00:00:00`));
-    if (day.count === 0) {
-      return isPt ? `Nenhuma contribuição em ${date}` : `No contributions on ${date}`;
+  const maxCount = useMemo(
+    () => (weeks ?? []).reduce((max, week) => week.days.reduce((m, day) => Math.max(m, day.count), max), 0),
+    [weeks],
+  );
+  // The longest readouts a day can produce. Laid out invisibly under the subtitle (also while loading), they
+  // reserve its height, so tapping a day never pushes the calendar down (a long readout wraps on a 320px phone).
+  const readoutProbes = useMemo(() => {
+    let longestDate = '';
+    for (let month = 0; month < 12; month += 1) {
+      // Day 28 of each month of a sample year: a two-digit day with every month's name (they differ in length).
+      const text = dateFormatter.format(new Date(2026, month, 28));
+      if (text.length > longestDate.length) longestDate = text;
     }
-    const label = isPt
-      ? `${day.count} contribuiç${day.count === 1 ? 'ão' : 'ões'} em ${date}`
-      : `${day.count} contribution${day.count === 1 ? '' : 's'} on ${date}`;
-    return label;
+    const n = new Intl.NumberFormat(locale).format(Math.max(maxCount, 99));
+    return [fill(copy.day.none, { date: longestDate }), fill(copy.day.other, { n, date: longestDate })];
+  }, [dateFormatter, locale, copy.day, maxCount]);
+  // "out. de 2025 – out. de 2026": the calendar's period, shown when the profile counts are unknown.
+  const period = useMemo(() => {
+    if (!weeks?.length) return null;
+    const lastWeek = weeks[weeks.length - 1].days;
+    const first = weeks[0].days[0].date;
+    const last = lastWeek[lastWeek.length - 1].date;
+    const formatter = new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' });
+    const [from, to] = [new Date(`${first}T00:00:00`), new Date(`${last}T00:00:00`)];
+    return formatter.formatRange ? formatter.formatRange(from, to) : `${formatter.format(from)} – ${formatter.format(to)}`;
+  }, [weeks, locale]);
+
+  // Edge fades show that the calendar scrolls; recomputed on scroll and resize (never during render).
+  // A month label that starts under a fade, or is cut by the edge, would read like a typo ("ul." for "jul."):
+  // it fades out until the visitor scrolls it clear of the edge.
+  const measure = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const start = el.scrollLeft > 1;
+    const end = el.scrollLeft < max - 1;
+    pinnedRef.current = !end;
+    const fade = fadeRef.current?.offsetWidth ?? 0;
+    const from = start ? el.scrollLeft + fade : -Infinity;
+    const to = end ? el.scrollLeft + el.clientWidth - fade : Infinity;
+    const hiddenLabels = [];
+    el.querySelectorAll('[data-month]').forEach((label) => {
+      if (label.offsetLeft < from || label.offsetLeft + label.offsetWidth > to) hiddenLabels.push(label.dataset.month);
+    });
+    const hidden = hiddenLabels.join(' ');
+    setEdges((prev) =>
+      prev.start === start && prev.end === end && prev.hidden === hidden ? prev : { start, end, hidden },
+    );
+  }, []);
+
+  const weekCount = columns.length;
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!weekCount || !el) return undefined;
+    // Open on the most recent weeks (right edge); older months are a swipe away.
+    if (pinnedRef.current) el.scrollLeft = el.scrollWidth;
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    // Its first call also measures new month labels (other data, other language).
+    const observer = new ResizeObserver(() => {
+      if (pinnedRef.current) el.scrollLeft = el.scrollWidth;
+      measure();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [weekCount, monthLabels, measure]);
+
+  if (!data && error?.code === 'NOT_CONFIGURED') return null;
+
+  const onPick = (event) => {
+    const day = dayFromEvent(event);
+    if (day) setPicked((prev) => (prev?.date === day.date ? null : day));
   };
+  const onHover = (event) => {
+    if (event.pointerType !== 'mouse') return;
+    const day = dayFromEvent(event);
+    setHovered((prev) => (prev?.date === day?.date ? prev : day));
+  };
+  const clearHover = () => setHovered(null);
 
-  if (status === 'loading' && !data) {
-    return (
-      <div
-        className="w-full bg-surface/40 backdrop-blur-md rounded-2xl border border-white/10 p-5 sm:p-6 min-h-64 shadow-xl"
-        aria-busy="true"
-        aria-label={isPt ? 'Carregando dados do GitHub' : 'Loading GitHub data'}
-      >
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-48 max-w-full bg-white/10 rounded-lg" />
-          <div className="h-16 bg-black/25 rounded-xl" />
-          <div className="h-28 bg-black/25 rounded-xl" />
-        </div>
-      </div>
-    );
+  const active = hovered ?? picked;
+  const hiddenMonths = new Set(edges.hidden.split(' '));
+  const numbers = new Intl.NumberFormat(locale);
+  // "24 repositórios · 8 seguidores" — only the counts the bridge actually knows (never a fake 0).
+  const counts = [];
+  if (isKnown(data?.profile?.repos)) counts.push(plural(copy.repos, data.profile.repos, locale));
+  if (isKnown(data?.profile?.followers)) counts.push(plural(copy.followers, data.profile.followers, locale));
+  const summary = counts.join(' · ') || period;
+  let subtitle = summary;
+  if (active) {
+    const date = dateFormatter.format(new Date(`${active.date}T00:00:00`));
+    const forms = { 0: copy.day.none, 1: copy.day.one };
+    subtitle = fill(forms[active.count] ?? copy.day.other, { n: numbers.format(active.count), date });
   }
+  // Every text the subtitle line can show, minus the visible one: they only reserve its height.
+  const subtitleProbes = [...new Set([summary, ...readoutProbes])].filter((text) => text && (!data || text !== subtitle));
 
-  if (status === 'error' && !data) {
-    return (
-      <div className="w-full bg-surface/40 rounded-2xl border border-red-400/20 p-6 sm:p-8 text-center shadow-xl">
-        <Icon icon="solar:cloud-cross-bold-duotone" className="text-4xl text-red-400 mx-auto mb-3" />
-        <h3 className="text-lg font-bold text-white">
-          {isPt ? 'GitHub indisponível no momento' : 'GitHub is unavailable right now'}
-        </h3>
-        <p className="text-sm text-gray-400 mt-2 mb-5">
-          {isPt
-            ? 'A seção volta automaticamente quando a API responder.'
-            : 'This section recovers automatically once the API responds.'}
-        </p>
-        <button
-          type="button"
-          onClick={() => setRefreshKey((value) => value + 1)}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-bold text-bg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-        >
-          <Icon icon="solar:refresh-bold" />
-          {isPt ? 'Tentar novamente' : 'Try again'}
-        </button>
-      </div>
-    );
-  }
+  // "Atualizado às 20:09" like the WakaTime card (amber "Mostrando a leitura das…" when the refresh failed).
+  const note = data
+    ? freshnessNote(formatStamp(data.fetchedAt ?? savedAt, locale, today), status === 'stale' || data.stale, t)
+    : null;
+
+  const total =
+    data?.totalContributions ?? (weeks ?? []).reduce((sum, week) => sum + week.days.reduce((s, day) => s + day.count, 0), 0);
+  const profileUrl = data?.profile?.htmlUrl || GITHUB_PROFILE_URL;
+  const loading = !data && status !== 'error';
 
   return (
-    <Motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.15 }}
-      className="w-full bg-gradient-to-b from-surface/40 to-black/40 backdrop-blur-md rounded-3xl border border-white/10 p-5 sm:p-6 shadow-xl relative overflow-hidden"
+    <article
+      aria-labelledby={titleId}
+      aria-busy={loading || undefined}
+      className="flex h-full flex-col rounded-card bg-surface-2 p-card"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-3">
-          <Icon icon="mdi:github" width="40" className="text-white shrink-0" />
-          <h3 className="text-white font-bold text-lg leading-tight">GitHub</h3>
+      <header>
+        <div className="flex flex-wrap items-center justify-between gap-x-4">
+          <h3 id={titleId} className="text-title-3 text-label-1">
+            {copy.title}
+          </h3>
+          {/* Under 360px the short label keeps the link beside the title; the full name stays in aria-label. */}
+          <a
+            href={profileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${copy.viewOnGithub} (${t.ui.opensInNewTab})`}
+            className="text-link -my-2 shrink-0"
+          >
+            <span className="max-[359px]:hidden">{copy.viewOnGithub}</span>
+            <span className="hidden max-[359px]:inline">{copy.viewOnGithubShort}</span>
+            <span aria-hidden="true" className="text-[1.1em] leading-none">
+              ↗
+            </span>
+          </a>
         </div>
-        <a
-          href={data.htmlUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="text-xs border border-white/20 px-3 py-1 rounded-full hover:bg-white hover:text-bg transition-colors text-white"
-        >
-          {isPt ? 'Ver Perfil GitHub' : 'View GitHub Profile'}
-        </a>
-      </div>
+        {(data || loading) && (
+          <div className="mt-1 grid grid-cols-1 text-footnote tabular-nums text-label-2">
+            {data ? (
+              <p aria-live="polite" className="[grid-area:1/1]">
+                {subtitle}
+              </p>
+            ) : (
+              <span aria-hidden="true" className="skeleton mt-px block h-4 w-48 max-w-full rounded-pill [grid-area:1/1]" />
+            )}
+            {subtitleProbes.map((text) => (
+              <p key={text} aria-hidden="true" className="invisible [grid-area:1/1]">
+                {text}
+              </p>
+            ))}
+          </div>
+        )}
+      </header>
 
-      <div className="flex flex-wrap gap-6 mb-6">
-        <StatBlock value={data.repos} label={isPt ? 'Repositórios' : 'Repositories'} barColor="bg-primary" barWidth="70%" />
-        <StatBlock value={data.followers} label={isPt ? 'Seguidores' : 'Followers'} barColor="bg-purple-500" barWidth="40%" />
-      </div>
-
-      <div className="pb-6 mb-6 border-b border-white/10">
-        <p className="text-xs text-gray-500">{isPt ? 'Atividade Recente' : 'Recent Activity'}</p>
-      </div>
-
-      <h4 className="text-sm font-bold text-white mb-4">
-        {isPt
-          ? `${data.totalContributions} contribuições no último ano`
-          : `${data.totalContributions} contributions in the last year`}
-      </h4>
-
-      <div className="overflow-x-auto pb-2 flex justify-center">
-        <div className="flex flex-col gap-2 w-max">
-          <div className="flex gap-2">
-            <div className="flex flex-col gap-[3px] pt-[18px] shrink-0 text-[10px] text-gray-500 leading-none">
-              {Array.from({ length: 7 }, (_, weekday) => (
-                <span key={weekday} className="h-[11px] flex items-center">
-                  {LABELED_WEEKDAYS.includes(weekday) ? weekdayFormatter.format(new Date(2024, 0, weekday)) : ''}
+      {data && (
+        <>
+          <div className="mt-5 flex gap-2 [--cell:12px] lg:mt-auto lg:pt-6 lg:[--cell:10px]">
+            <div
+              aria-hidden="true"
+              className="flex shrink-0 flex-col gap-[3px] pt-[1.375rem] text-caption leading-none text-label-2"
+            >
+              {weekdayLabels.map((label, weekday) => (
+                <span key={weekday} className="flex h-[var(--cell)] items-center">
+                  {label}
                 </span>
               ))}
             </div>
 
-            <div className="relative">
-              <div className="flex gap-[3px] h-[14px] mb-1 text-[10px] text-gray-500 leading-none">
-                {columns.map((_, index) => {
-                  const label = monthLabels.find((entry) => entry.index === index);
-                  return (
-                    <span key={index} className="w-[11px] shrink-0 relative">
-                      {label && <span className="absolute left-0 whitespace-nowrap">{label.text}</span>}
-                    </span>
-                  );
-                })}
+            <div className="relative min-w-0 flex-1">
+              <div
+                ref={scrollerRef}
+                role="img"
+                aria-label={fill(copy.calendarLabel, { n: numbers.format(total) })}
+                tabIndex={0}
+                onScroll={measure}
+                className="overflow-x-auto overscroll-x-contain rounded-[4px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                <div className="w-max">
+                  <div aria-hidden="true" className="relative mb-1.5 h-4 text-caption leading-4 text-label-2">
+                    {monthLabels.map((label) => (
+                      <span
+                        key={label.index}
+                        data-month={label.index}
+                        className={`absolute top-0 whitespace-nowrap transition-opacity duration-fast ease-standard ${
+                          hiddenMonths.has(String(label.index)) ? 'opacity-0' : ''
+                        }`}
+                        style={{ left: `calc(${label.index} * (var(--cell) + 3px))` }}
+                      >
+                        {label.text}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div
+                    className="flex touch-manipulation gap-[3px] [-webkit-tap-highlight-color:transparent]"
+                    onClick={onPick}
+                    onPointerOver={onHover}
+                    onPointerLeave={clearHover}
+                  >
+                    {columns.map((column, columnIndex) => (
+                      <div key={columnIndex} className="flex flex-col gap-[3px]">
+                        {column.map((day, weekday) =>
+                          day ? (
+                            <span
+                              key={weekday}
+                              data-date={day.date}
+                              data-count={day.count}
+                              className={`block size-[var(--cell)] rounded-[3px] ${LEVELS[levelOf(day.count)]} ${
+                                active?.date === day.date ? 'outline outline-2 outline-offset-1 outline-label-1' : ''
+                              }`}
+                            />
+                          ) : (
+                            <span key={weekday} className="block size-[var(--cell)]" />
+                          ),
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="flex gap-[3px]">
-                {columns.map((column, colIndex) => (
-                  <div key={colIndex} className="flex flex-col gap-[3px]">
-                    {column.map((day, rowIndex) =>
-                      day ? (
-                        <div
-                          key={rowIndex}
-                          title={tooltipFor(day)}
-                          className="w-[11px] h-[11px] rounded-[2px] transition-transform hover:scale-125"
-                          style={{ backgroundColor: LEVEL_COLORS[resolveLevel(day.count)] }}
-                        />
-                      ) : (
-                        <div key={rowIndex} className="w-[11px] h-[11px]" />
-                      ),
-                    )}
-                  </div>
-                ))}
-              </div>
+              <span
+                ref={fadeRef}
+                aria-hidden="true"
+                className={`pointer-events-none absolute inset-y-0 -left-px w-7 bg-gradient-to-r from-surface-2 from-[15%] transition-opacity duration-fast ease-standard ${
+                  edges.start ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none absolute inset-y-0 -right-px w-7 bg-gradient-to-l from-surface-2 from-[15%] transition-opacity duration-fast ease-standard ${
+                  edges.end ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-1.5 text-[10px] text-gray-500">
-            <span>{isPt ? 'Menos' : 'Less'}</span>
-            {LEVEL_COLORS.map((color, index) => (
-              <span key={index} className="w-[11px] h-[11px] rounded-[2px]" style={{ backgroundColor: color }} />
+          <div aria-hidden="true" className="mt-3 flex items-center justify-end gap-1 text-caption text-label-2">
+            <span className="mr-1">{copy.less}</span>
+            {LEVELS.map((level) => (
+              <span key={level} className={`size-2.5 rounded-[2px] ${level}`} />
             ))}
-            <span>{isPt ? 'Mais' : 'More'}</span>
+            <span className="ml-1">{copy.more}</span>
           </div>
-        </div>
-      </div>
 
-      {status === 'cached' && (
-        <p className="text-amber-300/70 text-[11px] mt-3">
-          {isPt
-            ? 'A API do GitHub oscilou; exibindo a última leitura válida.'
-            : 'The GitHub API is unstable; showing the last valid reading.'}
-        </p>
+          {note && (
+            <StatusNote tone={note.tone} className="mt-4">
+              {note.text}
+            </StatusNote>
+          )}
+        </>
       )}
-    </Motion.div>
+
+      {loading && (
+        <div aria-hidden="true" className="mt-5 lg:mt-auto lg:pt-6">
+          <span className="skeleton block h-[7.75rem] w-full rounded-control lg:h-[6.875rem]" />
+          <span className="skeleton ml-auto mt-3 block h-4 w-36 rounded-pill" />
+          <span className="skeleton mt-4 block h-4 w-40 rounded-pill" />
+        </div>
+      )}
+
+      {!data && status === 'error' && <ErrorBlock onRetry={retry} className="my-auto pt-4" />}
+    </article>
   );
 }

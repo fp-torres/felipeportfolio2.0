@@ -1,4 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" ry="12" fill="#0f172a"></rect>
-  <text x="32" y="40" font-size="36" font-family="Inter, sans-serif" text-anchor="middle" fill="#ffd100" font-weight="700">FT</text>
+  <rect width="64" height="64" rx="14" fill="#000"/>
+  <path fill="#ffd100" d="M14.80 47L8.66 47L8.66 17.00L28.40 17.00L28.40 22.09L14.80 22.09L14.80 30.47L27.07 30.47L27.07 35.48L14.80 35.48L14.80 47ZM40.01 22.09L30.83 22.09L30.83 17.00L55.34 17.00L55.34 22.09L46.17 22.09L46.17 47L40.01 47L40.01 22.09Z"/>
 </svg>

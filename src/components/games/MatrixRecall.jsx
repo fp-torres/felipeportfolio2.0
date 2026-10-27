@@ -1,365 +1,341 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../../context/useLanguage';
+import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, m as Motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
-import { AnimatePresence, motion as Motion } from 'framer-motion';
+import { useLanguage } from '../../context/useLanguage';
+import { EASE } from '../../lib/motion';
+import { Lives, NewRecord, Stat } from './GameUI';
+import { moveGridFocus } from './gridKeys';
+import { RECORD_KEYS, parseCount, saveRecord, useStoredRecord } from './records';
+import { fill, plural } from './text';
+import { useElementSize } from './useElementSize';
+import { useGameViewport } from './viewport';
 
 const BASE_LEVELS = [
-  { id: 1, size: 3, tiles: 3 },
-  { id: 2, size: 3, tiles: 4 },
-  { id: 3, size: 4, tiles: 5 },
-  { id: 4, size: 4, tiles: 6 },
-  { id: 5, size: 5, tiles: 7 },
-  { id: 6, size: 5, tiles: 8 },
-  { id: 7, size: 6, tiles: 9 },
+  { size: 3, tiles: 3 },
+  { size: 3, tiles: 4 },
+  { size: 4, tiles: 5 },
+  { size: 4, tiles: 6 },
+  { size: 5, tiles: 7 },
+  { size: 5, tiles: 8 },
+  { size: 6, tiles: 9 },
 ];
+const MIN_TILE = 44; // tiles never get smaller than a touch target, so the grid stops growing on small screens
+const GAP = 6;
+const BOARD_PADDING = 8;
+const STATUS_HEIGHT = 48;
+const MAX_BOARD = 520;
+const ROW_SIDE = 224 + 32; // side panel + gap in the row layout
 
-const getLevel = (idx) => {
-  if (idx < BASE_LEVELS.length) return BASE_LEVELS[idx];
-  const extra = idx - BASE_LEVELS.length + 1;
-  const size  = Math.min(7 + Math.floor(extra / 2), 10);
-  const tiles = 9 + extra;
-  return { id: idx + 1, size, tiles };
-};
-
-const createRound = (level) => {
-  const total = level.size * level.size;
-  const pattern = new Set();
-
-  while (pattern.size < level.tiles) {
-    pattern.add(Math.floor(Math.random() * total));
+// The grid grows with the level, capped by what fits the screen; past the cap the level adds tiles.
+function levelFor(index, maxSize) {
+  let base = BASE_LEVELS[index];
+  if (!base) {
+    const extra = index - BASE_LEVELS.length + 1;
+    base = { size: Math.min(7 + Math.floor(extra / 2), 10), tiles: 9 + extra };
   }
-
-  const availableGoldenTiles = Array.from(
-    { length: total },
-    (_, index) => index,
-  ).filter((index) => !pattern.has(index));
-
-  const goldenTile = availableGoldenTiles.length > 0
-    ? availableGoldenTiles[Math.floor(Math.random() * availableGoldenTiles.length)]
-    : null;
-
-  return { pattern: [...pattern], goldenTile };
-};
-
-function getSavedMatrixRecord() {
-  try {
-    return Number.parseInt(localStorage.getItem('matrixRecallRecord') || '1', 10) || 1;
-  } catch {
-    return 1;
-  }
+  const size = Math.min(base.size, maxSize);
+  return { size, tiles: Math.min(base.tiles, Math.floor(size * size * 0.6)) };
 }
 
-export default function MatrixRecall({ onBack }) {
+function createRound({ size, tiles }) {
+  const total = size * size;
+  const pattern = new Set();
+  while (pattern.size < tiles) pattern.add(Math.floor(Math.random() * total));
+  const free = Array.from({ length: total }, (_, index) => index).filter((index) => !pattern.has(index));
+  const golden = free.length > 0 ? free[Math.floor(Math.random() * free.length)] : null;
+  return { size, pattern: [...pattern], golden };
+}
+
+export default function MatrixRecall() {
   const { t } = useLanguage();
-  const common = t?.minigames?.common;
-  const txt    = t?.minigames?.matrix;
+  const text = t.minigames.matrix;
+  const common = t.minigames.common;
+  const viewport = useGameViewport();
+  const { wide } = viewport;
+  const best = parseCount(useStoredRecord(RECORD_KEYS.matrix)) ?? 0;
 
-  const [levelIndex,  setLevelIndex]  = useState(0);
-  const [pattern,     setPattern]     = useState([]);
-  const [goldenTile,  setGoldenTile]  = useState(null);
-  const [goldenUsed,  setGoldenUsed]  = useState(false);
-  const [selected,    setSelected]    = useState([]);
-  const [status,      setStatus]      = useState('idle'); // idle | preview | countdown | playing | won | error | lost
-  const [countdown,   setCountdown]   = useState(3);
-  const [lives,       setLives]       = useState(3);
-  const [highScore,   setHighScore]   = useState(getSavedMatrixRecord);
-  const transitionTimerRef = useRef(null);
+  const [levelIndex, setLevelIndex] = useState(0);
+  const [round, setRound] = useState({ size: 3, pattern: [], golden: null });
+  const [selected, setSelected] = useState([]);
+  const [goldenUsed, setGoldenUsed] = useState(false);
+  const [lifeGained, setLifeGained] = useState(false); // the golden tile only helps when a life was lost
+  const [status, setStatus] = useState('idle'); // idle | preview | countdown | playing | won | error | lost
+  const [countdown, setCountdown] = useState(3);
+  const [lives, setLives] = useState(3);
+  const [newRecord, setNewRecord] = useState(false);
+  const timerRef = useRef(0);
+  const maxSizeRef = useRef(3);
+  const [areaRef, area] = useElementSize();
 
-  const currentLevel = getLevel(levelIndex);
-  const isInfinite   = levelIndex >= BASE_LEVELS.length;
+  const boardSize = Math.floor(
+    wide
+      ? Math.min(viewport.height, viewport.width - ROW_SIDE, MAX_BOARD)
+      : Math.min(area.width, area.height - STATUS_HEIGHT - 12, MAX_BOARD),
+  );
+  const maxSize = Math.min(10, Math.max(3, Math.floor((boardSize - 2 * BOARD_PADDING + GAP) / (MIN_TILE + GAP))));
 
   useEffect(() => {
-    return () => window.clearTimeout(transitionTimerRef.current);
-  }, []);
+    maxSizeRef.current = maxSize;
+  }, [maxSize]);
+
+  useEffect(() => () => window.clearTimeout(timerRef.current), []);
 
   useEffect(() => {
-    if (status !== 'countdown') return;
-    const id = setTimeout(() => {
-      if (countdown <= 1) {
-        setCountdown(0);
-        setStatus('playing');
-      } else {
-        setCountdown(countdown - 1);
-      }
-    }, 700);
-    return () => clearTimeout(id);
+    if (status !== 'countdown') return undefined;
+    const id = window.setTimeout(() => {
+      if (countdown <= 1) setStatus('playing');
+      else setCountdown(countdown - 1);
+    }, 600);
+    return () => window.clearTimeout(id);
   }, [status, countdown]);
 
-  const startLevel = (idx) => {
-    const lvl   = getLevel(idx);
-    const round = createRound(lvl);
-
-    window.clearTimeout(transitionTimerRef.current);
-    setPattern(round.pattern);
-    setGoldenTile(round.goldenTile);
-    setGoldenUsed(false);
+  const startLevel = (index) => {
+    window.clearTimeout(timerRef.current);
+    const level = levelFor(index, maxSizeRef.current);
+    setRound(createRound(level));
     setSelected([]);
-    setLevelIndex(idx);
-
-    const previewMs = 1000 + lvl.tiles * 200;
+    setGoldenUsed(false);
+    setLifeGained(false);
+    setLevelIndex(index);
     setStatus('preview');
-    transitionTimerRef.current = window.setTimeout(() => {
-      setStatus('countdown');
+    const previewMs = Math.max(900, 1000 + level.tiles * 200 - Math.max(0, index - BASE_LEVELS.length) * 80);
+    timerRef.current = window.setTimeout(() => {
       setCountdown(3);
+      setStatus('countdown');
     }, previewMs);
   };
 
-  const handleTileClick = (index) => {
-    if (status !== 'playing') return;
-    if (selected.includes(index)) return;
+  const begin = () => {
+    setLives(3);
+    setNewRecord(false);
+    startLevel(0);
+  };
 
-    const newSelected = [...selected, index];
-    setSelected(newSelected);
+  const pick = (index) => {
+    if (status !== 'playing' || selected.includes(index)) return;
+    const nextSelected = [...selected, index];
+    setSelected(nextSelected);
 
-    if (index === goldenTile && !goldenUsed) {
+    if (index === round.golden && !goldenUsed) {
       setGoldenUsed(true);
-      setLives(prev => Math.min(prev + 1, 3));
+      if (lives < 3) {
+        setLives(lives + 1);
+        setLifeGained(true);
+      }
       return;
     }
 
-    if (pattern.includes(index)) {
-      const correctCount = newSelected.filter(i => pattern.includes(i)).length;
-      if (correctCount === pattern.length) {
-        setStatus('won');
-        const newRecord = levelIndex + 1;
-        if (newRecord >= highScore) {
-          setHighScore(newRecord);
-          localStorage.setItem('matrixRecallRecord', newRecord.toString());
-        }
-        transitionTimerRef.current = window.setTimeout(() => startLevel(levelIndex + 1), 950);
+    if (round.pattern.includes(index)) {
+      const found = nextSelected.filter((item) => round.pattern.includes(item)).length;
+      if (found < round.pattern.length) return;
+      setStatus('won');
+      const reached = levelIndex + 1;
+      if (reached > best) {
+        saveRecord(RECORD_KEYS.matrix, reached);
+        setNewRecord(true);
       }
-    } else {
-      setStatus('error');
-      const newLives = lives - 1;
-      setLives(newLives);
-      transitionTimerRef.current = window.setTimeout(() => {
-        if (newLives <= 0) setStatus('lost');
-        else startLevel(levelIndex);
-      }, 950);
+      timerRef.current = window.setTimeout(() => startLevel(levelIndex + 1), 900);
+      return;
     }
+
+    setStatus('error');
+    const remaining = lives - 1;
+    setLives(remaining);
+    timerRef.current = window.setTimeout(() => {
+      if (remaining <= 0) setStatus('lost');
+      else startLevel(levelIndex);
+    }, 900);
   };
 
-  const restartGame = () => { setLives(3); startLevel(0); };
-  const beginGame   = () => { setLives(3); startLevel(0); };
-
-  const renderTile = (index) => {
-    const isPattern  = pattern.includes(index);
+  const tileClass = (index) => {
+    const inPattern = round.pattern.includes(index);
     const isSelected = selected.includes(index);
-    const isGolden   = index === goldenTile && !goldenUsed;
-    const wasGolden  = index === goldenTile && goldenUsed && isSelected;
-
-    let bg   = 'bg-white/5 hover:bg-white/10';
-    let icon = null;
-    let anim = {};
+    const isGolden = index === round.golden;
 
     if (status === 'preview') {
-      if (isPattern) {
-        bg = 'bg-white text-bg shadow-[0_0_15px_white] scale-105';
-      } else if (isGolden) {
-        bg   = 'bg-yellow-400 shadow-[0_0_15px_#facc15] scale-105';
-        icon = <Icon icon="solar:star-bold" className="text-black text-xs" />;
-      }
-    } else if (status === 'countdown') {
-      bg = 'bg-white/5';
-    } else if (status === 'playing' || status === 'won' || status === 'error') {
-      if (isSelected) {
-        if (wasGolden) {
-          bg   = 'bg-yellow-400 shadow-[0_0_15px_#facc15]';
-          icon = <Icon icon="solar:star-bold" className="text-black text-sm" />;
-          anim = { scale: [1, 1.2, 1] };
-        } else if (isPattern) {
-          bg   = 'bg-green-500 shadow-[0_0_15px_#22c55e]';
-          anim = { scale: [1, 1.15, 1] };
-          if (currentLevel.size < 6) {
-            icon = <Icon icon="solar:check-circle-bold" className="text-white text-lg" />;
-          }
-        } else {
-          bg   = 'bg-red-500 shadow-[0_0_15px_#ef4444]';
-          icon = <Icon icon="solar:close-circle-bold" className="text-white text-lg" />;
-        }
-      } else if (isGolden) {
-        bg   = 'bg-yellow-400/25 border border-yellow-400/50 animate-pulse';
-        icon = <Icon icon="solar:star-bold" className="text-yellow-300 text-xs" />;
-      }
-    } else if (status === 'lost') {
-      if (isPattern)              bg = 'bg-white/20 animate-pulse';
-      if (isSelected && !isPattern) bg = 'bg-red-500/50';
+      if (inPattern) return 'bg-label-1';
+      if (isGolden) return 'bg-primary';
     }
+    if (status === 'playing' || status === 'won' || status === 'error') {
+      if (isSelected && isGolden) return 'bg-primary';
+      if (isSelected) return inPattern ? 'bg-success' : 'bg-danger';
+      if (isGolden && !goldenUsed) return 'bg-primary/20 ring-1 ring-inset ring-primary/60';
+    }
+    return 'bg-white/[0.08]';
+  };
 
-    return (
-      <Motion.button
-        key={index}
-        animate={anim}
-        transition={{ duration: 0.22 }}
-        className={`w-full aspect-square rounded-lg flex items-center justify-center transition-all duration-100 border border-white/5 ${bg}`}
-        onPointerDown={() => handleTileClick(index)}
-        disabled={status !== 'playing'}
-      >
-        {icon}
-      </Motion.button>
+  const tileIcon = (index) => {
+    const isGolden = index === round.golden;
+    const isSelected = selected.includes(index);
+    if (isGolden && (status === 'preview' || (!goldenUsed && status !== 'countdown') || isSelected)) {
+      return (
+        <Icon
+          icon="solar:star-bold"
+          aria-hidden="true"
+          className={`size-[45%] ${status === 'preview' || isSelected ? 'text-bg' : 'text-primary'}`}
+        />
+      );
+    }
+    if (!isSelected || round.size > 5 || status === 'preview') return null;
+    return round.pattern.includes(index) ? (
+      <Icon icon="solar:check-circle-linear" aria-hidden="true" className="size-[45%] text-bg" />
+    ) : (
+      <Icon icon="solar:close-circle-linear" aria-hidden="true" className="size-[45%] text-white" />
     );
   };
 
-  return (
-    <div className="w-full max-w-lg mx-auto bg-[#0F172A] rounded-3xl border border-white/10 p-4 sm:p-6 shadow-2xl relative min-h-[500px] flex flex-col">
-
-      {/* ── Header ── */}
-      <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
-        <button
-          onClick={onBack}
-          className="text-white/50 hover:text-white flex items-center gap-1.5 text-sm font-bold transition-colors"
-        >
-          <Icon icon="solar:arrow-left-bold" /> {common?.exit ?? 'Exit'}
-        </button>
-
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex gap-1">
-            {[...Array(3)].map((_, i) => (
-              <Motion.div
-                key={i}
-                animate={i === lives - 1 && lives > 0 ? { scale: [1, 1.4, 1] } : {}}
-                transition={{ duration: 0.3 }}
-              >
-                <Icon
-                  icon="solar:heart-bold"
-                  className={`transition-colors duration-300 ${i < lives ? 'text-red-500' : 'text-gray-800'}`}
-                />
-              </Motion.div>
-            ))}
-          </div>
-          <div className="text-xs text-gray-500 flex items-center gap-1 font-mono">
-            {common?.level ?? 'Level'} {levelIndex + 1}
-            {isInfinite && <span className="text-orange-400 font-bold">∞</span>}
-            {' · '}
-            <span className="text-gray-600">
-              {common?.max ?? 'Max'} {highScore}
+  const statusLine = (() => {
+    if (status === 'preview') return <p className="text-callout font-semibold text-label-1">{text.memorize}</p>;
+    if (status === 'countdown') return <p className="text-callout text-label-2">{text.ready}</p>;
+    if (status === 'won') {
+      return (
+        <p className="inline-flex items-center gap-2 text-callout font-semibold text-success">
+          <Icon icon="solar:check-circle-linear" aria-hidden="true" className="size-5" />
+          {text.success}
+        </p>
+      );
+    }
+    if (status === 'error') {
+      return (
+        <p className="inline-flex items-center gap-2 text-callout font-semibold text-danger">
+          <Icon icon="solar:close-circle-linear" aria-hidden="true" className="size-5" />
+          {text.wrong}
+        </p>
+      );
+    }
+    if (status === 'playing') {
+      return (
+        <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-callout text-label-1">
+          {text.repeat}
+          {round.golden !== null && !goldenUsed && (
+            <span className="inline-flex items-center gap-1 text-footnote text-label-2">
+              <Icon icon="solar:star-bold" aria-hidden="true" className="size-4 text-primary" />
+              {text.goldenHint}
             </span>
+          )}
+          {lifeGained && <span className="text-footnote font-semibold text-success">{text.goldenUsed}</span>}
+        </p>
+      );
+    }
+    return null;
+  })();
+
+  const screen = (() => {
+    if (status === 'idle') {
+      return (
+        <div className="flex max-w-xs flex-col items-center gap-4 text-center">
+          <p className="text-callout text-label-2">{text.intro}</p>
+          <p className="chip">
+            <Icon icon="solar:star-bold" aria-hidden="true" className="size-4 text-primary" />
+            {text.goldenHint}
+          </p>
+          <button type="button" onClick={begin} className="btn-primary">
+            <Icon icon="solar:play-linear" aria-hidden="true" className="size-5" />
+            {common.start}
+          </button>
+        </div>
+      );
+    }
+    if (status === 'lost') {
+      return (
+        <div className="flex max-w-xs flex-col items-center gap-3 text-center">
+          <Icon icon="solar:sad-circle-linear" aria-hidden="true" className="size-10 text-label-2" />
+          <p className="text-title-2 text-label-1">{text.fail}</p>
+          <p className="text-callout text-label-2">{plural(text.reached, levelIndex)}</p>
+          {newRecord && <NewRecord label={common.newRecord} />}
+          <button type="button" onClick={begin} className="btn-primary mt-1">
+            <Icon icon="solar:restart-linear" aria-hidden="true" className="size-5" />
+            {common.tryAgain}
+          </button>
+        </div>
+      );
+    }
+    if (boardSize <= 0) return null;
+    return (
+      <div
+        className="relative shrink-0 touch-none select-none rounded-tile bg-bg ring-1 ring-white/10 [-webkit-touch-callout:none]"
+        style={{ width: boardSize, height: boardSize, padding: BOARD_PADDING }}
+      >
+        <div
+          role="group"
+          aria-label={text.board}
+          onKeyDown={(event) => moveGridFocus(event, round.size)}
+          className="grid h-full w-full"
+          style={{
+            gridTemplateColumns: `repeat(${round.size}, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(${round.size}, minmax(0, 1fr))`,
+            gap: GAP,
+          }}
+        >
+          {Array.from({ length: round.size * round.size }, (_, index) => (
+            <button
+              key={index}
+              type="button"
+              aria-label={fill(text.tile, { n: index + 1 })}
+              disabled={status !== 'playing'}
+              onClick={() => pick(index)}
+              className={`grid place-items-center rounded-[8px] transition-[background-color,transform] duration-fast ease-standard enabled:active:scale-95 ${tileClass(index)}`}
+            >
+              {tileIcon(index)}
+            </button>
+          ))}
+        </div>
+
+        <AnimatePresence>
+          {status === 'countdown' && (
+            <Motion.div
+              key={countdown}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: EASE.emphasized }}
+              className="pointer-events-none absolute inset-0 grid place-items-center rounded-[inherit] bg-bg/60"
+            >
+              <span className="text-stat tabular-nums text-label-1">{countdown}</span>
+            </Motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  })();
+
+  const showStatus = status !== 'idle' && status !== 'lost';
+  const stats = (
+    <>
+      <Stat label={common.level} value={status === 'idle' ? '–' : levelIndex + 1} />
+      <Lives count={lives} label={fill(common.livesLabel, { n: lives })} />
+    </>
+  );
+
+  if (wide) {
+    return (
+      <div className="flex h-full items-center justify-center gap-8">
+        <div className="grid shrink-0 place-items-center" style={{ width: boardSize, height: boardSize }}>
+          {screen}
+        </div>
+        <div className="flex w-56 shrink-0 flex-col gap-5">
+          <div className="flex items-center justify-between gap-4">{stats}</div>
+          <div aria-live="polite" className="min-h-12 text-left">
+            {showStatus && statusLine}
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* ── Title Banner ── */}
-      <div className="text-center mb-3">
-        <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">
-          <Icon icon="solar:widget-5-bold" className="text-primary text-sm" />
-          <span className="text-sm font-bold text-white tracking-wider">{txt?.title ?? 'Matrix Recall'}</span>
-        </div>
-      </div>
-
-      {/* ── Game area ── */}
-      <div className="flex-1 flex flex-col items-center justify-center w-full">
-        {status === 'idle' ? (
-          <div className="text-center animate-in fade-in zoom-in duration-300 flex flex-col items-center gap-4 px-4">
-            <Icon icon="solar:widget-5-bold" className="text-primary text-6xl" />
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-1">{txt?.title ?? 'Matrix Recall'}</h3>
-              <p className="text-gray-400 text-sm max-w-xs">
-                {txt?.description ?? 'Memorize the highlighted tiles, then repeat the pattern from memory.'}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-gray-500 font-mono bg-white/5 border border-white/10 rounded-xl px-4 py-2">
-              <span className="flex items-center gap-1">
-                <Icon icon="solar:heart-bold" className="text-red-500" /> 3 {common?.lives ?? 'lives'}
-              </span>
-              <span className="text-gray-700">·</span>
-              <span className="flex items-center gap-1">
-                <Icon icon="solar:star-bold" className="text-yellow-400" /> {txt?.goldenHint ?? '+1 life bonus available'}
-              </span>
-            </div>
-            <button
-              onPointerDown={beginGame}
-              className="bg-primary text-bg px-10 py-3 rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg mt-1"
-            >
-              <Icon icon="solar:play-bold" /> {common?.start ?? txt?.start ?? 'Start'}
-            </button>
-            {highScore > 1 && (
-              <p className="text-gray-600 text-xs font-mono">
-                {common?.record ?? 'Record'}: {common?.level ?? 'Level'} {highScore}
-              </p>
-            )}
+  return (
+    <div className="mx-auto flex h-full w-full max-w-xl flex-col gap-3">
+      <div className="flex shrink-0 items-center justify-between gap-4">{stats}</div>
+      <div ref={areaRef} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3">
+        {screen}
+        {showStatus && (
+          <div
+            aria-live="polite"
+            className="flex w-full shrink-0 items-center justify-center text-center"
+            style={{ height: STATUS_HEIGHT }}
+          >
+            {statusLine}
           </div>
-        ) : status === 'lost' ? (
-          <div className="text-center animate-in zoom-in duration-300">
-            <Icon icon="solar:sad-face-bold" className="text-red-500 text-6xl mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-white mb-2">{txt?.fail ?? 'SYSTEM FAILURE'}</h3>
-            <p className="text-gray-400 mb-6">{common?.gameOver ?? 'Game Over'}</p>
-            <button
-              onClick={restartGame}
-              className="bg-primary text-bg px-8 py-3 rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2 mx-auto"
-            >
-              <Icon icon="solar:restart-bold" /> {common?.tryAgain ?? 'Try Again'}
-            </button>
-          </div>
-        ) : (
-          <div className="relative w-full max-w-[min(90vw,400px)]">
-
-            {/* Countdown overlay */}
-            <AnimatePresence mode="wait">
-              {status === 'countdown' && countdown > 0 && (
-                <Motion.div
-                  key={countdown}
-                  initial={{ scale: 2.2, opacity: 0 }}
-                  animate={{ scale: 1,   opacity: 1 }}
-                  exit={{   scale: 0.4,  opacity: 0 }}
-                  transition={{ duration: 0.35 }}
-                  className="absolute inset-0 flex items-center justify-center z-20 bg-black/60 rounded-xl backdrop-blur-sm"
-                >
-                  <span className="text-8xl font-black text-primary drop-shadow-[0_0_30px_rgba(250,204,21,0.7)]">
-                    {countdown}
-                  </span>
-                </Motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Grid */}
-            <div
-              className="grid gap-2 sm:gap-3 w-full"
-              style={{ gridTemplateColumns: `repeat(${currentLevel.size}, 1fr)` }}
-            >
-              {Array.from({ length: currentLevel.size * currentLevel.size }).map((_, i) =>
-                renderTile(i)
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Status footer ── */}
-      <div className="text-center min-h-[48px] flex items-center justify-center mt-4 gap-2 flex-wrap">
-        {status === 'preview' && (
-          <p className="text-primary font-bold animate-pulse text-xl tracking-widest">
-            {txt?.memorize ?? 'MEMORIZE!'}
-          </p>
-        )}
-
-        {status === 'countdown' && (
-          <p className="text-gray-500 text-sm">...</p>
-        )}
-
-        {status === 'playing' && (
-          <p className="text-gray-400 text-sm animate-in fade-in flex items-center gap-2 flex-wrap justify-center">
-            {txt?.repeat ?? 'Repeat the pattern.'}
-            {goldenTile !== null && !goldenUsed && (
-              <span className="text-yellow-400 text-xs flex items-center gap-1 bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/20">
-                <Icon icon="solar:star-bold" /> {txt?.goldenHint ?? '+1 life available'}
-              </span>
-            )}
-            {goldenUsed && (
-              <span className="text-green-400 text-xs flex items-center gap-1">
-                <Icon icon="solar:heart-bold" /> {txt?.goldenUsed ?? '+1 life!'}
-              </span>
-            )}
-          </p>
-        )}
-
-        {status === 'won' && (
-          <p className="text-green-400 font-bold flex items-center gap-2">
-            <Icon icon="solar:verified-check-bold" /> {txt?.success ?? 'SUCCESS!'}
-          </p>
-        )}
-
-        {status === 'error' && (
-          <p className="text-red-400 font-bold animate-pulse">✗</p>
         )}
       </div>
     </div>

@@ -1,39 +1,34 @@
-// Imagens Principais
-import profileImg from '../assets/imgs/img2.jpg';
-
-// Imagens de Projetos
-import logoNfse from '../assets/imgs/logo-nfs-e-horizontal.png'; // NOVO PROJETO (Emissor NFS-e)
-import torresBurgerImg from '../assets/imgs/web-home-dark.png'; 
-import forgeImg from '../assets/imgs/forgedevapps.png'; 
-import costsImg from '../assets/imgs/costs.jpeg';
-import steakImg from '../assets/imgs/img4.png'; 
-
-// --- PREVIEWS DOS CURRÍCULOS (INGLÊS) ---
-import imgCvModernEn from '../assets/imgs/preview-cv-moderno-en.png';
-import imgCvCorporateEn from '../assets/imgs/preview-cv-corporativo-en.png';
+// Imagens (retrato, prévias do CV, projetos e certificados): WebP responsivas geradas no build.
+// Cada uma é { src, srcSet } — ver ./images.js para adicionar ou trocar uma imagem.
+import * as images from './images';
 
 // Currículos PDFs (Versão Inglês)
 import cvCompleteEn from '../assets/curriculo/cv_Felipe_Torres_en.pdf';
 import cvFocusedEn from '../assets/curriculo/Felipe_Torres_cv_en.pdf';
 import diplomaTecnico from '../assets/curriculo/Diploma Técnico de Informática.pdf';
-
-// Certificados
-import certIotIaPucrs from '../assets/imgs/certs/CURSO DE EXTENSÃO EM INTERNET DAS COISAS, IA E A REVOLUÇÃO CONECTADA PUCRS.png'; 
-import certDbAdmin from '../assets/imgs/certs/Administrando Banco de Dados.png';
-import certHardware from '../assets/imgs/certs/Fundamentos de TI - Hardware e Software.png';
-import certImplDb from '../assets/imgs/certs/Implementando Banco de Dados.png';
-import certCyber from '../assets/imgs/certs/Introduction to Cybersecurity.png';
-import certIot from '../assets/imgs/certs/Introduction to LOT.png';
-import certGit from '../assets/imgs/certs/Introdução ao Git e GitHub.png';
-import certGestao from '../assets/imgs/certs/Introdução à Gestão de Projetos.png';
-import certPoo from '../assets/imgs/certs/Introdução à Programação Orientada a Objetos (POO).png';
-import certModeling from '../assets/imgs/certs/Modelagem de Dados.png';
-import certRiw from '../assets/imgs/certs/Rio Innovation Week 2023.png';
-import certSecurity from '../assets/imgs/certs/Segurança em Tecnologia da Informação.png';
-import certScrum from '../assets/imgs/certs/scrumcertificado.png'; 
-import certJavaUdemy from '../assets/imgs/certs/java-primeiros-passos-udemy.jpg';
+import diplomaTecnologo from '../assets/curriculo/Diploma Tecnólogo em Análise e Desenvolvimento de Sistemas.pdf';
 
 export const en = {
+  ui: {
+    skipToContent: "Skip to content",
+    close: "Close",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
+    mainNav: "Main navigation",
+    language: "Language",
+    switchLanguage: "PT — Switch language to Portuguese",
+    languageNames: { pt: "Português", en: "English" },
+    scrollToTop: "Back to top",
+    loading: "Loading…",
+    retry: "Try again",
+    errorTitle: "Couldn't load this",
+    errorText: "Check your connection and try again in a moment.",
+    previous: "Previous",
+    next: "Next",
+    opensInNewTab: "opens in a new tab",
+    updatedAt: "Updated at {time}",
+    lastReading: "Showing the last reading from {time}",
+  },
   nav: {
     home: "Home",
     experience: "Career",
@@ -42,64 +37,84 @@ export const en = {
     skills: "Stack",
     minigames: "Minigames",
     contact: "Contact",
+    logoLabel: "FT — Felipe Torres, back to top",
+  },
+  dock: {
+    nowPlaying: "Now playing on Spotify: {track} — {artist}",
   },
   hero: {
     name: "Felipe Torres",
     role: "Full Stack Developer",
-    image: profileImg,
+    image: images.portrait.src,
+    imageSrcSet: images.portrait.srcSet,
     ctaResume: "Download CV",
-    aboutTitle: "About Me",
     aboutText: "Full Stack Developer focused on React, Node.js, Java, and modern architecture. I transform complex ideas into robust and scalable software.",
-    recentActivity: "Recent Activity:",
     location: "Rio de Janeiro, BR",
     available: "Available",
-    currentFocus: "Current Focus",
-    githubStats: {
-      repos: "Repositories",
-      followers: "Followers",
-      profileBtn: "View GitHub Profile"
-    }
+    currentFocus: "Current focus",
+    imageAlt: "Portrait of Felipe Torres",
+    ctaContact: "Get in touch",
+    focusLabels: {
+      python: "Python",
+      java: "Java",
+      rest: "REST APIs",
+      react: "React",
+    },
   },
   
   cvModal: {
-    title: "Choose Resume Format",
+    title: "Choose a resume format",
     subtitle: "The same structured content in two different formats to fit any recruitment stage.",
+    download: "Download PDF",
     modern: {
       title: "Modern Design",
       desc: "Styled design with photo. Great for human reading, direct email applications, and networking.",
       link: cvCompleteEn,
       fileName: "cv_Felipe_Torres_en.pdf",
-      image: imgCvModernEn
+      image: images.cvModernEn.src,
+      imageSrcSet: images.cvModernEn.srcSet
     },
     corporate: {
       title: "Corporate Format (ATS)",
       desc: "Clean and traditional. 100% readable for automated Applicant Tracking Systems (ATS).",
       link: cvFocusedEn,
       fileName: "Felipe_Torres_cv_en.pdf",
-      image: imgCvCorporateEn
+      image: images.cvCorporateEn.src,
+      imageSrcSet: images.cvCorporateEn.srcSet
     }
   },
 
   experience: {
     title: "Professional Path",
     educationTitle: "Education",
+    eyebrow: "career",
+    experienceTitle: "Experience",
+    diploma: "View diploma",
+    links: {
+      website: "Website",
+      linkedin: "LinkedIn",
+    },
+    current: "Current",
+    months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
     items: [
       {
         id: 1,
         role: "Full Stack Developer",
         company: "Crase Sigma",
+        website: "https://www.crasesigma.com.br/",
+        linkedin: "https://www.linkedin.com/company/crasesigma/",
         period: "01/2026 - Present",
         description: "Development of complete web systems. Direct involvement in business rules, API integration, and performance optimization.",
-        current: true,
-        icon: "solar:code-square-bold"
+        current: true
       },
       {
         id: 2,
         role: "IT Intern",
         company: "Allternativa Filmes X",
+        website: "https://www.allternativafilmesx.com.br/",
+        linkedin: "https://www.linkedin.com/company/allternativa-filmes-x/",
         period: "Apr 2023 - Jul 2023",
-        description: "Technical support, infrastructure maintenance, and internal systems assistance.",
-        icon: "solar:monitor-camera-bold"
+        description: "Technical support, infrastructure maintenance, and internal systems assistance."
       }
     ],
     education: [
@@ -107,29 +122,43 @@ export const en = {
         id: 1,
         course: "Systems Analysis",
         school: "Universidade Veiga de Almeida",
+        website: "https://www.uva.br/",
+        linkedin: "https://www.linkedin.com/school/universidade-veiga-de-almeida/",
         period: "2024 - 2026",
-        diploma: null,
-        icon: "mdi:university"
+        diploma: diplomaTecnologo
       },
       {
         id: 2,
         course: "IT Technician",
         school: "Colégio Santo Inácio",
+        website: "https://www.santoinacio-rio.com.br/",
+        linkedin: "https://www.linkedin.com/school/santoinaciorj/",
         period: "2022 - 2023",
-        diploma: diplomaTecnico,
-        icon: "mdi:school"
+        diploma: diplomaTecnico
       }
     ]
   },
   projects: {
     title: "Projects",
+    eyebrow: "projects",
+    privateLabel: "Private",
+    techsTitle: "Technologies",
+    imageAlt: "Preview of the {title} project",
+    actions: {
+      details: "Details",
+      technicalDetails: "Technical details",
+      code: "Code",
+      visit: "Visit",
+      video: "Video",
+    },
     items: [
 {
         id: 5,
-        title: "National NFS-e Issuer",
+        title: "National NFS-\u2060e Issuer", // "-\u2060" = hyphen + word joiner: never wraps as "NFS-/e" and keeps the font's own hyphen (Inter has no U+2011)
         description: "[Private System] Highly complex corporate architecture for electronic tax invoice emission. Python core handles PFX certificates, XML signing, and mTLS communication with SEFIN.",
-        image: logoNfse,
-        containImage: true, 
+        image: images.nfse.src,
+        imageSrcSet: images.nfse.srcSet,
+        containImage: true,
         details: "The National NFS-e Issuer is a private corporate ecosystem designed to prepare, validate, sign, and securely transmit electronic tax invoices autonomously.\n\nUnlike traditional web applications, this project demands high fiscal reliability and strict security. The core was built in Python, handling the complexity of mTLS cryptography, XML digital signatures following government standards, and the secure manipulation of PFX digital certificates.\n\nThe architecture strictly follows Clean Architecture principles, ensuring that fiscal rules remain isolated. The system features a robust Flask API and a componentized React frontend (using Vite and Tailwind CSS), unifying both single and batch emission flows (processing thousands of invoices simultaneously).\n\nTo ensure production stability, strict security locks were implemented: backend concurrency blocking, real-time revalidation of Service Provision Documents (DPS) right before SEFIN transmission, automated testing, and comprehensive log preservation to guarantee full traceability during government server downtimes.",
         techs: ["Python", "Flask", "React", "XML/mTLS", "Tailwind CSS"],
         link: null,
@@ -140,7 +169,9 @@ export const en = {
         id: 4, 
         title: "TorresBurgers Full Stack",
         description: "Complete burger shop system with admin dashboard, real-time ordering, and inventory management.",
-        image: torresBurgerImg,
+        image: images.torresBurgers.src,
+        imageSrcSet: images.torresBurgers.srcSet,
+        imagePosition: "top-left", // keeps the corner logo visible in the 16:10 crop
         techs: ["React", "Node.js", "Express", "MySQL"],
         link: null,
         github: "https://github.com/fp-torres/TorresBurguers",
@@ -150,7 +181,8 @@ export const en = {
         id: 1,
         title: "ForgeDevApps",
         description: "Institutional platform focused on high performance.",
-        image: forgeImg,
+        image: images.forgeDevApps.src,
+        imageSrcSet: images.forgeDevApps.srcSet,
         techs: ["React", "Tailwind", "Full Stack Concept"],
         link: "https://forgedevapps.com", 
         github: "#",
@@ -158,9 +190,10 @@ export const en = {
       },
       {
         id: 2,
-        title: "Costs - Financial Manager",
+        title: "Costs\u00a0– Financial Manager", // "\u00a0–" = no-break space + en dash: the dash never dangles at the end of a line
         description: "Complete cost and project management system. Allows dynamic service creation and budgeting.",
-        image: costsImg,
+        image: images.costs.src,
+        imageSrcSet: images.costs.srcSet,
         techs: ["React", "Json Server", "CRUD"],
         link: null, 
         github: "https://github.com/fp-torres/projeto-react",
@@ -170,7 +203,8 @@ export const en = {
         id: 3,
         title: "Steak Burger",
         description: "Web application for digital menu.",
-        image: steakImg,
+        image: images.steakBurger.src,
+        imageSrcSet: images.steakBurger.srcSet,
         techs: ["HTML", "CSS", "JS"],
         link: "https://steakburger.forgedevapps.com",
         github: "https://github.com/fp-torres/stackburguer",
@@ -182,6 +216,9 @@ export const en = {
     title: "Certifications",
     seeMore: "See All",
     seeLess: "See Less",
+    eyebrow: "certificates",
+    seeAllCount: "See all {n}",
+    gridTitle: "All certifications",
     credentialLabels: {
       instructor: "Instructor",
       issued: "Completed on",
@@ -195,7 +232,8 @@ export const en = {
         id: 14,
         name: "Java First Steps: Programming Logic and Algorithms",
         issuer: "Udemy",
-        image: certJavaUdemy,
+        image: images.certJavaUdemy.src,
+        imageSrcSet: images.certJavaUdemy.srcSet,
         instructor: "Nelio Alves",
         issued: "October 23, 2026",
         duration: "8 hours total",
@@ -203,89 +241,123 @@ export const en = {
         credentialUrl: "https://ude.my/UC-ff31142f-911c-46f6-a734-4b1edec603db",
         reference: "0004",
       },
-      { id: 13, name: "IoT, AI & Connected Revolution", issuer: "PUCRS",             image: certIotIaPucrs }, 
-      { id: 12, name: "Scrum Fundamentals Certified", issuer: "SCRUMstudy",          image: certScrum }, 
-      { id: 1,  name: "OOP - Java",                   issuer: "Online Course",       image: certPoo },
-      { id: 2,  name: "Git & GitHub",                 issuer: "Online Course",       image: certGit },
-      { id: 3,  name: "DB Admin",                     issuer: "Fundação Bradesco",   image: certDbAdmin },
-      { id: 4,  name: "Impl DB",                      issuer: "Fundação Bradesco",   image: certImplDb },
-      { id: 5,  name: "Data Modeling",                issuer: "Fundação Bradesco",   image: certModeling },
-      { id: 6,  name: "IT Security",                  issuer: "Bradesco",            image: certSecurity },
-      { id: 7,  name: "Cybersecurity Intro",          issuer: "Cisco",               image: certCyber },
-      { id: 8,  name: "Project Mgmt",                 issuer: "Fundação Bradesco",   image: certGestao },
-      { id: 9,  name: "IoT Intro",                    issuer: "Cisco",               image: certIot },
-      { id: 10, name: "Hardware & Software",          issuer: "Cisco",               image: certHardware },
-      { id: 11, name: "Rio Innovation Week",          issuer: "Participation 2023",  image: certRiw },
+      { id: 13, name: "IoT, AI & Connected Revolution", issuer: "PUCRS",             image: images.certIotIaPucrs.src, imageSrcSet: images.certIotIaPucrs.srcSet },
+      { id: 12, name: "Scrum Fundamentals Certified", issuer: "SCRUMstudy",          image: images.certScrum.src, imageSrcSet: images.certScrum.srcSet },
+      { id: 1,  name: "OOP - Java",                   issuer: "Online Course",       image: images.certPoo.src, imageSrcSet: images.certPoo.srcSet },
+      { id: 2,  name: "Git & GitHub",                 issuer: "Online Course",       image: images.certGit.src, imageSrcSet: images.certGit.srcSet },
+      { id: 3,  name: "DB Admin",                     issuer: "Fundação Bradesco",   image: images.certDbAdmin.src, imageSrcSet: images.certDbAdmin.srcSet },
+      { id: 4,  name: "Impl DB",                      issuer: "Fundação Bradesco",   image: images.certImplDb.src, imageSrcSet: images.certImplDb.srcSet },
+      { id: 5,  name: "Data Modeling",                issuer: "Fundação Bradesco",   image: images.certModeling.src, imageSrcSet: images.certModeling.srcSet },
+      { id: 6,  name: "IT Security",                  issuer: "Bradesco",            image: images.certSecurity.src, imageSrcSet: images.certSecurity.srcSet },
+      { id: 7,  name: "Cybersecurity Intro",          issuer: "Cisco",               image: images.certCyber.src, imageSrcSet: images.certCyber.srcSet },
+      { id: 8,  name: "Project Mgmt",                 issuer: "Fundação Bradesco",   image: images.certGestao.src, imageSrcSet: images.certGestao.srcSet },
+      { id: 9,  name: "IoT Intro",                    issuer: "Cisco",               image: images.certIot.src, imageSrcSet: images.certIot.srcSet },
+      { id: 10, name: "Hardware & Software",          issuer: "Cisco",               image: images.certHardware.src, imageSrcSet: images.certHardware.srcSet },
+      { id: 11, name: "Rio Innovation Week",          issuer: "Participation 2023",  image: images.certRiw.src, imageSrcSet: images.certRiw.srcSet },
     ]
   },
   skills: {
     title: "Tech Stack",
-    list: [
-      { name: "React",      icon: "devicon-react-original"      },
-      { name: "Vite",       icon: "devicon-vite-original"       },
-      { name: "Node.js",    icon: "devicon-nodejs-plain"        },
-      { name: "PHP",        icon: "devicon-php-plain"           },
-      { name: "Laravel",    icon: "devicon-laravel-plain"       },
-      { name: "Python",     icon: "devicon-python-plain"        },
-      { name: "Java",       icon: "devicon-java-plain"          },
-      { name: "JavaScript", icon: "devicon-javascript-plain"    },
-      { name: "TypeScript", icon: "devicon-typescript-plain"    },
-      { name: "HTML5",      icon: "devicon-html5-plain"         },
-      { name: "CSS3",       icon: "devicon-css3-plain"          },
-      { name: "Tailwind",   icon: "devicon-tailwindcss-original"},
-      { name: "MySQL",      icon: "devicon-mysql-plain"         },
-      { name: "Docker",     icon: "devicon-docker-plain"        },
-      { name: "Git",        icon: "devicon-git-plain"           },
-      { name: "GitHub",     icon: "devicon-github-original"     },
-      { name: "Linux",      icon: "devicon-linux-plain"         },
-      { name: "Windows",    icon: "devicon-windows8-original"   },
-      { name: "MacOS",      icon: "devicon-apple-original"      },
-      { name: "Vue.js",     icon: "devicon-vuejs-plain"         },
-      { name: "Angular",    icon: "devicon-angularjs-plain"     },
-    ]
+    eyebrow: "stack",
+    countLabel: "{n} technologies",
+    filterLabel: "Filter technologies",
+    categories: {
+      all: "All",
+      frontend: "Frontend",
+      backend: "Backend",
+      database: "Database",
+      mobile: "Mobile",
+      tools: "Tools",
+      extras: "Extras",
+    },
+  },
+
+  activity: {
+    eyebrow: "activity",
+    title: "By the numbers",
+    lede: "Real coding activity, updated automatically from GitHub and WakaTime.",
+    contributionsLabel: "contributions in the last year",
+    codingLabel: {
+      last_7_days: "of coding in the last 7 days",
+      last_30_days: "of coding in the last 30 days",
+      all_time: "of coding in total",
+    },
+    updatedOn: "Updated {date}",
+    lastReadingToday: "Showing the reading from {time}",
+    lastReadingUnknown: "Showing the last available reading",
+    github: {
+      title: "Contributions",
+      viewOnGithub: "View on GitHub",
+      viewOnGithubShort: "GitHub",
+      repos: { one: "{n} repository", other: "{n} repositories" },
+      followers: { one: "{n} follower", other: "{n} followers" },
+      calendarLabel: "GitHub contribution calendar: {n} contributions in the last year",
+      less: "Less",
+      more: "More",
+      day: { none: "No contributions on {date}", one: "1 contribution on {date}", other: "{n} contributions on {date}" },
+    },
+    wakatime: {
+      title: "Coding time",
+      rangeLabel: "Period",
+      ranges: { last_7_days: "7 days", last_30_days: "30 days", all_time: "All time" },
+      dailyAverage: "Average of {time} per day",
+      others: "Other",
+      empty: "No activity recorded in this period.",
+    },
   },
 
   minigames: {
     sectionTitle: "Arcade Zone",
-    sectionSubtitle: "Challenge your mind with our mini-games.",
+    sectionSubtitle: "Challenge your mind with our mini-\u2060games.",
+    eyebrow: "arcade",
+    noRecord: "No record yet",
+    records: {
+      memory:    "Best ({mode}): {n} moves",
+      snake:     "Best: {n} points",
+      sequence:  "Best: round {n}",
+      matrix:    "Best: level {n}",
+      decryptor: "Best: level {n}",
+      zip:       "Best: {n} points",
+    },
 
     common: {
-      score:     "Score",
-      record:    "Record",
-      level:     "Level",
-      max:       "Max",
-      moves:     "Moves",
-      time:      "Time",
-      lives:     "lives",
-      win:       "You Won!",
-      gameOver:  "Game Over",
-      playAgain: "Play Again",
-      restart:   "Restart",
-      back:      "Back",
-      quit:      "Main Menu",
-      nextLevel: "Next Level",
-      tryAgain:  "Try Again",
-      exit:      "Exit",
+      score:      "Score",
+      level:      "Level",
+      livesLabel: "{n} of 3 lives",
+      time:       "Time",
+      start:      "Start",
+      pause:      "Pause",
+      resume:     "Resume",
+      paused:     "Paused",
+      restart:    "Restart",
+      playAgain:  "Play again",
+      tryAgain:   "Try again",
+      gameOver:   "Game over",
+      nextLevel:  "Next level",
+      newRecord:  "New record!",
     },
 
     descriptions: {
       memory:    { title: "Tech Memory",    desc: "Find the technology pairs."         },
       snake:     { title: "Dev Snake",      desc: "Classic Snake with tech visuals."   },
-      sequence:  { title: "Cyber Sequence", desc: "Repeat the colour sequence."        },
+      sequence:  { title: "Cyber Sequence", desc: "Repeat the color sequence."         },
       matrix:    { title: "Matrix Recall",  desc: "Memorize and repeat the pattern."   },
       decryptor: { title: "Decryptor",      desc: "Crack the secret logic password."   },
       zip:       { title: "Logic Quiz",     desc: "Quick logic questions."             },
     },
 
     memory: {
-      title:      "Tech Memory",
-      subtitle:   "Test your memory across different levels.",
-      bestScore:  "Best",
+      chooseMode: "Choose a difficulty",
+      pairs:      "{n} pairs",
+      best:       "Best: {n} moves",
+      noBest:     "No record",
       moves:      "Moves",
-      winTitle:   "Well Done!",
-      winSubtitle:"Completed in",
-      newRecord:  "🏆 NEW RECORD!",
-      playAgain:  "Play Again",
+      changeMode: "Change difficulty",
+      winTitle:   "Well done!",
+      winText:    "{moves} moves in {time}",
+      hiddenCard: "Face-down card",
+      matched:    "{name}, matched",
+      board:      "Cards",
       modes: {
         easy:   "Easy",
         medium: "Medium",
@@ -294,76 +366,97 @@ export const en = {
     },
 
     snake: {
-      title:          "Dev Snake",
-      start:          "Start",
-      help:           "WASD / Arrows to move · Space to pause",
-      helpMobile:     "Use the D-pad to move",
-      pauseHint:      "Press Space to resume",
-      pauseHintMobile:"Tap ⏸ to resume",
-      controls:       "WASD / Arrows · Space = pause",
-      controlsMobile: "D-pad to move",
-      goldenFood:     "Golden food = 30 pts",
-      newRecord:      "🏆 New Record!",
-      levelReached:   "reached",
+      board:        "Dev Snake board",
+      helpKeys:     "Use the arrow keys or WASD to move. Space pauses.",
+      helpTouch:    "Swipe on the board or use the arrows.",
+      golden:       "Golden food is worth 30 points",
+      levelReached: "Reached level {n}",
+      directions: {
+        up:    "Up",
+        down:  "Down",
+        left:  "Left",
+        right: "Right",
+      },
     },
 
     sequence: {
-      title:       "Cyber Sequence",
-      start:       "Start",
-      turn:        "Your turn!",
-      watch:       "Watch carefully...",
-      wrong:       "Game Over!",
-      phaseLabel:  "round",
-      phaseComplete: "✓ Round {n} complete!",
-      livesLeft:     "✗ Wrong! {n} {life} remaining",
-      life:          "life",
-      lives:         "lives",
+      intro:         "Repeat the color sequence. Each round adds one more.",
+      round:         "Round",
+      watch:         "Watch the sequence…",
+      turn:          "Your turn",
+      phaseComplete: "Round {n} complete!",
+      livesLeft:     { one: "Wrong! {n} life left", other: "Wrong! {n} lives left" },
+      reached:       { one: "You completed {n} round.", other: "You completed {n} rounds." },
+      board:         "Colours",
+      colors: {
+        green:  "Green",
+        red:    "Red",
+        yellow: "Yellow",
+        blue:   "Blue",
+      },
     },
 
     matrix: {
-      title:       "Matrix Recall",
-      start:       "Start",
-      description: "Memorize the highlighted tiles, then repeat the pattern from memory.",
-      memorize:    "MEMORIZE!",
-      repeat:      "Repeat the pattern.",
-      success:     "SUCCESS!",
-      fail:        "SYSTEM FAILURE",
-      phaseLabel:  "level",
-      goldenHint:  "+1 life available",
-      goldenUsed:  "+1 life!",
+      intro:      "Memorize the highlighted tiles, then repeat the pattern.",
+      goldenHint: "Golden tile: +1 life",
+      memorize:   "Memorize…",
+      ready:      "Get ready",
+      repeat:     "Repeat the pattern",
+      success:    "Nice!",
+      wrong:      "Wrong tile",
+      goldenUsed: "+1 life!",
+      fail:       "System failure",
+      reached:    { one: "You cleared {n} level.", other: "You cleared {n} levels." },
+      tile:       "Tile {n}",
+      board:      "Tiles",
     },
 
     decryptor: {
-      title:         "Decryptor",
-      accessGranted: "ACCESS GRANTED!",
-      accessDenied:  "ACCESS DENIED",
-      cracked:       "You cracked the encryption.",
-      enter:         "ENTER",
+      attempts:      "Attempts",
+      exactMatch:    "Right spot",
+      partialMatch:  "Right symbol, wrong spot",
+      placeholder:   "Pick symbols to build the password.",
+      keysHelp:      "Keys 1–{n} pick · Enter submits · Backspace deletes",
       hint:          "Hint",
-      hintUsed:      "Used",
-      hintRow:       "Hint: position",
-      exactMatch:    "Correct Position",
-      partialMatch:  "Right Symbol, Wrong Spot",
-      placeholder:   "Select icons below to guess the password.",
-      tries:         "tries",
-      remaining:     "left",
-      attemptsUsed:  "attempts used",
-      nextChallenge: "Next challenge unlocked",
-      codeWas:       "The code was:",
-      allAttempts:   "All attempts",
+      hintUsed:      "Hint used",
+      hintRow:       "Hint: position\u00a0{n}",
+      hintCost:      "−1 attempt",
+      enter:         "ENTER",
+      backspace:     "Delete",
+      slot:          "Position {n}",
+      guessLabel:    "Attempt {n}: {exact} in the right spot, {partial} in the wrong spot",
+      accessGranted: "Access granted",
+      accessDenied:  "Access denied",
+      cracked:       { one: "Password cracked in {n} attempt.", other: "Password cracked in {n} attempts." },
+      codeWas:       "The password was:",
+      symbols: {
+        A: "Code",
+        B: "Alert",
+        C: "Processor",
+        D: "Router",
+        E: "Database",
+        F: "Padlock",
+        G: "Bug",
+        H: "Server",
+        I: "Key",
+        J: "Fire",
+      },
     },
 
     zip: {
-      title:        "Logic Quiz",
-      subtitle:     "LOGIC QUIZ",
-      hint:         "Hint:",
+      intro:        "{total} questions, {seconds} seconds each and 3 lives.",
+      questionLabel:"Question",
+      answerLabel:  "Your answer",
+      placeholder:  "Answer",
+      submit:       "Submit answer",
       showHint:     "Show hint",
       hideHint:     "Hide hint",
-      correct:      "CORRECT!",
-      wrong:        "WRONG!",
-      bonus:        "bonus",
-      hackComplete: "HACK COMPLETE!",
-      placeholder:  "Answer...",
+      correct:      "Correct!",
+      bonus:        "+{n} bonus",
+      wrong:        "Wrong!",
+      timeUp:       "Time's up!",
+      hackComplete: "Hack complete!",
+      seconds:      "{n}s",
       levels: [
         { id: 1,  question: "2, 4, 6, 8, ...",               answer: "10",       hint: "Even numbers."                          },
         { id: 2,  question: "5, 10, 15, 20, ...",            answer: "25",       hint: "Multiples of 5."                        },
@@ -371,12 +464,12 @@ export const en = {
         { id: 4,  question: "10 - 5 + 2 = ?",               answer: "7",        hint: "Basic math."                            },
         { id: 5,  question: "A, B, C, D, ...",               answer: "E",        hint: "Alphabet."                              },
         { id: 6,  question: "1, 1, 2, 3, 5, 8, ...",        answer: "13",       hint: "Fibonacci (sum of previous two)."       },
-        { id: 7,  question: "HTML, CSS, JS, ...",            answer: "REACT",    hint: "Popular Frontend Stack."                },
+        { id: 7,  question: "HTML, CSS, JS, ...",            answer: "REACT",    hint: "Popular Frontend Stack.",                accept: ["REACTJS", "VUE", "VUEJS", "ANGULAR", "ANGULARJS", "SVELTE", "NEXT", "NEXTJS", "TS", "TYPESCRIPT"] },
         { id: 8,  question: "100, 90, 80, 70, ...",          answer: "60",       hint: "Countdown by 10."                       },
         { id: 9,  question: "0, 1, 10, 11, 100, ...",        answer: "101",      hint: "Binary sequence."                       },
         { id: 10, question: "const x = 5; x + 1 = ?",       answer: "6",        hint: "Basic JavaScript."                      },
         { id: 11, question: "3, 6, 9, 12, ...",              answer: "15",       hint: "Multiples of 3."                        },
-        { id: 12, question: "Mon, Tue, Wed, ...",            answer: "THURSDAY", hint: "Days of the week."                      },
+        { id: 12, question: "Mon, Tue, Wed, ...",            answer: "THU",      hint: "Days of the week (abbreviated).",        accept: ["THUR", "THURS", "THURSDAY"] },
         { id: 13, question: "10² = ?",                       answer: "100",      hint: "Exponentiation."                        },
         { id: 14, question: "[1, 2, 3].length = ?",          answer: "3",        hint: "Array length."                          },
         { id: 15, question: "#FF0000 is which color?",       answer: "RED",      hint: "Hex color code."                        },
@@ -385,9 +478,67 @@ export const en = {
   },
 
   footer: {
-    title:     "Let's build something amazing?",
+    title:     "Shall we build something amazing?",
     subtitle:  "I'm available for new projects and Full Stack opportunities.",
-    emailBtn:  "Send Email",
+    emailBtn:  "Send email",
+    cvBtn:     "Download CV",
+    socialLabel: "Social",
+    social: {
+      linkedin: "LinkedIn",
+      github: "GitHub",
+      instagram: "Instagram",
+      whatsapp: "WhatsApp",
+    },
+    lab: {
+      title: "Lab",
+      nasa: "NASA today",
+      timeMachine: "Time machine",
+      radar: "Tech radar",
+      failedTitle: "Couldn't open this",
+      failedText: "Reload the page to try again.",
+      reload: "Reload page",
+      apod: {
+        subtitle: "Astronomy Picture of the Day",
+        eyebrow: "APOD · {date}",
+        credit: "© {name}",
+        viewHd: "View in high resolution",
+        openVideo: "Open video",
+        playVideo: "Play video",
+        openOnNasa: "View on NASA's site",
+        otherMedia: "On this day NASA published interactive media.",
+        imageError: "The image can't be shown here.",
+        translated: "Automatically translated from English.",
+        original: "Original text by NASA, in English.",
+        errorTitle: "The image didn't load",
+        rateLimited: "NASA is limiting requests right now. Try again in a few minutes.",
+        rateLimitedUntil: "NASA is limiting requests right now. Try again after {time}.",
+        rateLimitedLater: "NASA is limiting requests right now. Try again later.",
+        unavailable: "Couldn't reach NASA right now. Try again in a moment.",
+        invalidDate: "That date isn't available in NASA's archive.",
+      },
+      travel: {
+        subtitle: "NASA's archive since 1995",
+        intro: "What was NASA looking at on the day you were born? Pick any date since June 16, 1995.",
+        dateLabel: "Date",
+        choose: "Choose a date",
+        submit: "Travel in time",
+        errorEmpty: "Choose a complete date.",
+        errorInvalid: "That date doesn't exist on the calendar.",
+        errorBefore: "The archive starts on June 16, 1995. Pick that day or later.",
+        errorAfter: "That date hasn't reached NASA yet. Pick a date up to today.",
+      },
+      news: {
+        subtitle: "Trending today on DEV Community",
+        readingTime: "{n} min read",
+        readingShort: "{n} min",
+        justNow: "just now",
+        more: "See more on DEV Community",
+        errorTitle: "No signal right now",
+        errorText: "Couldn't load the articles right now. Try again in a moment.",
+        emptyTitle: "Nothing trending right now",
+        emptyText: "No articles on the radar yet. Check back soon.",
+      },
+    },
     copyright: "© 2026 Felipe Torres. All rights reserved.",
   },
 };

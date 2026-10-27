@@ -1,16 +1,17 @@
 <!doctype html>
-<html lang="pt-br">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/fticon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b0f1a" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- PNG for Safari; browsers that support SVG favicons pick the SVG. ?v= busts old cached favicons. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2" />
+    <link rel="icon" type="image/svg+xml" href="/fticon.svg?v=2" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#000000" />
     <meta name="color-scheme" content="dark" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://felipeportfolio.forgedevapps.com/" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
 
     <!-- ─── SEO ──────────────────────────────────────────────────────── -->
     <title>Felipe Torres — Full Stack Developer</title>
@@ -22,11 +23,13 @@
     <meta property="og:type"         content="website" />
     <meta property="og:title"        content="Felipe Torres — Full Stack Developer" />
     <meta property="og:description"  content="Desenvolvedor Full Stack com experiência em React, Python, Flask, APIs e automações." />
-    <meta property="og:image"        content="https://felipeportfolio.forgedevapps.com/preview1.png" />
+    <meta property="og:image"        content="https://felipeportfolio.forgedevapps.com/og-image.jpg" />
+    <meta property="og:image:type"   content="image/jpeg" />
     <meta property="og:image:width"  content="1200" />
-    <meta property="og:image:height" content="610" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:image:alt"    content="Portfólio profissional de Felipe Torres" />
     <meta property="og:locale"       content="pt_BR" />
+    <meta property="og:locale:alternate" content="en_US" />
 
     <!-- ─── Twitter / X ─────────────────────────────────────────────── -->
     <meta name="twitter:card"        content="summary_large_image" />
@@ -34,11 +37,27 @@
     <meta property="twitter:url"     content="https://felipeportfolio.forgedevapps.com/" />
     <meta name="twitter:title"       content="Felipe Torres — Full Stack Developer" />
     <meta name="twitter:description" content="Desenvolvedor Full Stack com experiência em React, Python, Flask, APIs e automações." />
-    <meta name="twitter:image"       content="https://felipeportfolio.forgedevapps.com/preview1.png" />
+    <meta name="twitter:image"       content="https://felipeportfolio.forgedevapps.com/og-image.jpg" />
     <meta name="twitter:image:alt"   content="Portfólio profissional de Felipe Torres" />
 
-    <!-- ─── Devicons ─────────────────────────────────────────────────── -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
+    <!-- ─── Dados estruturados (Google) ─────────────────────────────── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Felipe Torres",
+        "jobTitle": "Desenvolvedor Full Stack",
+        "url": "https://felipeportfolio.forgedevapps.com/",
+        "image": "https://felipeportfolio.forgedevapps.com/og-image.jpg",
+        "address": { "@type": "PostalAddress", "addressLocality": "Rio de Janeiro", "addressCountry": "BR" },
+        "knowsAbout": ["React", "Node.js", "Java", "Python", "Flask", "APIs REST"],
+        "sameAs": [
+          "https://www.linkedin.com/in/felipe-torres-id",
+          "https://github.com/fp-torres",
+          "https://www.instagram.com/fp.torresz"
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

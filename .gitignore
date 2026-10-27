@@ -38,3 +38,7 @@ public/.cache/
 .env
 .env.*
 !.env.example
+
+# Gerados a cada dev/build por scripts/build-icons.mjs
+src/lib/icons.generated.js
+src/lib/icons.lazy.generated.js

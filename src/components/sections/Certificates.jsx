@@ -1,147 +1,65 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { m as Motion } from 'framer-motion';
 import { useLanguage } from '../../context/useLanguage';
-import { Icon } from '@iconify/react';
-import { AnimatePresence, motion as Motion } from 'framer-motion';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { reveal } from '../../lib/motion';
+import Section from '../ui/Section';
+import SectionHeader from '../ui/SectionHeader';
+import Sheet from '../ui/Sheet';
+import CertificateCard from '../certificates/CertificateCard';
+import CertificateDetail, { COMPACT_QUERY, CertificateVerifyLink } from '../certificates/CertificateDetail';
+import CertificateGallery from '../certificates/CertificateGallery';
+
+// Rendered width of one item in the "see all" grid (2 / 3 / 4 columns).
+const GRID_SIZES = '(min-width: 1024px) 17rem, (min-width: 640px) 30vw, 46vw';
 
 export default function Certificates() {
   const { t } = useLanguage();
-  const [selectedCert, setSelectedCert] = useState(null);
-  const [showAll, setShowAll] = useState(false);
-
-  const visibleCertificates = showAll ? t.certificates.items : t.certificates.items.slice(0, 4);
-
-  useEffect(() => {
-    if (!selectedCert) return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setSelectedCert(null);
-    };
-
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', closeOnEscape);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [selectedCert]);
+  const items = t.certificates.items;
+  const [gridOpen, setGridOpen] = useState(false);
+  // Keep the id (not the object) so the open sheet follows a language switch.
+  const [selectedId, setSelectedId] = useState(null);
+  const selected = items.find((cert) => cert.id === selectedId) ?? null;
+  // Short landscape screens: the "Verificar" button sits under the name instead of in a footer row.
+  const compact = useMediaQuery(COMPACT_QUERY);
+  const verifyFooter =
+    selected?.credentialUrl && !compact ? <CertificateVerifyLink href={selected.credentialUrl} /> : undefined;
 
   return (
-    <section id="certificates" className="py-20">
-      <div className="flex items-center gap-3 justify-center mb-12">
-        <Icon icon="solar:diploma-verified-bold" className="text-primary text-3xl md:text-4xl" />
-        <h2 className="text-3xl md:text-4xl font-bold">{t.certificates.title}</h2>
-      </div>
+    // Size container: the gallery measures the band (100cqw) to bleed to the screen edges on wide screens.
+    <Section id="certificates" band="elevated" labelledBy="certificates-title" className="[container-type:inline-size]">
+      <SectionHeader
+        id="certificates-title"
+        eyebrow={t.certificates.eyebrow}
+        title={t.certificates.title}
+        action={{ label: t.certificates.seeAllCount.replace('{n}', items.length), onClick: () => setGridOpen(true) }}
+      />
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {visibleCertificates.map((cert) => (
-          <Motion.button 
-            key={cert.id} 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.02 }}
-            className="w-full text-left cursor-pointer bg-surface rounded-2xl overflow-hidden border border-white/5 hover:border-primary/50 transition-all shadow-lg group relative"
-            type="button"
-            onClick={() => setSelectedCert(cert)}
-          >
-            {/* Imagem Preview */}
-            <div className="h-40 overflow-hidden relative">
-                <img src={cert.image} alt={cert.name} loading="lazy" decoding="async" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Icon icon="solar:eye-bold" className="text-white text-3xl" />
-                </div>
-            </div>
+      <Motion.div {...reveal}>
+        <CertificateGallery items={items} onSelect={setSelectedId} />
+      </Motion.div>
 
-            {/* Texto */}
-            <div className="p-4">
-                <h3 className="font-bold text-white text-md leading-tight mb-1 truncate">{cert.name}</h3>
-                <p className="text-xs text-primary">{cert.issuer}</p>
-            </div>
-          </Motion.button>
-        ))}
-      </div>
+      <Sheet open={gridOpen} onClose={() => setGridOpen(false)} title={t.certificates.gridTitle} size="xl">
+        <ul role="list" className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4">
+          {items.map((cert) => (
+            <li key={cert.id}>
+              <CertificateCard cert={cert} onSelect={setSelectedId} sizes={GRID_SIZES} />
+            </li>
+          ))}
+        </ul>
+      </Sheet>
 
-     {/* Botão Ver Mais / Ver Menos TRADUZIDO */}
-      {t.certificates.items.length > 4 && (
-        <div className="flex justify-center mt-10">
-            <button 
-                onClick={() => setShowAll(!showAll)}
-                className="flex items-center gap-2 px-6 py-2 border border-primary text-primary rounded-full hover:bg-primary hover:text-bg transition-colors font-bold"
-            >
-                {/* USANDO AS VARIÁVEIS DE TRADUÇÃO AQUI */}
-                {showAll ? t.certificates.seeLess : t.certificates.seeMore}
-                <Icon icon={showAll ? "solar:alt-arrow-up-bold" : "solar:alt-arrow-down-bold"} />
-            </button>
-        </div>
-      )}
-
-      {/* Modal Lightbox */}
-      <AnimatePresence>
-        {selectedCert && (
-          <Motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
-            onClick={() => setSelectedCert(null)}
-            role="dialog"
-            aria-modal="true"
-            aria-label={selectedCert.name}
-          >
-            <Motion.div 
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.8 }}
-                className="relative max-w-4xl w-full max-h-[90vh] bg-surface rounded-xl overflow-hidden border border-white/10 flex flex-col"
-                onClick={(e) => e.stopPropagation()} 
-            >
-                <button 
-                    type="button"
-                    onClick={() => setSelectedCert(null)} 
-                    className="absolute top-4 right-4 bg-black/50 p-2 rounded-full text-white hover:bg-primary hover:text-bg transition-colors z-10"
-                    aria-label={t.nav.home === 'Início' ? 'Fechar certificado' : 'Close certificate'}
-                >
-                    <Icon icon="solar:close-circle-bold" width="30" />
-                </button>
-                <div className="flex-1 min-h-0 overflow-auto bg-black flex items-center justify-center">
-                    <img src={selectedCert.image} alt={selectedCert.name} decoding="async" className="max-w-full max-h-[52vh] object-contain" />
-                </div>
-                <div className="p-4 bg-surface border-t border-white/10 text-center shrink-0 max-h-[36vh] overflow-y-auto">
-                    <h3 className="text-xl font-bold text-white">{selectedCert.name}</h3>
-                    <p className="text-muted">{selectedCert.issuer}</p>
-                    {selectedCert.credentialId && (
-                      <>
-                        <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-left text-sm">
-                          {[
-                            ['instructor', selectedCert.instructor],
-                            ['issued', selectedCert.issued],
-                            ['duration', selectedCert.duration],
-                            ['credentialId', selectedCert.credentialId],
-                            ['reference', selectedCert.reference],
-                          ].filter(([, value]) => value).map(([label, value]) => (
-                            <div key={label} className="min-w-0">
-                              <dt className="text-muted">{t.certificates.credentialLabels[label]}</dt>
-                              <dd className={`mt-0.5 text-white ${label === 'credentialId' ? 'break-all' : ''}`}>{value}</dd>
-                            </div>
-                          ))}
-                        </dl>
-                        <a
-                          href={selectedCert.credentialUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 mt-4 px-4 py-2 rounded-full bg-primary text-bg font-bold hover:brightness-110 transition"
-                        >
-                          <Icon icon="solar:link-circle-bold" />
-                          {t.certificates.credentialLabels.verify}
-                        </a>
-                      </>
-                    )}
-                </div>
-            </Motion.div>
-          </Motion.div>
-        )}
-      </AnimatePresence>
-    </section>
+      {/* Opens on top of the grid sheet when picked from there; Escape / close returns to it. */}
+      <Sheet
+        open={selected !== null}
+        onClose={() => setSelectedId(null)}
+        title={selected?.name}
+        hideTitle
+        size="lg"
+        footer={verifyFooter}
+      >
+        {selected && <CertificateDetail cert={selected} compact={compact} />}
+      </Sheet>
+    </Section>
   );
 }

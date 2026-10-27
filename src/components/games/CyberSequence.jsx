@@ -1,338 +1,322 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../../context/useLanguage';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
+import { useLanguage } from '../../context/useLanguage';
+import { Lives, NewRecord, ResultOverlay, Stat } from './GameUI';
+import { moveGridFocus } from './gridKeys';
+import { RECORD_KEYS, parseCount, saveRecord, useStoredRecord } from './records';
+import { fill, plural } from './text';
+import { useElementSize } from './useElementSize';
+import { useGameKeys } from './useGameKeys';
+import { useGameViewport } from './viewport';
 
-const COLORS = [
-  { id: 'green',  color: 'bg-green-500',  highlight: 'bg-green-300 shadow-[0_0_30px_#4ade80]',  sound: 261.63 },
-  { id: 'red',    color: 'bg-red-500',    highlight: 'bg-red-300 shadow-[0_0_30px_#f87171]',    sound: 329.63 },
-  { id: 'yellow', color: 'bg-yellow-500', highlight: 'bg-yellow-300 shadow-[0_0_30px_#facc15]', sound: 392.00 },
-  { id: 'blue',   color: 'bg-blue-500',   highlight: 'bg-blue-300 shadow-[0_0_30px_#60a5fa]',   sound: 523.25 },
+// Four pads in a circle (the outer corners follow the board's round clip): green, red, yellow, blue.
+// Keys 1–4 press them in reading order on a physical keyboard.
+const PADS = [
+  { id: 'green', key: '1', className: 'bg-success', frequency: 261.63 },
+  { id: 'red', key: '2', className: 'bg-danger', frequency: 329.63 },
+  { id: 'yellow', key: '3', className: 'bg-primary', frequency: 392.0 },
+  { id: 'blue', key: '4', className: 'bg-data-1', frequency: 523.25 },
 ];
 
-function getSavedSequenceScore() {
-  try {
-    return Number.parseInt(localStorage.getItem('sequenceHighScore') || '0', 10) || 0;
-  } catch {
-    return 0;
-  }
-}
+const STATUS_HEIGHT = 128; // fixed so the board never resizes when the message changes
+const MAX_BOARD = 480;
+const ROW_SIDE = 224 + 32; // side panel + gap in the row layout
+const randomPad = () => PADS[Math.floor(Math.random() * PADS.length)].id;
+const speedFor = (length) => Math.max(380, 820 - length * 35);
 
-export default function CyberSequence({ onBack }) {
+export default function CyberSequence() {
   const { t } = useLanguage();
-  const common = t?.minigames?.common;
-  const txt    = t?.minigames?.sequence;
+  const text = t.minigames.sequence;
+  const common = t.minigames.common;
+  const viewport = useGameViewport();
+  const { wide } = viewport;
+  const best = parseCount(useStoredRecord(RECORD_KEYS.sequence)) ?? 0;
 
-  const [sequence,    setSequence]    = useState([]);
-  const [userStep,    setUserStep]    = useState(0);
-  const [isPlaying,   setIsPlaying]   = useState(false);
-  const [activeColor, setActiveColor] = useState(null);
-  const [gameOver,    setGameOver]    = useState(false);
-  const [score,       setScore]       = useState(0);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [highScore,   setHighScore]   = useState(getSavedSequenceScore);
-  const [lives,       setLives]       = useState(3);
-  const [statusMsg,   setStatusMsg]   = useState('');
+  const [sequence, setSequence] = useState([]);
+  const [status, setStatus] = useState('idle'); // idle | showing | input | between | over
+  const [message, setMessage] = useState(null); // correct | wrong
+  const [lit, setLit] = useState(null);
+  const [lives, setLives] = useState(3);
+  const [score, setScore] = useState(0); // rounds completed
+  const [newRecord, setNewRecord] = useState(false);
 
-  // ── AudioContext – single instance, warmed-up on first interaction ──────────
-  const audioCtxRef = useRef(null);
-  const timeoutsRef = useRef(new Set());
+  // Taps are accepted only while this is true: never during playback or the pause between rounds.
+  const inputOpen = useRef(false);
+  const step = useRef(0);
+  const timers = useRef(new Set());
+  const audio = useRef(null);
+  const [areaRef, area] = useElementSize();
 
-  const clearScheduled = () => {
-    timeoutsRef.current.forEach((id) => window.clearTimeout(id));
-    timeoutsRef.current.clear();
+  const boardSize = Math.floor(
+    wide
+      ? Math.min(viewport.height, viewport.width - ROW_SIDE, MAX_BOARD)
+      : Math.min(area.width, area.height - STATUS_HEIGHT - 16, MAX_BOARD),
+  );
+
+  const clearTimers = () => {
+    timers.current.forEach((id) => window.clearTimeout(id));
+    timers.current.clear();
   };
 
-  const schedule = (callback, delay) => {
+  const later = (callback, delay) => {
     const id = window.setTimeout(() => {
-      timeoutsRef.current.delete(id);
+      timers.current.delete(id);
       callback();
     }, delay);
-    timeoutsRef.current.add(id);
-    return id;
-  };
-
-  const getAudioCtx = () => {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return null;
-    if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-      audioCtxRef.current = new AC();
-    }
-    return audioCtxRef.current;
-  };
-
-  // Pre-warm the AudioContext on first user gesture to eliminate mobile latency
-  const warmAudio = () => {
-    const ctx = getAudioCtx();
-    if (!ctx) return;
-    if (ctx.state === 'suspended') ctx.resume();
-    // Play a silent buffer to unlock the context immediately
-    const buf  = ctx.createBuffer(1, 1, 22050);
-    const src  = ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(ctx.destination);
-    src.start(0);
+    timers.current.add(id);
   };
 
   useEffect(() => {
+    const pending = timers.current;
     return () => {
-      clearScheduled();
-      audioCtxRef.current?.close();
+      pending.forEach((id) => window.clearTimeout(id));
+      pending.clear();
+      audio.current?.close?.().catch(() => {});
     };
   }, []);
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-  const playSound = (freq) => {
-    const ctx = getAudioCtx();
-    if (!ctx) return;
-    // Always resume before scheduling – critical on iOS/Android
-    const schedule = () => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.25, ctx.currentTime);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.42);
-      osc.stop(ctx.currentTime + 0.42);
+  // One AudioContext, unlocked by the tap that starts the game (required on iOS).
+  const getAudio = () => {
+    const Context = window.AudioContext || window.webkitAudioContext;
+    if (!Context) return null;
+    if (!audio.current || audio.current.state === 'closed') audio.current = new Context();
+    return audio.current;
+  };
+
+  const beep = (frequency) => {
+    const context = getAudio();
+    if (!context) return;
+    const play = () => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.2, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.4);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.4);
     };
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(schedule);
-    } else {
-      schedule();
-    }
+    if (context.state === 'suspended') context.resume().then(play, () => {});
+    else play();
   };
 
-  const flashColor = (colorObj, duration = 350) => {
-    setActiveColor(colorObj.id);
-    playSound(colorObj.sound);
-    schedule(() => setActiveColor(null), duration);
+  const flash = (id, duration) => {
+    setLit(id);
+    beep(PADS.find((pad) => pad.id === id).frequency);
+    later(() => setLit((current) => (current === id ? null : current)), duration);
   };
 
-  const getSpeed = (len) => Math.max(380, 820 - len * 35);
+  // Plays the sequence, then opens input. Always clears pending timers first: one timeline at a time.
+  const play = (seq) => {
+    clearTimers();
+    inputOpen.current = false;
+    step.current = 0;
+    setLit(null);
+    setMessage(null);
+    setStatus('showing');
+    const speed = speedFor(seq.length);
+    seq.forEach((id, index) => later(() => flash(id, Math.min(350, speed * 0.6)), speed * 0.5 + index * speed));
+    later(() => {
+      setLit(null);
+      inputOpen.current = true;
+      setStatus('input');
+    }, speed * 0.5 + seq.length * speed);
+  };
 
-  // ── Game logic ───────────────────────────────────────────────────────────────
-  const startGame = () => {
-    clearScheduled();
-    warmAudio(); // unlock on the user gesture that starts the game
-    setSequence([]);
-    setUserStep(0);
-    setScore(0);
-    setGameOver(false);
-    setGameStarted(true);
+  const start = () => {
+    const context = getAudio();
+    if (context?.state === 'suspended') context.resume().catch(() => {});
+    const first = [randomPad()];
+    setSequence(first);
     setLives(3);
-    setStatusMsg('');
-    schedule(() => nextRound([]), 500);
+    setScore(0);
+    setNewRecord(false);
+    play(first);
   };
 
-  const nextRound = (current) => {
-    setIsPlaying(true);
-    setUserStep(0);
-    setStatusMsg('');
+  const press = (pad) => {
+    if (!inputOpen.current) return;
+    flash(pad.id, 250);
 
-    const newSeq  = [...current, COLORS[Math.floor(Math.random() * COLORS.length)]];
-    setSequence(newSeq);
+    if (pad.id === sequence[step.current]) {
+      step.current += 1;
+      if (step.current < sequence.length) return;
 
-    const speed = getSpeed(newSeq.length);
-    let i = 0;
-    const tick = () => {
-      if (i >= newSeq.length) { setIsPlaying(false); setActiveColor(null); return; }
-      flashColor(newSeq[i]);
-      i++;
-      schedule(tick, speed);
-    };
-    schedule(tick, speed * 0.5);
-  };
-
-  const replaySequence = (seq) => {
-    setIsPlaying(true);
-    setUserStep(0);
-    const speed = getSpeed(seq.length);
-    let i = 0;
-    const tick = () => {
-      if (i >= seq.length) { setIsPlaying(false); setActiveColor(null); return; }
-      flashColor(seq[i]);
-      i++;
-      schedule(tick, speed);
-    };
-    schedule(tick, speed * 0.5);
-  };
-
-  const handleUserClick = (colorObj) => {
-    if (isPlaying || gameOver || !gameStarted) return;
-    flashColor(colorObj, 300);
-
-    if (colorObj.id === sequence[userStep].id) {
-      const next = userStep + 1;
-      if (next === sequence.length) {
-        const newScore = sequence.length;
-        setScore(newScore);
-        if (newScore > highScore) {
-          setHighScore(newScore);
-          localStorage.setItem('sequenceHighScore', newScore.toString());
-        }
-        setStatusMsg('correct');
-        schedule(() => nextRound(sequence), 1100);
-      } else {
-        setUserStep(next);
+      inputOpen.current = false;
+      const reached = sequence.length;
+      setScore(reached);
+      if (reached > best) {
+        saveRecord(RECORD_KEYS.sequence, reached);
+        setNewRecord(true);
       }
-    } else {
-      const newLives = lives - 1;
-      setLives(newLives);
-      if (newLives <= 0) {
-        setGameOver(true);
-        setGameStarted(false);
-      } else {
-        setStatusMsg('wrong');
-        schedule(() => {
-          setStatusMsg('');
-          replaySequence(sequence);
-        }, 1000);
-      }
+      setMessage('correct');
+      setStatus('between');
+      const next = [...sequence, randomPad()];
+      later(() => {
+        setSequence(next);
+        play(next);
+      }, 1100);
+      return;
     }
+
+    inputOpen.current = false;
+    const remaining = lives - 1;
+    setLives(remaining);
+    if (remaining <= 0) {
+      setMessage(null);
+      setStatus('over');
+      return;
+    }
+    setMessage('wrong');
+    setStatus('between');
+    later(() => play(sequence), 1200);
   };
 
-  // ── Build status messages from translations with fallbacks ──────────────────
-  const phaseCompleteMsg = txt?.phaseComplete
-    ? txt.phaseComplete.replace('{n}', score)
-    : `✓ Round ${score} complete!`;
-
-  const livesLeftMsg = (() => {
-    if (txt?.livesLeft) {
-      const word = lives !== 1 ? (txt?.lives ?? 'lives') : (txt?.life ?? 'life');
-      return txt.livesLeft.replace('{n}', lives).replace('{life}', word);
+  // Physical keyboard while the game is open: 1–4 press the pads, Enter / Space start a game.
+  useGameKeys((event) => {
+    const pad = PADS.find((item) => item.key === event.key);
+    if (pad) {
+      if (status !== 'input') return false;
+      press(pad);
+      return true;
     }
-    return `✗ Wrong! ${lives} ${lives !== 1 ? 'lives' : 'life'} remaining`;
+    if ((event.key === 'Enter' || event.key === ' ') && (status === 'idle' || status === 'over')) {
+      start();
+      return true;
+    }
+    return false;
+  });
+
+  const statusContent = (() => {
+    if (status === 'idle') {
+      return (
+        <>
+          <p className="max-w-xs text-callout text-label-2">{text.intro}</p>
+          <button type="button" onClick={start} className="btn-primary">
+            <Icon icon="solar:play-linear" aria-hidden="true" className="size-5" />
+            {common.start}
+          </button>
+        </>
+      );
+    }
+    if (status === 'over') return null;
+    if (message === 'correct') {
+      return (
+        <p className="inline-flex items-center gap-2 text-callout font-semibold text-success">
+          <Icon icon="solar:check-circle-linear" aria-hidden="true" className="size-5" />
+          {fill(text.phaseComplete, { n: score })}
+        </p>
+      );
+    }
+    if (message === 'wrong') {
+      return (
+        <p className="inline-flex items-center gap-2 text-callout font-semibold text-danger">
+          <Icon icon="solar:close-circle-linear" aria-hidden="true" className="size-5" />
+          {plural(text.livesLeft, lives)}
+        </p>
+      );
+    }
+    if (status === 'showing') {
+      return (
+        <p className="inline-flex items-center gap-2 text-callout text-label-2">
+          <Icon icon="solar:eye-linear" aria-hidden="true" className="size-5" />
+          {text.watch}
+        </p>
+      );
+    }
+    return <p className="text-callout font-semibold text-label-1">{text.turn}</p>;
   })();
 
-  return (
-    <div className="w-full max-w-lg mx-auto bg-surface/30 backdrop-blur-md rounded-3xl border border-white/10 p-4 sm:p-6 shadow-2xl flex flex-col items-center">
-
-      {/* ── Title Banner ── */}
-      <div className="mb-4 w-full text-center">
-        <div className="inline-flex items-center gap-2 bg-black/30 border border-white/10 rounded-full px-4 py-1.5">
-          <Icon icon="solar:palette-round-bold" className="text-primary text-sm" />
-          <span className="text-sm font-bold text-white tracking-wider">{txt?.title ?? 'Cyber Sequence'}</span>
-        </div>
-      </div>
-
-      {/* ── Header ── */}
-      <div className="w-full flex flex-wrap justify-between items-center gap-2 mb-6">
+  const board = boardSize > 0 && (
+    <div
+      role="group"
+      aria-label={text.board}
+      onKeyDown={(event) => moveGridFocus(event, 2)}
+      className="relative grid shrink-0 touch-none select-none grid-cols-2 gap-2 overflow-hidden rounded-full [-webkit-touch-callout:none]"
+      style={{ width: boardSize, height: boardSize }}
+    >
+      {PADS.map((pad) => (
         <button
-          onClick={onBack}
-          className="text-white/50 hover:text-white flex items-center gap-1.5 text-sm font-bold transition-colors"
+          key={pad.id}
+          type="button"
+          aria-label={text.colors[pad.id]}
+          aria-keyshortcuts={pad.key}
+          onClick={() => press(pad)}
+          disabled={status !== 'input'}
+          className={`grid place-items-center ${pad.className} transition-[opacity,filter] duration-100 ease-standard ${
+            lit === pad.id ? 'opacity-100 brightness-110' : status === 'input' ? 'opacity-70 active:opacity-100' : 'opacity-40'
+          }`}
         >
-          <Icon icon="solar:arrow-left-bold" /> {common?.exit ?? 'Exit'}
-        </button>
-
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {/* Lives */}
-          <div className="flex gap-1 items-center">
-            {[...Array(3)].map((_, i) => (
-              <Icon
-                key={i}
-                icon="solar:heart-bold"
-                className={`text-base transition-colors duration-300 ${i < lives ? 'text-red-500' : 'text-gray-700'}`}
-              />
-            ))}
-          </div>
-
-          {/* Score badge */}
-          <div className="text-primary font-mono font-bold bg-black/25 px-2.5 py-1 rounded-lg border border-primary/20 text-xs whitespace-nowrap">
-            {common?.score ?? 'Score'}: <span className="text-sm">{score}</span>
-          </div>
-
-          {/* Record badge */}
-          <div className="text-white/60 font-mono font-bold border border-white/10 bg-black/20 px-2.5 py-1 rounded-lg text-xs whitespace-nowrap">
-            <Icon icon="solar:cup-star-bold" className="inline mr-1 text-yellow-500/60" />
-            {highScore}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Color Grid ── */}
-      <div className="relative w-full max-w-[280px] sm:max-w-[320px] aspect-square grid grid-cols-2 gap-3 mb-6">
-        {COLORS.map((btn) => (
-          <button
-            key={btn.id}
-            onPointerDown={() => handleUserClick(btn)}
-            className={`
-              w-full h-full rounded-2xl transition-all duration-100 border-4 border-black/20
-              ${btn.color}
-              ${activeColor === btn.id
-                ? btn.highlight + ' scale-95'
-                : 'opacity-80 hover:opacity-100 active:scale-95'}
-            `}
-            disabled={isPlaying || gameOver}
-          />
-        ))}
-
-        {/* Center ring */}
-        <div className="absolute inset-0 m-auto w-16 h-16 sm:w-20 sm:h-20 bg-[#0F172A] rounded-full border-4 border-surface shadow-2xl flex flex-col items-center justify-center z-10 select-none pointer-events-none">
-          {gameStarted && !gameOver ? (
-            <>
-              <span className="text-white font-bold text-xl sm:text-2xl leading-none">{sequence.length}</span>
-              <span className="text-white/30 text-[9px] font-mono leading-none mt-0.5">
-                {txt?.phaseLabel ?? 'round'}
-              </span>
-            </>
-          ) : (
-            <div className={`w-3 h-3 rounded-full ${isPlaying ? 'bg-red-500 animate-ping' : 'bg-green-500'}`} />
-          )}
-        </div>
-      </div>
-
-      {/* ── Status / Actions ── */}
-      <div className="min-h-[72px] flex items-center justify-center w-full">
-        {!gameStarted && !gameOver && (
-          <button
-            onPointerDown={startGame}
-            className="bg-primary text-bg px-8 py-3 rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg animate-bounce"
+          <span
+            aria-hidden="true"
+            className="hidden min-w-6 rounded-pill bg-bg/40 px-1.5 text-center text-footnote font-semibold tabular-nums text-label-1 can-hover:block"
           >
-            <Icon icon="solar:play-bold" /> {txt?.start ?? 'Start'}
-          </button>
-        )}
-
-        {isPlaying && (
-          <span className="text-white font-mono text-base sm:text-lg animate-pulse flex items-center gap-2">
-            <Icon icon="solar:eye-bold" className="text-primary" />
-            {txt?.watch ?? 'Watch...'}
+            {pad.key}
           </span>
-        )}
-
-        {!isPlaying && statusMsg === 'correct' && (
-          <span className="text-green-400 font-mono text-base sm:text-lg animate-in fade-in">
-            {phaseCompleteMsg}
-          </span>
-        )}
-
-        {!isPlaying && statusMsg === 'wrong' && (
-          <span className="text-red-400 font-mono text-sm sm:text-base animate-in fade-in text-center">
-            {livesLeftMsg}
-          </span>
-        )}
-
-        {gameStarted && !isPlaying && !gameOver && statusMsg === '' && (
-          <span className="text-primary font-mono text-base sm:text-lg font-semibold">
-            {txt?.turn ?? 'Your turn!'}
-          </span>
-        )}
-
-        {gameOver && (
-          <div className="text-center animate-in fade-in zoom-in">
-            <p className="text-red-500 font-bold text-lg sm:text-xl mb-3">
-              {txt?.wrong ?? 'Wrong!'}
-            </p>
-            <button
-              onPointerDown={startGame}
-              className="bg-white/10 text-white border border-white/20 px-6 py-2 rounded-full hover:bg-white hover:text-bg transition-colors"
-            >
-              {common?.tryAgain ?? 'Try Again'}
-            </button>
-          </div>
-        )}
+        </button>
+      ))}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 grid size-[30%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-surface-1 ring-8 ring-surface-1"
+      >
+        <span className="flex flex-col items-center">
+          <span className="text-title-1 tabular-nums text-label-1">{sequence.length || '–'}</span>
+          <span className="text-caption text-label-2">{text.round}</span>
+        </span>
       </div>
+    </div>
+  );
+
+  const stats = (
+    <>
+      <Stat label={text.round} value={sequence.length || '–'} />
+      <Lives count={lives} label={fill(common.livesLabel, { n: lives })} />
+    </>
+  );
+
+  const over = status === 'over' && (
+    <ResultOverlay>
+      <p className="text-title-2 text-label-1">{common.gameOver}</p>
+      <p className="text-callout text-label-2">{plural(text.reached, score)}</p>
+      {newRecord && <NewRecord label={common.newRecord} />}
+      <button type="button" onClick={start} className="btn-primary mt-1">
+        <Icon icon="solar:restart-linear" aria-hidden="true" className="size-5" />
+        {common.playAgain}
+      </button>
+    </ResultOverlay>
+  );
+
+  if (wide) {
+    return (
+      <div className="relative flex h-full items-center justify-center gap-8">
+        {board}
+        <div className="flex w-56 shrink-0 flex-col gap-5">
+          <div className="flex items-center justify-between gap-4">{stats}</div>
+          <div aria-live="polite" className="flex flex-col items-start gap-3">
+            {statusContent}
+          </div>
+        </div>
+        {over}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative mx-auto flex h-full w-full max-w-xl flex-col gap-3">
+      <div className="flex shrink-0 items-center justify-between gap-4">{stats}</div>
+      <div ref={areaRef} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4">
+        {board}
+        <div
+          aria-live="polite"
+          className="flex w-full shrink-0 flex-col items-center justify-center gap-3 text-center"
+          style={{ height: STATUS_HEIGHT }}
+        >
+          {statusContent}
+        </div>
+      </div>
+      {over}
     </div>
   );
 }
