@@ -509,9 +509,18 @@ function bridge_iso(int $timestamp): string
     return gmdate('Y-m-d\TH:i:s\Z', $timestamp);
 }
 
-/** JSON response. Only a 200 with $maxAge > 0 may be cached (browser + CDN); everything else is no-store. */
-function bridge_send(array $body, int $status = 200, int $maxAge = 0, int $retryAfter = 0): void
-{
+/**
+ * JSON response. Only a 200 with $maxAge > 0 may be cached (browser + CDN); everything else is no-store. Once expired,
+ * a cached copy may still be used while it is refreshed for $staleWhileRevalidate seconds (default 12 × $maxAge; 0 =
+ * never).
+ */
+function bridge_send(
+    array $body,
+    int $status = 200,
+    int $maxAge = 0,
+    int $retryAfter = 0,
+    ?int $staleWhileRevalidate = null
+): void {
     $json = json_encode($body, BRIDGE_JSON);
     if ($json === false) {
         $status = 500;
@@ -524,8 +533,10 @@ function bridge_send(array $body, int $status = 200, int $maxAge = 0, int $retry
         header('Content-Type: application/json; charset=utf-8');
         header('X-Content-Type-Options: nosniff');
         header('X-Robots-Tag: noindex');
+        $stale = $staleWhileRevalidate ?? $maxAge * 12;
         header($status === 200 && $maxAge > 0
-            ? sprintf('Cache-Control: public, max-age=%d, stale-while-revalidate=%d', $maxAge, $maxAge * 12)
+            ? sprintf('Cache-Control: public, max-age=%d', $maxAge)
+                . ($stale > 0 ? sprintf(', stale-while-revalidate=%d', $stale) : '')
             : 'Cache-Control: no-store');
         if ($status >= 400 && $retryAfter > 0) {
             header('Retry-After: ' . $retryAfter);
@@ -547,7 +558,8 @@ function bridge_error(string $code, int $status, ?int $retryAfter = null, array 
     bridge_send($extra + ['error' => $error], $status, 0, $error['retryAfter'] ?? 0);
 }
 
-/** Sends a bridge_resolve() result in the {"data": …} envelope (github, wakatime, nasa). */
+/** Sends a bridge_resolve() result in the {"data": …} envelope (github, wakatime, nasa); $result['swr'], when set,
+ *  overrides the stale-while-revalidate window (see bridge_send). */
 function bridge_respond(array $result, array $extra = []): void
 {
     if (!$result['ok']) {
@@ -559,5 +571,5 @@ function bridge_respond(array $result, array $extra = []): void
         'source' => $result['source'],
         'stale' => $result['stale'],
         'fetchedAt' => bridge_iso($result['storedAt']),
-    ])], 200, $result['maxAge']);
+    ])], 200, $result['maxAge'], 0, $result['swr'] ?? null);
 }

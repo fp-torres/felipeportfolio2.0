@@ -39,6 +39,21 @@ const OWN_IMAGE = /\/science\/cds\/apod\//i;
 // The breadcrumb of NASA's APOD section ("Science › APOD › …"), on every APOD post: tells one whose title has no
 // "APOD:" (1995-12-19, "Albert Einstein: 1879 – 1955") from NASA's other image articles.
 const APOD_SECTION = /\/apod\/apod-index\/"[^>]*>\s*<span>\s*APOD\s*<\/span>/i;
+// The day in a post's title: "2026 October 28", "29 October 2026" (NASA's form since 2026-10-29) or "October 29, 2026".
+const TITLE_DATE = new RegExp(
+  String.raw`^APOD:\s*(?:(?<y1>\d{4})\s+(?<m1>[a-z]{3,})\.?\s+(?<d1>\d{1,2})` +
+    String.raw`|(?<d2>\d{1,2})\s+(?<m2>[a-z]{3,})\.?,?\s+(?<y2>\d{4})` +
+    String.raw`|(?<m3>[a-z]{3,})\.?\s+(?<d3>\d{1,2}),?\s+(?<y3>\d{4}))` +
+    String.raw`(?:\s*[–—:-]\s*|\s+)(?<title>.+)$`,
+  'i',
+);
+// What a title naming no day starts with: "APOD: 2026 April –", "APOD: October 2026 –".
+const NO_DAY_PREFIX = new RegExp(
+  String.raw`^APOD:\s*(?:(?:\d{4}\s+[a-z]{3,}\.?(?:\s+\d{1,2})?` +
+    String.raw`|(?:\d{1,2}\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?(?:\s+\d{1,2})?,?\s+\d{4})` +
+    String.raw`\s*[–—-]\s*)?`,
+  'i',
+);
 // The label before the names: "Image Credit & Copyright:", "Credit and Copyright:", "Video Credit:", a bare "Credit".
 const CREDIT_LABEL = /^(?:[a-z &]*(?:credit|copyright)[a-z &]*:\s*|credit\s+)+/i;
 const VIDEO_FILE = /\.(?:mp4|webm|m4v|mov)$/i; // what ApodView plays in a <video> element
@@ -173,15 +188,31 @@ function pathOf(url) {
 const fileName = (url) => pathOf(url).split('/').pop().toLowerCase();
 
 // { date, title } of a post titled "APOD: 2026 October 2 &#8211; Title" (old ones write the day as "01", a few have no
-// dash: "APOD: 2017 November 22 ‘Oumuamua: …"), or null.
+// dash: "APOD: 2017 November 22 ‘Oumuamua: …"), "APOD: 29 October 2026 – Title" (NASA's form since 2026-10-29) or
+// "APOD: October 29, 2026 – Title"; null otherwise.
 function titleParts(rendered) {
-  const match = /^APOD:\s*(\d{4})\s+([a-z]{3,})\.?\s+(\d{1,2})(?:\s*[–—-]\s*|\s+)(.+)$/i.exec(
-    typeof rendered === 'string' ? plainText(rendered) : '',
-  );
+  const match = TITLE_DATE.exec(typeof rendered === 'string' ? plainText(rendered) : '');
   if (!match) return null;
-  const month = MONTHS.findIndex((name) => name.toLowerCase().startsWith(match[2].toLowerCase())) + 1;
-  const date = `${match[1]}-${String(month).padStart(2, '0')}-${match[3].padStart(2, '0')}`;
-  return month && isValidIsoDate(date) ? { date, title: match[4].trim() } : null;
+  const { y1, y2, y3, m1, m2, m3, d1, d2, d3, title } = match.groups;
+  const name = (m1 ?? m2 ?? m3).toLowerCase();
+  const month = MONTHS.findIndex((monthName) => monthName.toLowerCase().startsWith(name)) + 1;
+  const date = `${y1 ?? y2 ?? y3}-${String(month).padStart(2, '0')}-${(d1 ?? d2 ?? d3).padStart(2, '0')}`;
+  return month && isValidIsoDate(date) ? { date, title: title.trim() } : null;
+}
+
+// The day a post is the picture of: the one its title names or, for an APOD post (titled "APOD:…", or in NASA's APOD
+// section) whose title names no day in a known form, the day it was published — so a new way of writing the date
+// never hides the latest picture again. '' when neither.
+function postDay(post) {
+  const named = titleParts(post?.title?.rendered)?.date;
+  if (named) return named;
+  const rendered = post?.title?.rendered;
+  const content = post?.content?.rendered;
+  const published = typeof post?.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(post.date);
+  const apod =
+    /^APOD\s*:/i.test(typeof rendered === 'string' ? plainText(rendered) : '') ||
+    APOD_SECTION.test(typeof content === 'string' ? content : '');
+  return published && apod ? post.date.slice(0, 10) : '';
 }
 
 // The post's featured image when it is a real picture, or null (missing or a placeholder). own: in APOD's own folder
@@ -306,11 +337,12 @@ function creditOf(content) {
 function postPayload(post, date = '') {
   const parts = titleParts(post?.title?.rendered);
   const day = date || parts?.date;
-  // A title that names no day only loses its "APOD: 2026 April –" ("Albert Einstein: 1879 – 1955" stays whole).
+  // A title that names no day only loses its "APOD: 2026 April –" or "APOD: October 2026 –" ("Albert Einstein: 1879
+  // – 1955" stays whole).
   const title =
     parts?.title ??
     (typeof post?.title?.rendered === 'string' ? plainText(post.title.rendered) : '')
-      .replace(/^APOD:\s*(?:\d{4}\s+[a-z]{3,}\.?(?:\s+\d{1,2})?\s*[–—-]\s*)?/i, '')
+      .replace(NO_DAY_PREFIX, '')
       .trim();
   if (!day || !title) return null;
   const content = typeof post.content?.rendered === 'string' ? post.content.rendered : '';
@@ -347,18 +379,23 @@ async function fetchPosts(params, deadline, path = '') {
 }
 
 // The APOD post of `date` among `posts` — when two titles name it, the one also published that day (NASA titled
-// 2006-02-17 and 18 "2007"), else the first — or the most recent one up to today when `date` is ''. Of two posts
-// titled and published the same day, the last one is kept (2007-07-16: Manhattanhenge, most likely the missing
-// 2007-07-13, then the Lagoon Nebula).
+// 2006-02-17 and 18 "2007"), else the first — or the most recent one up to today when `date` is '' (dated by
+// postDay). Of two posts titled and published the same day, the last one is kept (2007-07-16: Manhattanhenge, most
+// likely the missing 2007-07-13, then the Lagoon Nebula).
 function pickPost(posts, date) {
   const today = apodToday();
   let best = null;
   let sameDay = null;
   for (const post of posts) {
-    const postDate = titleParts(post?.title?.rendered)?.date ?? '';
+    const named = titleParts(post?.title?.rendered)?.date ?? '';
+    const postDate = !date && !named ? postDay(post) : named;
     if (!postDate) continue;
     if (!date) {
-      if (postDate <= today && postDate > (best?.date ?? '')) best = { post, date: postDate };
+      // The newest; on the same day, a post whose title names it beats one dated by its publication.
+      const titled = Boolean(named);
+      if (postDate <= today && (postDate > (best?.date ?? '') || (postDate === best?.date && titled && !best.titled))) {
+        best = { post, date: postDate, titled };
+      }
     } else if (postDate === date) {
       if (typeof post.date === 'string' && post.date.slice(0, 10) === date) sameDay = post;
       else best ??= { post, date: postDate };
@@ -467,7 +504,7 @@ async function loadFromNasa(date, lang) {
     const latest = !date || date === apodToday();
     const post = latest ? await findLatest(deadline) : await findPost(date, deadline);
     if (!post) throw new HttpError('Not in the APOD archive', { status: 404, code: 'NOT_FOUND' });
-    const apod = { ...toApod(postPayload(post, latest ? '' : date)), translated: false };
+    const apod = { ...toApod(postPayload(post, latest ? postDay(post) : date)), translated: false };
     return lang === 'pt' ? await inPortuguese(apod, deadline) : apod;
   } finally {
     deadline.stop();

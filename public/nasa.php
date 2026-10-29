@@ -41,6 +41,10 @@ const APOD_OWN_IMAGE = '#/science/cds/apod/#i';
 // The breadcrumb of NASA's APOD section ("Science › APOD › …"), on every APOD post: tells one whose title has no
 // "APOD:" (1995-12-19, "Albert Einstein: 1879 – 1955") from NASA's other image articles.
 const APOD_SECTION = '#/apod/apod-index/"[^>]*>\s*<span>\s*APOD\s*</span>#i';
+// The day in a post's title: "2026 October 28", "29 October 2026" (NASA's form since 2026-10-29) or "October 29, 2026".
+const APOD_TITLE_DATE = '/^APOD:\s*(?:(?<y1>\d{4})\s+(?<m1>[a-z]{3,})\.?\s+(?<d1>\d{1,2})'
+    . '|(?<d2>\d{1,2})\s+(?<m2>[a-z]{3,})\.?,?\s+(?<y2>\d{4})|(?<m3>[a-z]{3,})\.?\s+(?<d3>\d{1,2}),?\s+(?<y3>\d{4}))'
+    . '(?:\s*[–—:-]\s*|\s+)(?<title>.+)$/iu';
 // The label before the names: "Image Credit & Copyright:", "Credit and Copyright:", "Video Credit:", a bare "Credit".
 const APOD_CREDIT_LABEL = '/^(?:[a-z &]*(?:credit|copyright)[a-z &]*:\s*|credit\s+)+/i';
 const APOD_VIDEO_FILE = '/\.(?:mp4|webm|m4v|mov)$/i'; // what the client plays in a <video> element
@@ -114,27 +118,50 @@ function apod_file_name(string $url): string
 
 /**
  * [date, title] of a post titled "APOD: 2026 October 2 &#8211; Title" (old ones write the day as "01", a few have no
- * dash: "APOD: 2017 November 22 ‘Oumuamua: …"), or null.
+ * dash: "APOD: 2017 November 22 ‘Oumuamua: …"), "APOD: 29 October 2026 – Title" (NASA's form since 2026-10-29) or
+ * "APOD: October 29, 2026 – Title"; null otherwise.
  */
 function apod_title_parts($rendered): ?array
 {
     $title = is_string($rendered) ? apod_plain($rendered) : '';
-    if (!preg_match('/^APOD:\s*(\d{4})\s+([a-z]{3,})\.?\s+(\d{1,2})(?:\s*[–—-]\s*|\s+)(.+)$/iu', $title, $match)) {
+    if (!preg_match(APOD_TITLE_DATE, $title, $match, PREG_UNMATCHED_AS_NULL)) {
         return null;
     }
+    $year = (int) ($match['y1'] ?? $match['y2'] ?? $match['y3']);
+    $name = (string) ($match['m1'] ?? $match['m2'] ?? $match['m3']);
+    $day = (int) ($match['d1'] ?? $match['d2'] ?? $match['d3']);
 
     $month = 0;
-    foreach (APOD_MONTHS as $index => $name) {
-        if (stripos($name, $match[2]) === 0) {
+    foreach (APOD_MONTHS as $index => $monthName) {
+        if (stripos($monthName, $name) === 0) {
             $month = $index + 1;
             break;
         }
     }
-    if ($month === 0 || !checkdate($month, (int) $match[3], (int) $match[1])) {
+    if ($month === 0 || !checkdate($month, $day, $year)) {
         return null;
     }
 
-    return [sprintf('%04d-%02d-%02d', (int) $match[1], $month, (int) $match[3]), trim($match[4])];
+    return [sprintf('%04d-%02d-%02d', $year, $month, $day), trim((string) $match['title'])];
+}
+
+/**
+ * The day a post is the picture of: the one its title names or, for an APOD post (titled "APOD:…", or in NASA's APOD
+ * section) whose title names no day in a known form, the day it was published — so a new way of writing the date
+ * never hides the latest picture again. '' when neither.
+ */
+function apod_post_day(array $post): string
+{
+    $named = apod_title_parts($post['title']['rendered'] ?? null)[0] ?? '';
+    if ($named !== '') {
+        return $named;
+    }
+    $title = is_string($post['title']['rendered'] ?? null) ? apod_plain($post['title']['rendered']) : '';
+    $content = is_string($post['content']['rendered'] ?? null) ? $post['content']['rendered'] : '';
+    $published = is_string($post['date'] ?? null) && preg_match('/^\d{4}-\d{2}-\d{2}/', $post['date']) === 1;
+    $apod = preg_match('/^APOD\s*:/i', $title) === 1 || preg_match(APOD_SECTION, $content) === 1;
+
+    return $published && $apod ? substr($post['date'], 0, 10) : '';
 }
 
 /**
@@ -312,9 +339,11 @@ function apod_post_payload(array $post, ?string $date = null): ?array
 {
     $parts = apod_title_parts($post['title']['rendered'] ?? null);
     $date ??= $parts[0] ?? null;
-    // A title that names no day only loses its "APOD: 2026 April –" ("Albert Einstein: 1879 – 1955" stays whole).
+    // A title that names no day only loses its "APOD: 2026 April –" or "APOD: October 2026 –" ("Albert Einstein: 1879
+    // – 1955" stays whole).
     $title = $parts[1] ?? trim((string) preg_replace(
-        '/^APOD:\s*(?:\d{4}\s+[a-z]{3,}\.?(?:\s+\d{1,2})?\s*[–—-]\s*)?/iu',
+        '/^APOD:\s*(?:(?:\d{4}\s+[a-z]{3,}\.?(?:\s+\d{1,2})?|(?:\d{1,2}\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct'
+        . '|nov|dec)[a-z]*\.?(?:\s+\d{1,2})?,?\s+\d{4})\s*[–—-]\s*)?/iu',
         '',
         is_string($post['title']['rendered'] ?? null) ? apod_plain($post['title']['rendered']) : ''
     ));
@@ -370,22 +399,27 @@ function apod_posts(array $query, string $path = ''): array
 }
 
 /** The APOD post of $date among $posts — when two titles name it, the one also published that day (NASA titled
- *  2006-02-17 and 18 "2007"), else the first — or the most recent one up to $today when $date is null. Of two posts
- *  titled and published the same day, the last one is kept (2007-07-16: Manhattanhenge, most likely the missing
- *  2007-07-13, then the Lagoon Nebula). */
+ *  2006-02-17 and 18 "2007"), else the first — or the most recent one up to $today when $date is null (dated by
+ *  apod_post_day). Of two posts titled and published the same day, the last one is kept (2007-07-16: Manhattanhenge,
+ *  most likely the missing 2007-07-13, then the Lagoon Nebula). */
 function apod_pick(array $posts, ?string $date, string $today): ?array
 {
     $best = null;
     $bestDate = '';
+    $bestTitled = false;
     $sameDay = null;
     foreach ($posts as $post) {
-        $postDate = apod_title_parts($post['title']['rendered'] ?? null)[0] ?? '';
+        $named = apod_title_parts($post['title']['rendered'] ?? null)[0] ?? '';
+        $postDate = $date === null && $named === '' ? apod_post_day($post) : $named;
         if ($postDate === '') {
             continue;
         }
         if ($date === null) {
-            if ($postDate <= $today && $postDate > $bestDate) {
-                [$best, $bestDate] = [$post, $postDate];
+            // The newest; on the same day, a post whose title names it beats one dated by its publication.
+            $titled = $named !== '';
+            if ($postDate <= $today
+                && ($postDate > $bestDate || ($postDate === $bestDate && $titled && !$bestTitled))) {
+                [$best, $bestDate, $bestTitled] = [$post, $postDate, $titled];
             }
         } elseif ($postDate === $date) {
             if (is_string($post['date'] ?? null) && substr($post['date'], 0, 10) === $date) {
@@ -508,13 +542,23 @@ function apod_fetch_date(string $date, string $today): array
     return bridge_fail('NOT_FOUND', 404, $recent ? 900 : BRIDGE_MAX_BACKOFF);
 }
 
+/** Seconds until the next picture is due — NASA publishes it at 00:05 in New York, checked from 00:06 —, at most
+ *  30 min. */
+function apod_until_next_picture(): int
+{
+    $next = new DateTimeImmutable('tomorrow 00:06', new DateTimeZone('America/New_York'));
+
+    return max(60, min(1800, $next->getTimestamp() - time()));
+}
+
 function apod_fetch_latest(string $today): array
 {
     $found = apod_find_latest($today);
-    $payload = $found['ok'] && $found['post'] !== null ? apod_post_payload($found['post']) : null;
+    $post = $found['ok'] ? $found['post'] : null;
+    $payload = $post !== null ? apod_post_payload($post, apod_post_day($post)) : null;
     if ($payload !== null) {
-        // Until today's picture is published (just after midnight in New York), asked again every 10 min.
-        return bridge_ok($payload, $payload['date'] === $today ? null : 600);
+        // Today's picture is kept until the next one is due; until today's is published, asked again every 10 min.
+        return bridge_ok($payload, $payload['date'] === $today ? apod_until_next_picture() : 600);
     }
 
     return $found['ok'] ? bridge_fail() : $found;
@@ -584,10 +628,14 @@ if (!is_string($lang) || !in_array($lang, ['pt', 'en'], true)
 
 // Today in New York is the latest picture: until NASA publishes it (just after midnight there), yesterday's.
 $latest = $requested === '' || $requested === $today;
+// The cached latest picture is answered while it is refreshed (after the response) only when it is today's: an older
+// copy — yesterday's, or days old after a quiet spell — is refreshed first, so "NASA hoje" never shows a picture NASA
+// has already replaced. (When NASA can't be reached, that copy is still answered, marked stale.)
+$cachedDay = $latest ? (string) (bridge_cache_get(APOD_CACHE_PREFIX . 'latest')['payload']['date'] ?? '') : '';
 $result = $latest
     ? bridge_resolve(
         APOD_CACHE_PREFIX . 'latest',
-        APOD_LATEST_POLICY,
+        ['background' => $cachedDay === $today] + APOD_LATEST_POLICY,
         static fn (): array => apod_fetch_latest($today)
     )
     : bridge_resolve(
@@ -630,5 +678,7 @@ if ($lang === 'pt' && !$translated) {
 $result['payload'] = $apod;
 // Never longer than the bridge's own max-age: 60 s for a copy answered while it is being refreshed.
 $result['maxAge'] = min($maxAge, $result['maxAge']);
+// The latest picture is never reused by the browser once expired (no stale-while-revalidate): it may be outdated.
+$result['swr'] = $latest ? 0 : null;
 bridge_respond($result, ['lang' => $lang, 'translated' => $translated]);
 bridge_after($result);
